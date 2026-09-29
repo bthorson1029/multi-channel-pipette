@@ -7,7 +7,7 @@ Builds the baseline (build_pipette.py) and then modifies it:
     carrying the tray + well plate rides the lower part of the same 4 rails
   * the geared arms (shortened to 65 mm) drive the platform through 4 short 47 mm links, laid out as
     a toggle: at the top of travel arm and link go collinear, so force multiplication climbs steeply
-    exactly where tips are pressed on. The lever runs 1.5 deg over centre onto a hard stop, so the
+    exactly where tips are pressed on. The lever runs 1.5 deg over center onto a hard stop, so the
     raised bed locks itself. Each labware adapter (tray, tip-rack riser) is sized so its engagement
     point is this one repeatable top position.
   * the handle (lengthened to a 250 mm grip radius) moves to the back shaft, extended through the
@@ -59,9 +59,9 @@ ARM_SHIFT = ARM_L - ARM_A                    # cut the stock arm's straight sect
 _R = math.hypot(PIN_Y - SHAFT_Y, Z_TDC - SHAFT_Z)
 LINK2 = _R - ARM_A                           # arm + link collinear at the top -> toggle
 TH_TDC = math.atan2(Z_TDC - SHAFT_Z, PIN_Y - SHAFT_Y)
-TH_HIGH = TH_TDC + D(1.5)                    # over centre onto the hard stop: self-locking
+TH_HIGH = TH_TDC + D(1.5)                    # over center onto the hard stop: self-locking
 TH_LOW = D(-11)                              # arm tip stays clear of the bottom ring
-HANDLE_R = 250.0                             # grip-centre radius (stock bar gives 189)
+HANDLE_R = 250.0                             # grip-center radius (stock bar gives 189)
 HANDLE_EXT = HANDLE_R - 189.0                # lengthen the stock handle bar's straight section
 HANDLE_X = IX + 20 + T + 8.5                 # outside the RIGHT face; 15 mm grip clears posts + brackets
 HANDLE_H_END = D(0)                          # handle level when locked (clears the bench)
@@ -84,7 +84,7 @@ def mech_adv(th):
 
 
 def stadium(name, c2c, w, t, coll, m):
-    """Laser-cut link: slot-ended bar, local X along the link, holes' centres at +/-c2c/2."""
+    """Laser-cut link: slot-ended bar, local X along the link, holes' centers at +/-c2c/2."""
     r, h = w / 2, c2c / 2
     pts = [(h + r * math.cos(D(a)), r * math.sin(D(a))) for a in range(-90, 91, 15)] + \
           [(-h + r * math.cos(D(a)), r * math.sin(D(a))) for a in range(90, 271, 15)]
@@ -127,7 +127,7 @@ def modify():
     # -- back shaft extended through the right face for the external handle
     box("square_shaft_back_long", (HANDLE_X + 6 + 91.2, 10, 10),
         ((HANDLE_X + 6 - 91.2) / 2, SHAFT_Y, SHAFT_Z), "Lever", M["chrome"])
-    # -- printed hard stop outboard of the right-face bracket: the bar lands on it just past centre
+    # -- printed hard stop outboard of the right-face bracket: the bar lands on it just past center
     box("handle_stop", (HANDLE_X + 4 - (IX + 23.2), 20, 32.2),
         ((HANDLE_X + 4 + IX + 23.2) / 2, SHAFT_Y - 80, 16.1), "Lever", M["pla"], bevel=1.0)
 
@@ -277,5 +277,5 @@ summary = {
     "mech_adv": {f"{mm} mm below top": round(mech_adv(
         min((TH_LOW + (TH_TDC - TH_LOW) * i / 4000 for i in range(4001)),
             key=lambda t: abs(pin_z(t) - (pin_z(TH_TDC) - mm)))), 1) for mm in (40, 20, 10, 5, 2, 1)},
-    "over_centre_drop_mm": pin_z(TH_TDC) - pin_z(TH_HIGH),
+    "over_center_drop_mm": pin_z(TH_TDC) - pin_z(TH_HIGH),
 }

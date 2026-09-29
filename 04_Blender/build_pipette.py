@@ -32,9 +32,9 @@ X, Y, Z = Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))
 
 # ---------------------------------------------------------------- key dimensions
 FX, FY, FH = 229.2, 218.0, 400.0          # frame outer size (bed footprint = frame footprint)
-PX, PY = FX / 2 - 10, FY / 2 - 10          # post centre lines (104.6, 99)
+PX, PY = FX / 2 - 10, FY / 2 - 10          # post center lines (104.6, 99)
 IX = FX / 2 - 20                           # inner face of side posts (94.6)
-BED_RECT_Z = 65.0                          # centre of 2nd extrusion ring (bearing-plate bolt spacing 55)
+BED_RECT_Z = 65.0                          # center of 2nd extrusion ring (bearing-plate bolt spacing 55)
 SHAFT_Z, SHAFT_Y = (10 + BED_RECT_Z) / 2, 18.0   # 36 mm gear pitch -> shafts +/-18
 ARM_L, LINK_L = 89.0, 140.0                # lever_cutout pivot->pin, linkage1 pin->pin
 T = 3.0                                    # laser-cut steel thickness
@@ -247,7 +247,7 @@ def dxf_part(fname, name, thick, c, m, xform=None):
     return o
 
 
-# ---------------------------------------------------------------- STL import (Y-up -> Z-up, origin bottom-centre)
+# ---------------------------------------------------------------- STL import (Y-up -> Z-up, origin bottom-center)
 def import_stl(fname, c, m, rot=None):
     bpy.ops.object.select_all(action='DESELECT')
     bpy.ops.wm.stl_import(filepath=os.path.join(STL, fname), up_axis='Y', forward_axis='NEGATIVE_Z')
@@ -261,6 +261,11 @@ def import_stl(fname, c, m, rot=None):
         M = rot.to_4x4() @ M
     o.data.transform(M)
     o.matrix_world = Matrix.Identity(4)
+    bm = bmesh.new()                     # STL repeats each shared vertex per triangle: weld them so
+    bm.from_mesh(o.data)                 # the mesh is watertight (booleans and exports need that)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-4)
+    bm.to_mesh(o.data)
+    bm.free()
     vs = [v.co for v in o.data.vertices]
     mn = Vector([min(v[i] for v in vs) for i in range(3)])
     mx = Vector([max(v[i] for v in vs) for i in range(3)])
@@ -273,7 +278,7 @@ def import_stl(fname, c, m, rot=None):
 
 
 def seat_grip(grip, bar, end_x=144.5):
-    """lever_handle.STL is a sleeve: a 3x10 mm slot, 40 mm deep, open at its +Y end, centred at
+    """lever_handle.STL is a sleeve: a 3x10 mm slot, 40 mm deep, open at its +Y end, centered at
     (x=0, z=12.5). Parent it to the handle bar with the bar's far end (DXF x=end_x) seated in the slot."""
     R = Matrix(((0, -1, 0), (0, 0, -1), (1, 0, 0)))   # grip X->bar Z, grip Y->bar -X, grip Z->bar -Y
     grip.parent = bar

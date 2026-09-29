@@ -16,9 +16,13 @@ Builds the baseline (build_pipette.py) and then modifies it:
   * both belts have a smooth-idler tensioner on a slotted printed bracket; the lift homes onto a
     micro switch pressed by the platform underside at the bottom of travel
   * frees two of the CNC shield's four driver slots (X = plunger, Y = lift)
+  * the pipette plate is bolted through two printed brackets to a 2020 bar along each side of
+    the frame; the lift platform's rail plates hang from four printed corner blocks
+Layout numbers and the laser-cut plates come from 01_Hardware/MotorLift/make_dxf.py (run it first
+if the DXFs are missing); export_motor_lift_parts.py writes the printed parts as STL.
 Run: blender --python 04_Blender/variant_motor_lift.py  (or open it in Blender's Text Editor and Run Script)
 """
-import bpy, bmesh, math, os
+import bpy, bmesh, math, os, importlib.util
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 
@@ -42,6 +46,12 @@ HERE = _script_dir()
 g = {"__name__": "pipette_lib", "__file__": os.path.join(HERE, "build_pipette.py")}
 exec(open(os.path.join(HERE, "build_pipette.py"), encoding="utf-8").read(), g)   # functions only
 
+FAB = os.path.normpath(os.path.join(HERE, "..", "01_Hardware", "MotorLift"))
+_spec = importlib.util.spec_from_file_location("motorlift_layout", os.path.join(FAB, "make_dxf.py"))
+L = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(L)             # layout constants shared with the laser-cut DXFs
+FAB_DXF = os.path.join(FAB, "ToLaserCut-DXF")
+
 D = math.radians
 M = None
 box, cyl, dxf_part, dup, new_obj = g["box"], g["cyl"], g["dxf_part"], g["dup"], g["new_obj"]
@@ -49,10 +59,10 @@ IF_X, IX, PY, T, P, FH = g["IF_X"], g["IX"], g["PY"], g["T"], g["P"], g["FH"]
 PLG_MID, PLG_TOP, BED_RECT_Z = g["PLG_MID"], g["PLG_TOP"], g["BED_RECT_Z"]
 
 # ---------------------------------------------------------------- parameters
-PULLEY_R = 6.37                   # GT2 20T pitch radius
+PULLEY_R = L.PULLEY_R             # GT2 20T pitch radius
 # lift
-LIFT_X = 72.0                     # screws at (+/-72, 0): outside the tray (+/-63.9)
-LIFT_MOTOR_XY = (0.0, 36.0)
+LIFT_X = L.LIFT_X                 # screws at (+/-LIFT_X, 0): outside the tray (+/-63.9)
+LIFT_MOTOR_XY = L.LIFT_MOTOR_XY
 BASE_Z = BED_RECT_Z - 10 - T      # base plate top = underside of bed-ring side members (52..55)
 LIFT_PLUS = BASE_Z + T + 1        # pulley stack starts 1 mm above the base plate
 LIFT0 = 78.0                      # platform underside at the bottom of travel
@@ -61,17 +71,17 @@ TIP_DEPTH = 9.0                   # tips this far into the wells at the top of t
 LIFT_TRAVEL = (P - 112 + TIP_DEPTH) - (LIFT0 + T + TRAY_H + PLATE_H)
 LIFT_LEAD = 2.0                   # T8x2 on the lift: force + self-locking
 # plunger
-PS_XY = [(sx * 65.0, sy * 58.9) for sy in (-1, 1) for sx in (-1, 1)]
-PLG_MOTOR_XY = (0.0, -85.0)
+PS_XY = L.PS_XY                   # order: LF, RF, LB, RB
+PLG_MOTOR_XY = L.PLG_MOTOR_XY
 SWITCH_TOP = P + 39 + 11.5        # limit-switch lever tops on the pipette-plate corner blocks
 PLG_REST = (SWITCH_TOP + 0.5) - (PLG_MID - T / 2)   # home = plate just off the switches (firmware homes onto them)
 ASPIRATE = 12.0                   # animation stroke (~215 uL in a 4.78 mm-bore 1 mL syringe)
 PLG_LEAD = 2.0                    # T8x2: 4x the resolution and thrust of the original T8x8
 # tensioners / homing
-IDLER_R = 8.8                     # belt pitch-line radius on a 16 mm smooth idler (back-side wrap)
-TENSION_TAKEUP = 16.0             # idler deflects the run this far; slot gives +/-6 mm.
+IDLER_R = L.IDLER_R               # belt pitch-line radius on a 16 mm smooth idler (back-side wrap)
+TENSION_TAKEUP = L.TENSION_TAKEUP # idler deflects the run this far; slot gives +/-6 mm.
                                   # (take-up ~ deflection^2 / span, so a shallow idler takes up almost nothing)
-HOME_SW_XY = (-40.0, -35.0)       # lift home switch: under the platform, clear of belt + nuts
+HOME_SW_XY = L.HOME_SW_XY         # lift home switch: under the platform, clear of belt + nuts
 HOME_OVERTRAVEL = 0.8             # lever deflection when the platform is home
 
 
@@ -235,47 +245,104 @@ def slot_prism(bm, cx, cy, length, width, z0, z1):
     bmesh.ops.translate(bm, verts=[v for v in ext['geom'] if isinstance(v, bmesh.types.BMVert)], vec=(0, 0, z1 - z0))
 
 
-def tensioner(prefix, x, y_idler, z_base, height, coll, through=None):
-    """Printed bracket with a 12 mm adjustment slot along y: the idler's shoulder bolt clamps
-    anywhere in the slot. The model shows it at TENSION_TAKEUP (mid-slot)."""
+def boolean(obj, bm, op='DIFFERENCE'):
+    """Apply a cutter (or union) built in world coordinates to obj and bake the result."""
+    cut = new_obj(obj.name + "_tool", bm, obj.users_collection[0].name)
+    mod = obj.modifiers.new("tool", 'BOOLEAN')
+    mod.object, mod.operation, mod.solver = cut, op, 'EXACT'
+    bpy.context.view_layer.update()
+    mats = list(obj.data.materials)
+    obj.data = bpy.data.meshes.new_from_object(obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    obj.modifiers.clear()
+    if not obj.data.materials:
+        for m in mats:
+            obj.data.materials.append(m)
+    bpy.data.objects.remove(cut)
+
+
+def _block(bm, x0, x1, y0, y1, z0, z1):
+    g_ = bmesh.ops.create_cube(bm, size=1)
+    for v in g_["verts"]:
+        v.co = Vector(((x0 + x1) / 2 + v.co.x * (x1 - x0), (y0 + y1) / 2 + v.co.y * (y1 - y0),
+                       (z0 + z1) / 2 + v.co.z * (z1 - z0)))
+
+
+def _bar(bm, p0, p1, r, seg=24):
+    """Cylinder from p0 to p1 (for holes along any axis)."""
+    p0, p1 = Vector(p0), Vector(p1)
+    d = p1 - p0
+    rot = d.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=r, radius2=r, depth=d.length,
+                          matrix=Matrix.Translation((p0 + p1) / 2) @ rot)
+
+
+def tensioner(prefix, x, y_idler, z_base, height, coll):
+    """Printed bracket: 12 mm adjustment slot along y for the idler's shoulder bolt, plus two M3
+    screws into the plate. The model shows the idler at TENSION_TAKEUP (mid-slot)."""
     br = box(prefix + "_bracket", (30, 34, height), (x, y_idler, z_base + height / 2), coll, M["pla"], bevel=1.0)
     bm = bmesh.new()
-    slot_prism(bm, x, y_idler, 17.2, 5.2, z_base - 5, z_base + height + 5)
-    cut = new_obj(prefix + "_slotcut", bm, coll)
-    mod = br.modifiers.new("slot", 'BOOLEAN')
-    mod.object, mod.operation, mod.solver = cut, 'DIFFERENCE', 'EXACT'
-    bpy.context.view_layer.update()
-    dg = bpy.context.evaluated_depsgraph_get()
-    baked = bpy.data.meshes.new_from_object(br.evaluated_get(dg))
-    br.modifiers.clear()
-    br.data = baked
-    bpy.data.objects.remove(cut)
-    if through is not None:           # matching slot in the plate below so the bolt + nut can slide
-        bm = bmesh.new()
-        slot_prism(bm, x, y_idler, 17.2, 5.2, -500, 500)
-        cut = new_obj(prefix + "_plateslot", bm, coll)
-        mod = through.modifiers.new("slot", 'BOOLEAN')
-        mod.object, mod.operation, mod.solver = cut, 'DIFFERENCE', 'EXACT'
-        bpy.context.view_layer.update()
-        dg = bpy.context.evaluated_depsgraph_get()
-        mats = list(through.data.materials)
-        through.data = bpy.data.meshes.new_from_object(through.evaluated_get(dg))
-        through.modifiers.clear()
-        if not through.data.materials:
-            for m in mats:
-                through.data.materials.append(m)
-        bpy.data.objects.remove(cut)
+    slot_prism(bm, x, y_idler, L.SLOT_TRAVEL + L.M5, L.M5, z_base - 5, z_base + height + 5)
+    for s_ in (-1, 1):
+        _cone(bm, L.M3 / 2, L.M3 / 2, z_base - 5, z_base + height + 5, xy=(x + s_ * L.TENSIONER_HOLE_DX, y_idler))
+    boolean(br, bm)
     return br
 
 
 def microswitch(prefix, x, y, z_base, lever_top, coll):
-    """Printed holder + micro limit switch, lever tip at lever_top."""
-    sw_h, lev = 10.0, 1.0
-    hold_h = lever_top - lev - 0.5 - sw_h - z_base
-    box(prefix + "_holder", (26, 14, hold_h), (x, y, z_base + hold_h / 2), coll, M["pla"], bevel=0.8)
-    zs = z_base + hold_h
-    box(prefix + "_body", (20, 6.5, sw_h), (x, y, zs + sw_h / 2), coll, M["pla_grey"])
+    """Printed holder + micro limit switch (KW12-style, 20 x 10 x 6.4 mm, mounting holes 9.5 mm
+    apart). The switch stands in a channel between two walls, clamped by two M2 screws through
+    the walls; two M3 screws hold the base to the plate outside the switch footprint."""
+    sw_h, lev, wall_h = 10.0, 1.0, 8.0
+    zt = lever_top - lev - 0.5 - sw_h                 # base top = switch bottom
+    h = box(prefix + "_holder", (34, 16, zt - z_base), (x, y, (z_base + zt) / 2), coll, M["pla"])
+    bm = bmesh.new()
+    for s_ in (-1, 1):                                # walls either side of a 6.6 mm channel
+        _block(bm, x - 10, x + 10, y + s_ * 3.3, y + s_ * 8.0, zt - 0.01, zt + wall_h)
+    boolean(h, bm, 'UNION')
+    bm = bmesh.new()
+    for s_ in (-1, 1):
+        _cone(bm, L.M3 / 2, L.M3 / 2, z_base - 5, zt + 5, xy=(x + s_ * 14, y))
+        _bar(bm, (x + s_ * 4.75, y - 12, zt + 3), (x + s_ * 4.75, y + 12, zt + 3), 1.1)
+    boolean(h, bm)
+    box(prefix + "_body", (20, 6.5, sw_h), (x, y, zt + sw_h / 2), coll, M["pla_grey"])
     box(prefix + "_lever", (18, 4, lev), (x + 1, y, lever_top - lev / 2), coll, M["chrome"])
+
+
+def head_bracket(name, sx, coll):
+    """Printed bracket joining the pipette plate to the side bar. An L profile (so it prints on
+    its side with no overhang): the upper block sits under the plate edge (2 M4 up through the
+    plate), the foot runs under the bar (2 M5 up into the bar's bottom slot)."""
+    zt = P - T                                        # pipette plate underside = bar top
+    x_in, x_bar, x_out = 60.0, IX, IX + 17.4          # inner face, bar inner face, foot end
+    o = box(name, (x_bar - x_in, 60, 20), (sx * (x_in + x_bar) / 2, 0, zt - 10), coll, M["pla"])
+    bm = bmesh.new()
+    xa, xb = sorted((sx * (x_bar - 0.01), sx * x_out))
+    _block(bm, xa, xb, -30, 30, zt - 26, zt - 20 + 0.01)
+    boolean(o, bm, 'UNION')
+    bm = bmesh.new()
+    for x, y in L.HEAD_MOUNT_XY:
+        if x * sx > 0:
+            _cone(bm, L.M4 / 2, L.M4 / 2, zt - 30, zt + 5, xy=(x, y))
+    for y in (-20.0, 20.0):
+        _cone(bm, L.M5 / 2, L.M5 / 2, zt - 30, zt - 15, xy=(sx * (IX + 10), y))
+    boolean(o, bm)
+    return o
+
+
+def fab_plate(fname, obj_name, coll, loc):
+    """A laser-cut plate from the generated DXFs (01_Hardware/MotorLift/ToLaserCut-DXF)."""
+    o = dxf_part(os.path.join(FAB_DXF, fname), obj_name, T, coll, M["steel"])
+    o.location = loc
+    return o
+
+
+def replace_mesh(obj, fname):
+    """Swap a baseline plate's mesh for the generated DXF (same drawing frame, same transform)."""
+    tmp = dxf_part(os.path.join(FAB_DXF, fname), obj.name + "_new", T, obj.users_collection[0].name, M["steel"])
+    old = obj.data
+    obj.data = tmp.data
+    bpy.data.objects.remove(tmp)
+    bpy.data.meshes.remove(old)
 
 
 def drill(obj, holes, r):
@@ -329,16 +396,16 @@ def modify():
         for sy in (-1, 1):
             box(f"MGN9H_rail_{'LR'[sx > 0]}{'FB'[sy > 0]}", (6.5, 9, r1 - r0),
                 (sx * (IX - 3.25), sy * PY, (r0 + r1) / 2), "Frame", M["chrome"], bevel=0.3)
-    # pipette plate fixed to the posts
-    for o in [o for o in obj if o.name.startswith("MGN9H_carriage_low")]:
-        o.name = o.name.replace("MGN9H_carriage_low", "head_fixed_mount")
-        o.data.materials.clear()
-        o.data.materials.append(M["pla"])
+    # pipette plate fixed to the frame: a 2020 bar along each side at plate height, joined to
+    # the plate by printed brackets (replaces the lower rail carriages and interface plates)
+    for o in [o for o in obj if o.name.startswith(("MGN9H_carriage_low", "interface_plate_low"))]:
+        obj.remove(o)
+    for sx in (-1, 1):
+        box(f"ext_head_{'LR'[sx > 0]}", (20, g["FY"] - 40, 20), (sx * g["PX"], 0, P - T - 10), "Frame", M["ext"], bevel=1.0)
+        head_bracket(f"head_bracket_{'LR'[sx > 0]}", sx, "Head")
 
     # ---------------- LIFT
-    box("lift_base_plate", (2 * (IX + 20), 120, T), (0, 0, BASE_Z + T / 2), "Frame", M["steel"], bevel=0.5)
-    drill(obj["lift_base_plate"], [(-LIFT_X, 0), (LIFT_X, 0)], 4.5)
-    drill(obj["lift_base_plate"], [LIFT_MOTOR_XY], 11.5)
+    fab_plate("lift_base_plate.dxf", "lift_base_plate", "Frame", (0, 0, BASE_Z + T / 2))
     nema17("lift_motor", *LIFT_MOTOR_XY, BASE_Z, True, "Bed")
     obj["lift_motor_shaft"].location.z = BASE_Z + 9
     for sx in (-1, 1):
@@ -348,19 +415,22 @@ def modify():
         pulley(f"lift_pulley_{tag}", sx * LIFT_X, 0, LIFT_PLUS, "Bed")
     pulley("lift_pulley_motor", *LIFT_MOTOR_XY, LIFT_PLUS, "Bed")
     # tensioner: idler pushes the long lower run (between the screws) inward (+y)
-    li_y = -(PULLEY_R + IDLER_R) + TENSION_TAKEUP
+    li_y = L.LIFT_IDLER_Y
     idler("lift_idler", 0, li_y, LIFT_PLUS, "Bed")
-    tensioner("lift_tensioner", 0, li_y, BASE_Z + T, LIFT_PLUS + 6 - (BASE_Z + T) - 0.5, "Bed",
-              through=obj["lift_base_plate"])
+    tensioner("lift_tensioner", 0, li_y, BASE_Z + T, LIFT_PLUS + 6 - (BASE_Z + T) - 0.5, "Bed")
     lift_seq = [(-LIFT_X, 0, PULLEY_R), (0, li_y, -IDLER_R), (LIFT_X, 0, PULLEY_R), (*LIFT_MOTOR_XY, PULLEY_R)]
     lift_belt = belt("lift_belt", lift_seq, LIFT_PLUS + 11, "Bed")
     # homing: the platform underside presses the lever at the bottom of travel
     microswitch("lift_home_switch", *HOME_SW_XY, BASE_Z + T, LIFT0 + HOME_OVERTRAVEL, "Bed")
 
     # platform (+ carriages, interface plates, nuts, tray, plate)
-    lp = box("lift_plate", (160, 200, T), (0, 0, LIFT0 + T / 2), "Bed", M["steel"], bevel=0.5)
-    drill(lp, [(-LIFT_X, 0), (LIFT_X, 0)], 5.5)
+    lp = fab_plate("lift_plate.dxf", "lift_plate", "Bed", (0, 0, LIFT0 + T / 2))
     members = [lp]
+    src_blk = obj["LimitSwitch_holder_A"]            # same corner blocks as the plunger plate
+    for i, (sx, sy) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1)), 1):
+        b = dup(src_blk, f"lift_corner_block_{i}", "Bed")
+        b.location = (sx * 63, sy * (100 - src_blk.dimensions.y / 2), LIFT0 + T)
+        members.append(b)
     src = dxf_part("interface_plate_high.DXF", "lift_interface", T, "Bed", M["steel"])
     zc = LIFT0 + T / 2 - 10
     for i, (sx, sy) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1))):
@@ -380,21 +450,27 @@ def modify():
 
     # ---------------- PLUNGER drive on the fixed pipette plate
     pip, plg, hold = obj["pipette_plate"], obj["plunger_plate"], obj["plunger_holder_plate"]
-    drill(pip, PS_XY, 4.5)
-    drill(pip, [PLG_MOTOR_XY], 11.5)
-    drill(plg, PS_XY, 5.5)
-    drill(hold, PS_XY, 6.0)
+    replace_mesh(pip, "pipette_plate_motorlift.dxf")
+    replace_mesh(plg, "plunger_plate_motorlift.dxf")
+    q = L.T8_NUT_PCD / 2 / math.sqrt(2)               # holder plate: screw clearance + nut flange screws
+    bm = bmesh.new()
+    for x, y in PS_XY:
+        _cone(bm, L.SCREW_CLEAR_D / 2, L.SCREW_CLEAR_D / 2, 0, 600, xy=(x, y))
+        for a in (-1, 1):
+            for b in (-1, 1):
+                _cone(bm, L.M3 / 2, L.M3 / 2, 0, 600, xy=(x + a * q, y + b * q))
+    boolean(hold, bm)
     for i, (x, y) in enumerate(PS_XY, 1):
         kfl08(f"KFL08_plunger_{i}", x, y, P - T, True, "Motors", rot=D(90))   # flange along y: clears interface plates
-        cyl(f"plunger_screw_{i}", 4, FH - 35 - (P - 16), (x, y, (FH - 35 + P - 16) / 2), "Motors", M["chrome"], seg=16)
+        cyl(f"plunger_screw_{i}", 4, FH - 30 - (P - 16), (x, y, (FH - 30 + P - 16) / 2), "Motors", M["chrome"], seg=16)
         pulley(f"plunger_pulley_{i}", x, y, P + 1, "Motors")
     nema17("plunger_motor", *PLG_MOTOR_XY, P - T, True, "Motors", length=48.0)
     obj["plunger_motor_shaft"].location.z = P + 6
     pulley("plunger_pulley_motor", *PLG_MOTOR_XY, P + 1, "Motors")
     # tensioner: idler pushes the back run (behind the array) inward (-y)
-    pi_y = 58.9 + PULLEY_R + IDLER_R - TENSION_TAKEUP
+    pi_y = L.PLG_IDLER_Y
     idler("plunger_idler", 0, pi_y, P + 1, "Motors")
-    tensioner("plunger_tensioner", 0, pi_y, P, 5.5, "Motors", through=pip)
+    tensioner("plunger_tensioner", 0, pi_y, P, 5.5, "Motors")
     lf, rf, lb, rb = PS_XY          # PS_XY order: LF, RF, LB, RB
     plg_seq = [(*lf, PULLEY_R), (*PLG_MOTOR_XY, PULLEY_R), (*rf, PULLEY_R), (*rb, PULLEY_R),
                (0, pi_y, -IDLER_R), (*lb, PULLEY_R)]
@@ -405,19 +481,21 @@ def modify():
     members = [plg, hold, obj["plungers_x96"]]
     members += [o for o in obj if o.name.startswith(("LimitSwitch_holder_A", "interface_plate_high",
                                                       "MGN9H_carriage_high"))]
+    zh = g["HOLD_TOP"]
     for i, (x, y) in enumerate(PS_XY, 1):
-        # anti-backlash T8 nut: flange nut + preload spring + second nut, hanging under the plate
-        members.append(cyl(f"plunger_nut_flange_{i}", 11, 3.5, (x, y, zb - 1.75), "Motors", M["brass"]))
-        members.append(cyl(f"plunger_nut_body_{i}", 5.1, 16, (x, y, zb + 8), "Motors", M["brass"]))
-        members.append(spring(f"plunger_nut_spring_{i}", x, y, zb - 11.5, zb - 3.5, 6.0, 0.6, 4, "Motors", M["chrome"]))
-        members.append(cyl(f"plunger_nut_lower_{i}", 7.0, 10, (x, y, zb - 16.5), "Motors", M["brass"], seg=6))
-    # 2020 stiffening frame on the holder plate, around the syringe array and inside the screws:
+        # anti-backlash T8 nut, flange down on the holder plate (4 M3 through holder + steel plate),
+        # body up; preload spring and second nut above it
+        members.append(cyl(f"plunger_nut_flange_{i}", 11, 3.5, (x, y, zh + 1.75), "Motors", M["brass"]))
+        members.append(cyl(f"plunger_nut_body_{i}", 5.1, 12, (x, y, zh + 9.5), "Motors", M["brass"]))
+        members.append(spring(f"plunger_nut_spring_{i}", x, y, zh + 15.5, zh + 23.5, 6.0, 0.6, 4, "Motors", M["chrome"]))
+        members.append(cyl(f"plunger_nut_upper_{i}", 7.0, 10, (x, y, zh + 28.5), "Motors", M["brass"], seg=6))
+    # 2020 stiffening frame on the holder plate, around the syringe array and inside the nuts:
     # two bars along x carry the load toward the screw rows, two short bars close the frame.
-    zf = g["HOLD_TOP"] + 10
+    zf = zh + 10
     for sy in (-1, 1):
-        members.append(box(f"plunger_stiffener_{'FB'[sy > 0]}", (150, 20, 20), (0, sy * 42, zf), "Head", M["ext"], bevel=1.0))
+        members.append(box(f"plunger_stiffener_{'FB'[sy > 0]}", (150, 20, 20), (0, sy * 37, zf), "Head", M["ext"], bevel=1.0))
     for sx in (-1, 1):
-        members.append(box(f"plunger_stiffener_{'LR'[sx > 0]}", (20, 64, 20), (sx * 48, 0, zf), "Head", M["ext"], bevel=1.0))
+        members.append(box(f"plunger_stiffener_{'LR'[sx > 0]}", (20, 54, 20), (sx * 48, 0, zf), "Head", M["ext"], bevel=1.0))
     rig_empty("plunger_carriage", "Head", members)
     def span(seq, idx, sign):         # belt length with the idler at each end of its slot
         out = []
@@ -489,7 +567,8 @@ def collision_report():
     plg_g = {o.name for o in meshes if o.parent and o.parent.name == "plunger_carriage"}
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
-                  "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner"))}
+                  "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
+                  "ext_head", "head_bracket"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -503,7 +582,9 @@ def collision_report():
                ("plunger_idler", "plunger_tensioner"), ("lift_idler", "lift_idler"), ("plunger_idler", "plunger_idler"),
                ("lift_tensioner", "lift_base_plate"), ("plunger_tensioner", "pipette_plate"),
                ("lift_home_switch", "lift_home_switch"), ("lift_home_switch_holder", "lift_base_plate"),
-               ("lift_home_switch_lever", "lift_plate")]   # the platform presses the lever at home
+               ("lift_home_switch_lever", "lift_plate"),   # the platform presses the lever at home
+               ("head_bracket", "pipette_plate"), ("head_bracket", "ext_head"), ("ext_head", "post"),
+               ("plunger_idler", "pipette_plate"), ("lift_idler", "lift_base_plate")]   # bolts in slots
     ok = lambda a, b: any((a.startswith(p) and b.startswith(q)) or (a.startswith(q) and b.startswith(p)) for p, q in allowed)
     hits = {}
     samples = sorted({(l, a) for _, l, a in KEYS} | {(0.5, 0), (0.5, 1), (1, 0.5), (0, 0.5)})

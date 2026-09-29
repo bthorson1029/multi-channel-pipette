@@ -8,6 +8,7 @@ truth; the `.blend` files they produce are not committed.
 blender --python 04_Blender/build_pipette.py        # the original design
 blender --python 04_Blender/variant_raise_bed.py    # fixed head, lever lifts the bed
 blender --python 04_Blender/variant_motor_lift.py   # fixed head, motorized lead-screw lift (chosen)
+blender -b --python 04_Blender/export_motor_lift_parts.py   # write the motor-lift printed parts as STL
 ```
 
 You can also open a script in Blender's Text Editor and use **Run Script**. Add `-b` to build
@@ -19,7 +20,7 @@ without the UI. Units are millimeters (Z up, front = -Y).
 |---|---|---|
 | `build_pipette.py` | The original: the lever lowers the whole head. | `original_*.jpg` |
 | `variant_raise_bed.py` | Head fixed; the geared lever raises the bed through short links arranged as a toggle that locks at the top. Handle on the right. | `lever_lift_*.jpg` |
-| `variant_motor_lift.py` | Head fixed; one NEMA17 lifts the bed on two T8x2 screws through a GT2 belt, and one motor (48 mm body) drives all four T8x2 plunger screws through a second belt. Anti-backlash plunger nuts, a 2020 stiffening frame on the plunger plate, idler tensioners and a lift home switch. Firmware: `02_Software/arduino/MotorLift`. | `motor_lift_*.jpg` |
+| `variant_motor_lift.py` | Head fixed; one NEMA17 lifts the bed on two T8x2 screws through a GT2 belt, and one motor (48 mm body) drives all four T8x2 plunger screws through a second belt. Anti-backlash plunger nuts, a 2020 stiffening frame on the plunger plate, idler tensioners, a lift home switch, and the pipette plate bolted to side bars. Its plates come from `01_Hardware/MotorLift/make_dxf.py`, which also holds the layout numbers. Firmware: `02_Software/arduino/MotorLift`. | `motor_lift_*.jpg` |
 
 The variants build on `build_pipette.py`, so it has to stay in the same folder.
 
@@ -34,13 +35,16 @@ The variants build on `build_pipette.py`, so it has to stay in the same folder.
   syringe and tip dimensions, and some mounting positions are estimates.
 - **Lever variant:** the shorter gear-arm and longer handle are derived from the stock
   `lever_cutout*.DXF` outlines by shifting only their straight sections.
+- **Motor-lift variant:** its four laser-cut plates are imported from the generated DXFs in
+  `01_Hardware/MotorLift/ToLaserCut-DXF`, and its new printed parts are modeled as closed solids
+  so `export_motor_lift_parts.py` can write them straight to STL.
 
 ## Checks
 
 Both variants include `collision_report()`, which sweeps every moving part through its full
 travel and tests it against the rest of the model, allowing only intended contacts (screws in
 nuts, carriages on rails, and so on). Both report no collisions. `variant_motor_lift.py` also
-reports the belt loop lengths across the tensioner's adjustment range: 346.4-351.7 mm (lift) and
-547.3-553.1 mm (plunger).
+reports the belt loop lengths across the tensioner's adjustment range: 338.9-344.4 mm (lift) and
+543.2-549.1 mm (plunger).
 
 Each variant keyframes a full cycle as it builds; scrub the timeline to watch it.
