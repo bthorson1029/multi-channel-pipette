@@ -75,6 +75,8 @@ LIFT_LEAD = 2.0                   # T8x2 on the lift: force + self-locking
 BRK_H = 18.0                      # lift carriage bracket height above the plate
 BRK_BOLT_Z = LIFT0 + T + 10.0     # rail-plate M4 row: the rail plates ride this high so it clears the plate
 LIFT_IF_HOLE_Y = (PY - 30.0, PY - 50.0)   # the rail plate's 2 M4 holes (DXF x 20, 40; anchor x -10 at PY)
+PLG_BRK_H = 18.0                  # plunger carriage bracket height under the plate
+assert L.CARRIAGE_Y == PY and PLG_MID - L.RAIL_ZC_BELOW_MID == g["ZC_HIGH"]
 # plunger
 PS_XY = L.PS_XY                   # order: LF, RF, LB, RB
 PLG_MOTOR_XY = L.PLG_MOTOR_XY
@@ -362,6 +364,33 @@ def lift_carriage_bracket(name, sx, sy, coll):
     return o
 
 
+def plunger_carriage_bracket(name, sx, sy, coll):
+    """Printed block hanging under a side edge of the plunger plate, clear of the syringe array
+    (inboard) and the nut screws (y > 48): 2 M4 down through the plate into captive nuts in
+    pockets from below (heads under the holder plate, in clearance holes), and 2 M4 from outside
+    through the plunger rail plate into captive nuts in slots from below."""
+    zt = PLG_MID - T / 2                              # plate underside
+    zb, zr = zt - PLG_BRK_H, PLG_MID - L.PLG_BRACKET_ROW_BELOW_MID
+    x_in, x_out = 56.0, IF_X - T / 2
+    y0, y1 = 8.0, 48.0
+    o = box(name, (x_out - x_in, y1 - y0, PLG_BRK_H), (sx * (x_in + x_out) / 2, sy * (y0 + y1) / 2, (zb + zt) / 2),
+            coll, M["pla"])
+    bm = bmesh.new()                                  # two passes so no cutters overlap each other
+    for y in L.PLG_BRACKET_RAIL_Y:
+        _bar(bm, (sx * (x_in - 1), sy * y, zr), (sx * (x_out + 1), sy * y, zr), L.M4 / 2)
+    for x, y in L.PLG_BRACKET_PLATE_XY:
+        _cone(bm, L.M4 / 2, L.M4 / 2, zb - 1, zt + 1, xy=(sx * x, sy * y))
+    boolean(o, bm)
+    bm = bmesh.new()
+    for y in L.PLG_BRACKET_RAIL_Y:                    # rail-bolt nut slots (7 mm AF), open at the bottom
+        xa, xb = sorted((sx * 75.5, sx * 79.0))
+        _block(bm, xa, xb, sy * y - 3.7, sy * y + 3.7, zb - 1, zr + 4.0)
+    for x, y in L.PLG_BRACKET_PLATE_XY:               # plate-bolt nut pockets from below
+        _cone(bm, 4.2, 4.2, zb - 1, zt - 9.0, seg=6, xy=(sx * x, sy * y))
+    boolean(o, bm)
+    return o
+
+
 def fab_plate(fname, obj_name, coll, loc):
     """A laser-cut plate from the generated DXFs (01_Hardware/MotorLift/ToLaserCut-DXF)."""
     o = dxf_part(os.path.join(FAB_DXF, fname), obj_name, T, coll, M["steel"])
@@ -583,6 +612,8 @@ def modify():
         for a in (-1, 1):
             for b in (-1, 1):
                 _cone(bm, L.M3 / 2, L.M3 / 2, 0, 600, xy=(x + a * q, y + b * q))
+    for x, y in L.PLG_BRACKET_HOLES:                  # room for the carriage-bracket bolt heads
+        _cone(bm, 4.5, 4.5, 0, 600, xy=(x, y))
     boolean(hold, bm)
     for i, (x, y) in enumerate(PS_XY, 1):
         kfl08(f"KFL08_plunger_{i}", x, y, P - T, True, "Motors", rot=D(90))   # flange along y: clears interface plates
@@ -600,11 +631,21 @@ def modify():
                (0, pi_y, -IDLER_R), (*lb, PULLEY_R)]
     plg_belt = belt("plunger_belt", plg_seq, P + 11, "Motors")
 
-    # moving plunger carriage: plate, holder, plungers, corner blocks, carriages, nuts, stiffener
-    zb = PLG_MID - T / 2
-    members = [plg, hold, obj["plungers_x96"]]
-    members += [o for o in obj if o.name.startswith(("LimitSwitch_holder_A", "interface_plate_high",
-                                                      "MGN9H_carriage_high"))]
+    # moving plunger carriage: plate, holder, plungers, carriage brackets, rail plates, carriages,
+    # nuts, stiffener. The repo's LimitSwitch_holder_A blocks carry no switch here and joined
+    # nothing, so they go; the rail plates become the taller plunger_rail_plate.dxf.
+    for o in [o for o in obj if o.name.startswith("LimitSwitch_holder_A")]:
+        bpy.data.objects.remove(o)
+    rails = [o for o in obj if o.name.startswith("interface_plate_high")]
+    tmp = dxf_part(os.path.join(FAB_DXF, "plunger_rail_plate.dxf"), "plunger_rail_plate", T, "Head", M["steel"])
+    for o in rails:
+        o.data = tmp.data
+    bpy.data.objects.remove(tmp)
+    members = [plg, hold, obj["plungers_x96"]] + rails
+    members += [o for o in obj if o.name.startswith("MGN9H_carriage_high")]
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            members.append(plunger_carriage_bracket(f"plunger_carriage_bracket_{'LR'[sx > 0]}{'FB'[sy > 0]}", sx, sy, "Head"))
     zh = g["HOLD_TOP"]
     for i, (x, y) in enumerate(PS_XY, 1):
         # anti-backlash T8 nut, flange down on the holder plate (4 M3 through holder + steel plate),

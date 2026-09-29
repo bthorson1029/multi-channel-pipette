@@ -46,6 +46,17 @@ BASE_MOUNT_XY = [(sx * 104.6, sy * 45.0) for sx in (-1, 1) for sy in (-1, 1)]  #
 LIFT_BRACKET_X = 71.0                            # lift carriage brackets: 2 M4 down through the plate each,
 LIFT_BRACKET_Y = (38.0, 80.0)                    # either side of the rail plate's M4 holes (y 49, 69)
 LIFT_BRACKET_HOLES = [(sx * LIFT_BRACKET_X, sy * y) for sx in (-1, 1) for sy in (-1, 1) for y in LIFT_BRACKET_Y]
+# Plunger carriage brackets hang under the plunger plate's side edges, between the syringe array and
+# the nut screws. The plunger rail plates are a taller version of interface_plate_high whose M4 row
+# lands in the brackets; their frame: DXF (-10, 0) sits on the carriage center (y = CARRIAGE_Y),
+# DXF x runs toward the machine's middle, DXF y is up, and DXF y = 0 is RAIL_ZC_BELOW_MID below the
+# plunger plate's mid-plane (ZC_HIGH in build_pipette.py).
+CARRIAGE_Y = 99.0                                # PY in build_pipette.py
+RAIL_ZC_BELOW_MID = 10.0
+PLG_BRACKET_PLATE_XY = [(61.0, 14.0), (70.0, 32.0)]    # per corner (mirrored): M4 down through the plate
+PLG_BRACKET_RAIL_Y = (24.0, 40.0)                # rail-plate M4 bolts into the bracket
+PLG_BRACKET_ROW_BELOW_MID = 7.5                  # rail-plate bolt row, below the plunger plate's mid-plane
+PLG_BRACKET_HOLES = [(sx * x, sy * y) for sx in (-1, 1) for sy in (-1, 1) for x, y in PLG_BRACKET_PLATE_XY]
 
 # Hole diameters
 M3, M4, M5 = 3.4, 4.5, 5.5
@@ -187,7 +198,20 @@ def plunger_plate():
     new = []
     for x, y in PS_XY:                                       # nuts sit on the holder plate, body up
         new += nut_holes(x, y, SCREW_CLEAR_D)
+    new += [circle(x, y, M4) for x, y in PLG_BRACKET_HOLES]  # carriage brackets underneath
     return keep + [shift(e, ox, oy) for e in new]
+
+
+def plunger_rail_plate():
+    """interface_plate_high made rectangular and 24 mm longer, so it reaches down beside the
+    plunger plate to its carriage bracket: same carriage holes, M4 row moved into the bracket."""
+    src = read_entities(os.path.join(REPO_DXF, "interface_plate_high.DXF"))
+    ents = [e for e in src if near_r(e, 1.7)]               # the 3 carriage screws
+    x0, x1, y0, y1 = -20.0, CARRIAGE_Y - 10.0 - (PLG_BRACKET_RAIL_Y[0] - 9.0), -9.0, 20.0
+    ents += rounded_rect(x1 - x0, y1 - y0, 2.0, (x0 + x1) / 2, (y0 + y1) / 2)
+    row = RAIL_ZC_BELOW_MID - PLG_BRACKET_ROW_BELOW_MID
+    ents += [circle(CARRIAGE_Y - 10.0 - y, row, M4) for y in PLG_BRACKET_RAIL_Y]
+    return ents
 
 
 def lift_plate():
@@ -223,6 +247,7 @@ def shift(e, dx, dy):
 PARTS = {
     "pipette_plate_motorlift": pipette_plate,
     "plunger_plate_motorlift": plunger_plate,
+    "plunger_rail_plate": plunger_rail_plate,
     "lift_plate": lift_plate,
     "lift_base_plate": lift_base_plate,
 }

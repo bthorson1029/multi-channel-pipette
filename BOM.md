@@ -20,10 +20,11 @@ would be lighter but about 3x more flexible, which costs plunger accuracy.
 | Part | Qty | File | Status | Notes |
 |---|---|---|---|---|
 | Pipette plate | 1 | `MotorLift/ToLaserCut-DXF/pipette_plate_motorlift.dxf` | Generated | Plunger screws + KFL08s, plunger motor, tensioner slot, side-bracket holes. |
-| Plunger plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 4 T8 nut cutouts; old motor cutouts removed. |
+| Plunger plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 4 T8 nut cutouts, 8 carriage-bracket holes; old motor cutouts removed. |
 | Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 160 x 200 mm, 2 T8 nut cutouts, 8 carriage-bracket holes. |
 | Lift base plate | 1 | `MotorLift/ToLaserCut-DXF/lift_base_plate.dxf` | Generated | 229.2 x 120 mm. |
-| Interface plate, high | 8 | `ToLaserCut-DXF/interface_plate_high.DXF` | Repo | 4 for the plunger plate, 4 for the lift platform. |
+| Interface plate, high | 4 | `ToLaserCut-DXF/interface_plate_high.DXF` | Repo | Lift platform rail plates. |
+| Plunger rail plate | 4 | `MotorLift/ToLaserCut-DXF/plunger_rail_plate.dxf` | Generated | A taller, rectangular `interface_plate_high` that reaches down to the plunger carriage brackets. |
 | Frame corner bracket | 16 | `ToLaserCut-DXF/angle_bracket-(optionally can be purchased).DXF` | Repo | Or buy 2020 flat L corner plates. |
 
 Not needed in this layout: `interface_plate_low` (the pipette plate now bolts to side bars),
@@ -39,8 +40,7 @@ least 220 mm.
 |---|---|---|---|---|
 | Syringe barrel grip | 1 | `ToPrint-STL/syringe_grip_static.STL` | Repo | Barrels press-fit into it. |
 | Syringe/plunger retainer | 1 | `ToPrint-STL/S-P_plate.STL` | Repo | |
-| Plunger holder plate | 1 | `MotorLift/ToPrint-STL/plunger_holder_plate_motorlift.stl` | Generated | The plunger nuts sit on it. |
-| Corner block | 4 | `ToPrint-STL/LimitSwitch_holder_A.STL` | Repo | On the plunger plate. |
+| Plunger holder plate | 1 | `MotorLift/ToPrint-STL/plunger_holder_plate_motorlift.stl` | Generated | The plunger nuts sit on it; clearance holes over the carriage-bracket bolt heads. |
 | Corner block + switch, pipette level | 4 | `ToPrint-STL/LimitSwitch_holder_B.STL` | Repo | |
 | Electronics housing (sloped) | 1 | `MotorLift/ToPrint-STL/control_box_housing_sloped.stl` | Generated | Repo housing with the screen panel tilted 10 deg toward the user. Lies in front of the base; 2 screws through its back wall into the bottom front bar. |
 | Electronics lid | 1 | `ToPrint-STL/electronics_lid.STL` | Repo | |
@@ -48,6 +48,7 @@ least 220 mm.
 | Head bracket | 2 | `MotorLift/ToPrint-STL/head_bracket.stl` | Generated | Bolts the pipette plate to the side bars. |
 | Belt tensioner bracket (lift) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_lift.stl` | Generated | |
 | Belt tensioner bracket (plunger) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_plunger.stl` | Generated | |
+| Plunger carriage bracket | 2 + 2 | `MotorLift/ToPrint-STL/plunger_carriage_bracket_RF_LB.stl`, `..._RB_LF.stl` | Generated | Hang under the plunger plate's side edges and join it to its 4 rail plates. Two mirror-image hands, 2 of each. 4 captive M4 nuts each. |
 | Lift carriage bracket | 4 | `MotorLift/ToPrint-STL/lift_carriage_bracket.stl` | Generated | Joins the lift platform to its 4 rail plates; same part at every corner. 2 captive M4 nuts each. |
 | Lift home-switch holder | 1 | `MotorLift/ToPrint-STL/lift_home_switch_holder.stl` | Generated | For a KW12-type switch. |
 
@@ -114,9 +115,9 @@ T-nuts.
 | M3 x 10 + nut | 24 | Motors (8), lift nuts (8), tensioner brackets (4), switch holder (2), spares |
 | M3 x 16 + nut | 16 | Plunger nuts (through nut flange, holder plate, 1.5 mm washers and plunger plate) |
 | M3 flat washer (7 mm OD) | 24 | Under the M3 nuts at the T8 nut cutouts, to span the slots (lift 8, plunger 16) |
-| M4 x 10 + nut | 24 | Plunger interface plates (8), KFL08 bearings (12), head brackets to the pipette plate (4) |
-| M4 x 12 + nut | 8 | Lift rail plates into the carriage brackets' captive nuts |
-| M4 x 16 + nut | 8 | Carriage brackets down through the lift platform |
+| M4 x 10 + nut | 16 | KFL08 bearings (12), head brackets to the pipette plate (4) |
+| M4 x 12 + nut | 16 | Lift and plunger rail plates into the carriage brackets' captive nuts (8 + 8) |
+| M4 x 16 + nut | 16 | Lift brackets down through the platform (8); plunger plate down into its brackets' captive nuts (8) |
 | M2 x 16 + nut | 2 | Lift home switch |
 | M2/M2.5 screws | 6 | Plunger-level limit switches |
 | Shoulder bolt + nut for idlers | 2 | Tensioners |
