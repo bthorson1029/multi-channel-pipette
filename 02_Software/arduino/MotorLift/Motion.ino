@@ -6,6 +6,8 @@ long plungerPos = 0;       // steps above the switches ("second stop"); see plun
 int8_t plungerLastDir = 0; // +1 up, -1 down, 0 unknown (for backlash compensation)
 bool liftHomed = false;
 bool plungerHomed = false;
+float plungerTiltMm = -1;
+int8_t plungerLateSw = -1;
 
 void initMotors() {
   pinMode(EN_PIN, OUTPUT);
@@ -183,20 +185,73 @@ bool plungerMoveTo(long target, float ulPerS) {
   return true;
 }
 
+// Slow final approach of the homing, with the level check: step down at constant speed and keep
+// going after the first switch closes, until every switch has closed or the plate has gone
+// PLUNGER_TILT_MAX_MM past the first one, noting where each closed (after 3 consecutive reads,
+// like stepAxis). Sets plungerTiltMm / plungerLateSw. Returns the steps taken past the first
+// closure, or -1 if no switch closed within maxSteps.
+long plungerSeatAndLevel(long maxSteps) {
+  const long tiltMax = lround(PLUNGER_TILT_MAX_MM * PLUNGER_STEPS_PER_MM);
+  const uint32_t interval = (uint32_t)(1e6 / (PLUNGER_HOME_SLOW_UL_S * PLUNGER_STEPS_PER_UL));
+  long closedAt[PLUNGER_SW_COUNT];
+  uint8_t hits[PLUNGER_SW_COUNT];
+  for (uint8_t k = 0; k < PLUNGER_SW_COUNT; k++) { closedAt[k] = -1; hits[k] = 0; }
+  long first = -1, taken = 0;
+  uint8_t closed = 0;
+  plungerTiltMm = -1;
+  plungerLateSw = -1;
+  digitalWrite(PLUNGER_DIR_PIN, PLUNGER_DISPENSE_LEVEL);
+  delayMicroseconds(5);
+  uint32_t next = micros();
+  while (taken < maxSteps) {
+    while ((long)(micros() - next) < 0) {}
+    digitalWrite(PLUNGER_STEP_PIN, HIGH);
+    delayMicroseconds(3);
+    digitalWrite(PLUNGER_STEP_PIN, LOW);
+    next += interval;
+    taken++;
+    for (uint8_t k = 0; k < PLUNGER_SW_COUNT; k++) {
+      if (closedAt[k] >= 0) continue;
+      hits[k] = digitalRead(PLUNGER_SW_PINS[k]) == LOW ? hits[k] + 1 : 0;
+      if (hits[k] >= 3) {
+        closedAt[k] = taken - 2;                  // the first of the three reads
+        if (first < 0) first = closedAt[k];
+        closed++;
+        plungerLateSw = k;
+      }
+    }
+    if (closed == PLUNGER_SW_COUNT) break;
+    if (first >= 0 && taken - first >= tiltMax) break;
+  }
+  if (first < 0) return -1;
+  if (closed == PLUNGER_SW_COUNT) {
+    plungerTiltMm = (closedAt[plungerLateSw] - first) / PLUNGER_STEPS_PER_MM;
+  } else {
+    for (uint8_t k = 0; k < PLUNGER_SW_COUNT; k++)
+      if (closedAt[k] < 0) { plungerLateSw = k; break; }
+  }
+  return taken - first;
+}
+
 // Same pattern as the lift, then up to the working zero. Only call with the bed lowered:
-// homing dispenses whatever is held.
+// homing dispenses whatever is held. Home (position 0) is where the first switch closed; if
+// the others don't follow within PLUNGER_TILT_MAX_MM (the plate isn't level, or a switch is
+// dead), homing fails and plungerLateSw names the switch.
 bool homePlunger() {
   plungerHomed = false;
+  plungerTiltMm = -1;
+  plungerLateSw = -1;
   const long backoff = lround(PLUNGER_BACKOFF_UL * PLUNGER_STEPS_PER_UL);
   if (plungerSwitch()) plungerUp(backoff, PLUNGER_HOME_FAST_UL_S);
   plungerDown(PLUNGER_HOME_MAX_UL * PLUNGER_STEPS_PER_UL, PLUNGER_HOME_FAST_UL_S);
   if (!plungerSwitch()) return false;
   plungerUp(backoff, PLUNGER_HOME_FAST_UL_S);
   if (plungerSwitch()) return false;
-  plungerDown(2 * backoff, PLUNGER_HOME_SLOW_UL_S);
-  if (!plungerSwitch()) return false;
-  plungerPos = 0;
+  long past = plungerSeatAndLevel(2 * backoff);
+  if (past < 0) return false;
+  plungerPos = -past;                            // it pressed on past the first closure
   plungerLastDir = -1;
+  if (plungerTiltMm < 0) return false;           // a switch didn't close in time: not level
   plungerHomed = true;
   return plungerReset();
 }

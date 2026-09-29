@@ -5,12 +5,19 @@ Load "Main.ino" file onto arduino, it will automatically include the "MotorDrive
 MotorLift sketch (arduino/MotorLift): for the motorized-lift layout (fixed head, lead-screw bed lift,
 one belt-synced plunger motor). Open MotorLift.ino; settings are in Config.h.
 - Wiring: plunger motor in the X slot, lift motor in the Y slot (Z and A unused).
-  Plunger switch(es) on X- (D9), and optionally Z- (D11) / CoolEn (A3); any one closing homes it.
+  Plunger switches on X- (D9), Z- (D11) and CoolEn (A3), one on each switch post; all three
+  are needed (see the level check below).
   Lift home switch on Y- (D10), pressed by the platform at the bottom of travel.
 - Set each driver's microstep jumpers to match PLUNGER_MICROSTEPS / LIFT_MICROSTEPS (default 1/8).
 - If an axis runs backwards, flip PLUNGER_DISPENSE_LEVEL or LIFT_UP_LEVEL.
 - On power-up it homes the lift (down), then the plunger. The lift re-zeroes on its switch every
   time it lowers, so lost steps do not accumulate.
+- Plunger level check: homing sets zero where the first plunger switch closes, then presses on
+  until the other two close and shows their spread ("Homed, level 0.04"). If one closes more
+  than PLUNGER_TILT_MAX_MM after the first, the plate is tilted (e.g. the belt skipped a tooth on
+  one screw) or that switch is dead: it shows "Level: pin 11 late" and the plunger stays
+  un-homed until Home all succeeds. PLUNGER_TILT_MAX_MM (0.10 mm) is a placeholder: home about
+  ten times on the built machine, note the readings, and set it just above the largest.
 - Plunger screws are T8x2 (2 mm lead) with anti-backlash nuts: 48 steps/uL, scaled from the
   original 12 steps/uL on T8x8. Volumes are capped at the tip capacity (200 uL).
 - Two modes: Forward (single transfer: dispense everything, then blow out past the working zero)

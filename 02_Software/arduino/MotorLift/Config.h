@@ -15,9 +15,10 @@ const uint8_t LIFT_STEP_PIN    = 3;    // Y
 const uint8_t LIFT_DIR_PIN     = 6;
 
 // Limit switches: normally-open to GND, read with INPUT_PULLUP (LOW = pressed).
-// The plunger keeps three of the original corner switches (X-, Z-, CoolEn); any one of them
-// homes it, since the belt keeps the plate level. The fourth original switch moves to the
-// lift's home position on Y-.
+// The plunger keeps three of the original corner switches (X-, Z-, CoolEn); the first to close
+// sets home, since the belt keeps the plate level, and homing checks that the other two close
+// within PLUNGER_TILT_MAX_MM of it (a belt that skipped a tooth on one screw tilts the plate).
+// The fourth original switch moves to the lift's home position on Y-.
 const uint8_t PLUNGER_SW_PINS[] = {9, 11, A3};
 const uint8_t PLUNGER_SW_COUNT  = sizeof(PLUNGER_SW_PINS) / sizeof(PLUNGER_SW_PINS[0]);
 const uint8_t LIFT_SW_PIN       = 10;
@@ -44,6 +45,7 @@ const float    LIFT_LEAD_MM       = 2.0;   // T8x2
 // The original firmware used 12 steps/uL with T8x8 screws (8 mm lead) at the same
 // microstepping; that scales with the lead. Refine with the calibration tables below.
 const float PLUNGER_STEPS_PER_UL = 12.0 * (8.0 / PLUNGER_LEAD_MM);   // 48
+const float PLUNGER_STEPS_PER_MM = MOTOR_STEPS * (float)PLUNGER_MICROSTEPS / PLUNGER_LEAD_MM;   // 800
 const float LIFT_STEPS_PER_MM    = MOTOR_STEPS * (float)LIFT_MICROSTEPS / LIFT_LEAD_MM;
 
 const float LIFT_TRAVEL_MM = 46.0;         // soft limit above home (Blender model: 45.9 mm)
@@ -99,6 +101,13 @@ const float PLUNGER_HOME_FAST_UL_S = 50.0;
 const float PLUNGER_HOME_SLOW_UL_S = 10.0;
 const float PLUNGER_BACKOFF_UL     = 10.0;
 const float PLUNGER_HOME_MAX_UL    = 1100;  // give up homing after this much travel
+// Plate level check at homing: all switches must close within this much travel of the first.
+// A skipped belt tooth drops one screw's corner by 0.1 mm (2 mm lead / 20 teeth); the switches
+// sit away from the screws, so they see a bit less. PLACEHOLDER until measured: home ~10 times,
+// note the "level" readings (switch scatter alone, perhaps a few hundredths), and set this just
+// above the largest. Too low gives false alarms; too high misses single skipped teeth. Keep it
+// well under the switches' overtravel (1 mm or more for KW12 levers), since homing presses on.
+const float PLUNGER_TILT_MAX_MM    = 0.10;
 
 // ---------------------------------------------------------------- labware
 // engageMm = bed height above home where the tips are at working depth.
@@ -134,5 +143,7 @@ bool plungerToHeld(float ul, float ulPerS);
 bool plungerBlowout();
 bool plungerReset();
 extern bool liftHomed, plungerHomed;
+extern float plungerTiltMm;          // switch spread at the last plunger homing; -1 = a switch never closed
+extern int8_t plungerLateSw;         // index into PLUNGER_SW_PINS of the last (or missing) switch
 // MotorLift.ino
 void showStatus(const char *msg);

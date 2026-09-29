@@ -12,7 +12,10 @@
 //               live if it is up), press to save to EEPROM
 //   Raise/Lower bed (a manually raised bed stays up for Aspirate and reverse Dispense)
 //   Empty tips  dispense everything held + blow out into the current labware (e.g. waste)
-//   Home all    re-home lift, then plunger
+//   Home all    re-home lift, then plunger. Shows "Homed, level 0.04" (spread of the plunger
+//               switches in mm), or "Level: pin 11 late" if one switch closed more than
+//               PLUNGER_TILT_MAX_MM after the first (plate tilted, e.g. a skipped belt tooth, or a
+//               dead switch); the plunger then stays un-homed until Home all succeeds.
 #include <Wire.h>
 #include <EEPROM.h>
 #include <LiquidCrystal_I2C.h>
@@ -99,13 +102,32 @@ bool lowerBed() {
 }
 
 // ---------------------------------------------------------------- sequences
+// Pin label for a plunger switch, as wired on the CNC shield (for status messages).
+const char *swName(int8_t k) {
+  static char buf[4];
+  uint8_t pin = PLUNGER_SW_PINS[k];
+  if (pin >= A0) snprintf(buf, sizeof(buf), "A%d", pin - A0);
+  else snprintf(buf, sizeof(buf), "%d", pin);
+  return buf;
+}
+
 void homeAll() {
   bedUp = false;
   showStatus("Homing lift...");
   if (!homeLift()) { showStatus("Lift home FAIL"); return; }
   showStatus("Homing plunger...");
-  if (!homePlunger()) { showStatus("Plunger home FAIL"); return; }
-  showStatus("Homed");
+  bool ok = homePlunger();
+  char msg[19];
+  if (plungerTiltMm < 0 && plungerLateSw >= 0) {     // a switch lagged the first by too much
+    snprintf(msg, sizeof(msg), "Level: pin %s late", swName(plungerLateSw));
+  } else if (!ok) {
+    strcpy(msg, "Plunger home FAIL");
+  } else {
+    char mm[6];
+    dtostrf(plungerTiltMm, 4, 2, mm);
+    snprintf(msg, sizeof(msg), "Homed, level %s", mm);
+  }
+  showStatus(msg);
 }
 
 bool ready() {
