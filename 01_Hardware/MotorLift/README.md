@@ -8,10 +8,10 @@ millimeters.
 
 | File | Qty | What changed |
 |---|---|---|
-| `pipette_plate_motorlift.dxf` | 1 | From `pipette_plate.DXF`: old per-motor nut holes removed; adds the 4 plunger-screw holes + KFL08 bolts, the plunger motor mount, the belt-tensioner slot, and 4 holes for the side-bar brackets. |
-| `plunger_plate_motorlift.dxf` | 1 | From `plunger_plate.DXF`: old motor cutouts removed; adds 4 T8 nut cutouts (the nuts sit on the holder plate, body up) and 8 M4 holes for the carriage brackets underneath. |
+| `pipette_plate_motorlift.dxf` | 1 | From `pipette_plate.DXF`: old per-motor nut holes removed; adds the 4 plunger-screw holes + KFL08 bolts, the plunger motor mount, the belt-tensioner slot, 4 holes for the side-bar brackets and 6 for the plunger switch posts; the repo's unused M4 holes removed. |
+| `plunger_plate_motorlift.dxf` | 1 | From `plunger_plate.DXF`: old motor cutouts removed; adds 4 T8 nut cutouts (the nuts sit on the holder plate, body up), 8 M4 holes for the carriage brackets underneath and 2 M5 for the stiffening frame; the repo's unused M4 holes removed. |
 | `plunger_rail_plate.dxf` | 4 | From `interface_plate_high.DXF`: rectangular and 24 mm longer so it reaches down beside the plunger plate; same carriage holes, M4 pair moved into the carriage bracket. |
-| `lift_plate.dxf` | 1 | New: 160 x 200 lift platform with 2 T8 nut cutouts (body through) and 8 holes for the carriage brackets. |
+| `lift_plate.dxf` | 1 | New: 160 x 200 lift platform with 2 T8 nut cutouts (body through), 8 holes for the carriage brackets and 4 for the well-plate nest. |
 | `lift_base_plate.dxf` | 1 | New: 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
 
 Each T8 nut mounts through one cloverleaf cutout (the center bore with four 3.4 mm slots out to
@@ -27,16 +27,19 @@ plate). The pipette plate's 96 syringe holes keep the repo plate's 2.5 mm webs.
 
 | File | Qty | Notes |
 |---|---|---|
-| `plunger_holder_plate_motorlift.stl` | 1 | Repo holder plate plus 4 screw clearance holes, the nut flange screw holes, and 8 clearance holes over the carriage-bracket bolt heads. |
+| `plunger_holder_plate_motorlift.stl` | 1 | Repo holder plate plus 4 screw clearance holes, the nut flange screw holes, 8 clearance holes over the carriage-bracket bolt heads, 2 M5 holes for the stiffening frame, and the repo's four 33 mm motor holes filled. |
 | `head_bracket.stl` | 2 | Joins the pipette plate to the side bar: 2 M4 up through the plate, 2 M5 up into the bar's bottom slot. Prints on its side; the same part works on both sides (turn it around). |
 | `tensioner_bracket_lift.stl` | 1 | 6.5 mm tall. Idler shoulder bolt in the 12 mm slot, 2 M3 to the plate. |
 | `tensioner_bracket_plunger.stl` | 1 | 5.5 mm tall; otherwise the same. |
-| `control_box_housing_sloped.stl` | 1 | The repo `ScreenHousing` with its screen panel tilted 10 deg toward the user (front 17.5 mm lower). The panel moves as one piece with the LCD, encoder and Arduino standoffs under it, and the USB opening in the front wall is moved to where the port now sits. Prints panel-down. |
+| `control_box_housing_sloped.stl` | 1 | The repo `ScreenHousing` with its screen panel tilted 10 deg toward the user (front 17.5 mm lower), a 3 mm skirt that runs every wall down to the base, the lid bosses extended down to it, and a back pad with 2 M5 holes into the bottom front bar. The panel moves as one piece with the LCD, encoder and Arduino standoffs under it, and the USB opening in the front wall is moved to where the port now sits. Prints panel-down. |
 | `plunger_carriage_bracket_RF_LB.stl`, `plunger_carriage_bracket_RB_LF.stl` | 2 + 2 | Join the plunger plate to its rail plates, hanging under the plate's side edges between the syringe array and the nut screws. 2 M4 x 16 down through the plate into captive nuts in pockets from below (heads sit in the holder plate's clearance holes, so fit these before the holder plate), and 2 M4 x 12 in from outside through the rail plate into captive nuts in slots from below. Mirror-image hands: RF and LB are one, RB and LF the other. Print plate-face down. |
 | `lift_carriage_bracket.stl` | 4 | Joins the lift platform to a rail plate (one per corner, all alike). Sits on the platform with its outer face on the rail plate: 2 M4 x 12 in from outside through the rail plate's holes into captive nuts (slots open at the top), 2 M4 x 16 down through counterbores and the platform. Prints as oriented; its inner face stays 2 mm outside the well plate's path. |
+| `plunger_switch_post.stl` | 3 | Plunger home-switch post (replaces the repo's corner blocks, which stood unbolted): a KW12-type switch clamped by 2 M2 at the plunger plate's home height, 2 M3 x 12 through counterbores into the pipette plate. Three are fitted (the firmware homes on any one). |
+| `well_plate_nest.stl` | 1 | Locates the well plate on the lift platform (replaces the flat repo tray): a 15 mm base (the height the firmware expects), walls 4 mm above it on the back and sides, a 2 mm lip at the front, 0.4 mm clearance around the SBS footprint. 4 M4 x 16 through counterbores into the platform. |
+| `control_box_base.stl` | 1 | Closes the control box (replaces the repo lid). 4 countersunk M3 self-tappers into the housing bosses. |
 | `lift_home_switch_holder.stl` | 1 | For a KW12-type lever micro switch (20 x 10 x 6.4 mm, mounting holes 9.5 mm apart), clamped by 2 M2 through the walls; 2 M3 to the base plate. Check the hole positions against your switch. |
 
-All nine are closed solids (every edge shared by exactly two triangles).
+All twelve are closed solids (every edge shared by exactly two triangles).
 
 ## Check against your hardware before cutting
 

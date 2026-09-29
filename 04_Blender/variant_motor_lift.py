@@ -90,6 +90,7 @@ TENSION_TAKEUP = L.TENSION_TAKEUP # idler deflects the run this far; slot gives 
                                   # (take-up ~ deflection^2 / span, so a shallow idler takes up almost nothing)
 HOME_SW_XY = L.HOME_SW_XY         # lift home switch: under the platform, clear of belt + nuts
 HOME_OVERTRAVEL = 0.8             # lever deflection when the platform is home
+CBOX_BOSSES = [(sx * 79.0, y) for sx in (-1, 1) for y in (-207.5, -117.5)]   # repo lid screw bosses (measured)
 CONTROL_SLOPE_DEG = 10.0          # control-box screen panel tilted toward the user (front edge lowered)
 
 
@@ -297,7 +298,7 @@ def tensioner(prefix, x, y_idler, z_base, height, coll):
     return br
 
 
-def microswitch(prefix, x, y, z_base, lever_top, coll):
+def microswitch(prefix, x, y, z_base, lever_top, coll, cbore=None):
     """Printed holder + micro limit switch (KW12-style, 20 x 10 x 6.4 mm, mounting holes 9.5 mm
     apart). The switch stands in a channel between two walls, clamped by two M2 screws through
     the walls; two M3 screws hold the base to the plate outside the switch footprint."""
@@ -313,6 +314,11 @@ def microswitch(prefix, x, y, z_base, lever_top, coll):
         _cone(bm, L.M3 / 2, L.M3 / 2, z_base - 5, zt + 5, xy=(x + s_ * 14, y))
         _bar(bm, (x + s_ * 4.75, y - 12, zt + 3), (x + s_ * 4.75, y + 12, zt + 3), 1.1)
     boolean(h, bm)
+    if cbore:                                         # tall post: screw heads sit cbore above the plate
+        bm = bmesh.new()
+        for s_ in (-1, 1):
+            _cone(bm, 3.2, 3.2, z_base + cbore, zt + 5, xy=(x + s_ * 14, y))
+        boolean(h, bm)
     box(prefix + "_body", (20, 6.5, sw_h), (x, y, zt + sw_h / 2), coll, M["pla_grey"])
     box(prefix + "_lever", (18, 4, lev), (x + 1, y, lever_top - lev / 2), coll, M["chrome"])
 
@@ -389,6 +395,77 @@ def plunger_carriage_bracket(name, sx, sy, coll):
         _cone(bm, 4.2, 4.2, zb - 1, zt - 9.0, seg=6, xy=(sx * x, sy * y))
     boolean(o, bm)
     return o
+
+
+def well_plate_nest(name, z0, coll):
+    """Printed nest that locates the well plate on the lift platform (replaces the flat repo tray).
+    A TRAY_H base keeps the plate at the height the firmware expects; walls 4 mm above it on the
+    back and sides and a 2 mm lip at the front hold the SBS footprint with 0.4 mm clearance (lift the
+    plate over the lip to load it). The side walls stop short of the carriage brackets and leave a
+    gap for the lift nut bodies. 4 M4 down
+    through counterbores into the lift plate, nuts underneath."""
+    hx, hy = 63.9 + 0.4, 42.7 + 0.4
+    o = box(name, (2 * hx, 2 * hy, TRAY_H), (0, 0, z0 + TRAY_H / 2), coll, M["pla"])
+    bm = bmesh.new()
+    _block(bm, -hx, hx, hy - 0.5, hy + 3, z0, z0 + TRAY_H + 4)              # back wall
+    _block(bm, -40, 40, -hy - 3, -hy + 0.5, z0, z0 + TRAY_H + 2)            # front lip
+    for s_ in (-1, 1):                                  # side walls, split around the lift nut bodies
+        xa, xb = sorted((s_ * (hx - 0.5), s_ * (hx + 1.6)))
+        for ya, yb in ((-30, -7), (7, 30)):
+            _block(bm, xa, xb, ya, yb, z0, z0 + TRAY_H + 4)
+    boolean(o, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()
+    for x, y in L.NEST_HOLES:
+        _cone(bm, L.M4 / 2, L.M4 / 2, z0 - 1, z0 + TRAY_H + 1, xy=(x, y))
+    boolean(o, bm)
+    bm = bmesh.new()
+    for x, y in L.NEST_HOLES:
+        _cone(bm, 4.2, 4.2, z0 + 6, z0 + TRAY_H + 1, xy=(x, y))
+    boolean(o, bm)
+    return o
+
+
+def close_control_box(h):
+    """The repo housing hung on the frame with its open back against the posts and its lid set
+    between them; laid on the bench here, its walls stop short of the lid and its side bays have
+    no floor. So: a 3 mm skirt runs every wall down to the bench, the lid's four screw bosses are
+    extended down to a new full-size base plate, and a pad on the back wall carries 2 M5 into
+    T-nuts in the bottom front bar."""
+    vs = [h.matrix_world @ v.co for v in h.data.vertices]
+    x1 = max(v.x for v in vs)
+    y0, y1 = min(v.y for v in vs), max(v.y for v in vs)
+    w = 3.0
+    bm = bmesh.new()                                  # skirt ring (4 non-overlapping sides)
+    _block(bm, -x1, x1, y0, y0 + w, 0, 16)
+    _block(bm, -x1, x1, y1 - w, y1, 0, 16)
+    for s_ in (-1, 1):
+        xa, xb = sorted((s_ * x1, s_ * (x1 - w)))
+        _block(bm, xa, xb, y0 + w + 0.01, y1 - w - 0.01, 0, 16)
+    boolean(h, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()
+    for x, y in CBOX_BOSSES:                          # lid bosses down to the base plate
+        _cone(bm, 3.5, 3.5, 3, 15.5, xy=(x, y))
+    boolean(h, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()                                  # frame pad
+    _block(bm, -40, 40, y1 - 0.5, -g["FY"] / 2 - 0.2, 2, 18)
+    boolean(h, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()
+    for x, y in CBOX_BOSSES:                          # pilot holes for M3 self-tappers
+        _cone(bm, 1.25, 1.25, -1, 30, xy=(x, y))
+    for x in (-25.0, 25.0):                           # M5 into the bar's front slot (z 10)
+        _bar(bm, (x, y1 - 12, 10), (x, -g["FY"] / 2 + 1, 10), L.M5 / 2)
+    boolean(h, bm)
+    base = box("control_box_base", (2 * (x1 - w - 0.3), (y1 - y0) - 2 * (w + 0.3), 3),
+               (0, (y0 + y1) / 2, 1.5), h.users_collection[0].name, M["pla"])
+    bm = bmesh.new()
+    for x, y in CBOX_BOSSES:                          # countersunk M3
+        _cone(bm, 1.7, 1.7, -1, 4, xy=(x, y))
+    boolean(base, bm)
+    bm = bmesh.new()
+    for x, y in CBOX_BOSSES:
+        _cone(bm, 3.4, 1.7, -0.01, 1.7, xy=(x, y))
+    boolean(base, bm)
+    return base
 
 
 def fab_plate(fname, obj_name, coll, loc):
@@ -558,6 +635,12 @@ def modify():
     for sx in (-1, 1):
         box(f"ext_head_{'LR'[sx > 0]}", (20, g["FY"] - 40, 20), (sx * g["PX"], 0, P - T - 10), "Frame", M["ext"], bevel=1.0)
         head_bracket(f"head_bracket_{'LR'[sx > 0]}", sx, "Head")
+    # plunger home switches: the repo corner blocks stood on their sides unbolted; printed posts
+    # bolted to the pipette plate carry three switches (the firmware homes on any one)
+    for o in [o for o in obj if o.name.startswith(("LimitSwitch_holder_B", "limit_switch_"))]:
+        obj.remove(o)
+    for x, y in L.SWITCH_POSTS:
+        microswitch(f"plunger_switch_{'LR'[x > 0]}{'FB'[y > 0]}", x, y, P, SWITCH_TOP, "Head", cbore=6.0)
 
     # ---------------- LIFT
     fab_plate("lift_base_plate.dxf", "lift_base_plate", "Frame", (0, 0, BASE_Z + T / 2))
@@ -595,8 +678,8 @@ def modify():
         tag = "LR"[sx > 0]
         members.append(cyl(f"lift_nut_flange_{tag}", 11, 3.5, (sx * LIFT_X, 0, LIFT0 - 1.75), "Bed", M["brass"]))
         members.append(cyl(f"lift_nut_body_{tag}", 5.1, 15, (sx * LIFT_X, 0, LIFT0 + 7.5), "Bed", M["brass"]))
-    tray, wp = obj["vertical_tray"], obj["well_plate_96"]
-    tray.location.z = LIFT0 + T
+    obj.remove(obj["vertical_tray"])
+    tray, wp = well_plate_nest("well_plate_nest", LIFT0 + T, "Bed"), obj["well_plate_96"]
     wp.location.z = LIFT0 + T + TRAY_H + PLATE_H / 2
     members += [tray, wp]
     rig_empty("lift_platform", "Bed", members)
@@ -614,7 +697,14 @@ def modify():
                 _cone(bm, L.M3 / 2, L.M3 / 2, 0, 600, xy=(x + a * q, y + b * q))
     for x, y in L.PLG_BRACKET_HOLES:                  # room for the carriage-bracket bolt heads
         _cone(bm, 4.5, 4.5, 0, 600, xy=(x, y))
+    for x, y in L.STIFF_SHORT_HOLES:                  # stiffener short-bar bolts
+        _cone(bm, L.M5 / 2, L.M5 / 2, 0, 600, xy=(x, y))
     boolean(hold, bm)
+    bm = bmesh.new()                                  # fill the repo's 33 mm motor holes (unused here)
+    hz = [(hold.matrix_world @ v.co).z for v in hold.data.vertices]
+    for x, y in g["MOTOR_XY"]:
+        _cone(bm, 16.6, 16.6, min(hz), max(hz), seg=48, xy=(x, y))
+    boolean(hold, bm, 'UNION', self_intersect=True)
     for i, (x, y) in enumerate(PS_XY, 1):
         kfl08(f"KFL08_plunger_{i}", x, y, P - T, True, "Motors", rot=D(90))   # flange along y: clears interface plates
         cyl(f"plunger_screw_{i}", 4, FH - 30 - (P - 16), (x, y, (FH - 30 + P - 16) / 2), "Motors", M["chrome"], seg=16)
@@ -655,17 +745,21 @@ def modify():
         members.append(spring(f"plunger_nut_spring_{i}", x, y, zh + 15.5, zh + 23.5, 6.0, 0.6, 4, "Motors", M["chrome"]))
         members.append(cyl(f"plunger_nut_upper_{i}", 7.0, 10, (x, y, zh + 28.5), "Motors", M["brass"], seg=6))
     # 2020 stiffening frame on the holder plate, around the syringe array and inside the nuts:
-    # two bars along x carry the load toward the screw rows, two short bars close the frame.
+    # two bars along x carry the load toward the screw rows, two short bars close the frame
+    # (inside corner brackets). Each long bar is clamped at both ends by the carriage-bracket
+    # bolts at (+/-70, +/-32) into M4 T-nuts; each short bar by one M5 up through both plates at
+    # mid-span, just outside the syringe array.
     zf = zh + 10
+    ly, sxx = L.STIFF_LONG_Y, L.STIFF_SHORT_X
     for sy in (-1, 1):
-        members.append(box(f"plunger_stiffener_{'FB'[sy > 0]}", (150, 20, 20), (0, sy * 37, zf), "Head", M["ext"], bevel=1.0))
+        members.append(box(f"plunger_stiffener_{'FB'[sy > 0]}", (150, 20, 20), (0, sy * ly, zf), "Head", M["ext"], bevel=1.0))
     for sx in (-1, 1):
-        members.append(box(f"plunger_stiffener_{'LR'[sx > 0]}", (20, 54, 20), (sx * 48, 0, zf), "Head", M["ext"], bevel=1.0))
+        members.append(box(f"plunger_stiffener_{'LR'[sx > 0]}", (20, 2 * (ly - 10), 20), (sx * sxx, 0, zf), "Head", M["ext"], bevel=1.0))
     rig_empty("plunger_carriage", "Head", members)
 
     # ---------------- control box: laid down in front of the base, screen and knob facing up,
-    # lid on the bench. At 72 mm tall it stays below the lowered tray (96 mm), so well plates
-    # still slide in from the front; two screws through its back wall into the bottom front bar.
+    # base plate on the bench. At 72 mm tall it stays below the lowered tray (96 mm), so well plates
+    # still slide in from the front; two M5 through a pad on its back wall into the bottom front bar.
     parts = [obj[n] for n in ("ScreenHousing", "electronics_lid", "LCD_2004_bezel", "LCD_2004_screen", "encoder_knob")]
     bpy.context.view_layer.update()
     R = Matrix.Rotation(D(-90), 4, 'X')               # screen normal -y -> +z, box top -> toward the frame
@@ -679,6 +773,8 @@ def modify():
     for o in parts:
         o.matrix_world = Matrix.Translation(shift) @ o.matrix_world
     slope_control_box(D(CONTROL_SLOPE_DEG), parts)
+    obj.remove(obj["electronics_lid"])
+    close_control_box(obj["ScreenHousing"])
 
     def span(seq, idx, sign):         # belt length with the idler at each end of its slot
         out = []
@@ -751,7 +847,7 @@ def collision_report():
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
-                  "ext_head", "head_bracket"))}
+                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -767,7 +863,9 @@ def collision_report():
                ("lift_home_switch", "lift_home_switch"), ("lift_home_switch_holder", "lift_base_plate"),
                ("lift_home_switch_lever", "lift_plate"),   # the platform presses the lever at home
                ("head_bracket", "pipette_plate"), ("head_bracket", "ext_head"), ("ext_head", "post"),
-               ("plunger_idler", "pipette_plate"), ("lift_idler", "lift_base_plate")]   # bolts in slots
+               ("plunger_idler", "pipette_plate"), ("lift_idler", "lift_base_plate"),
+               ("plunger_switch", "pipette_plate"), ("plunger_switch", "plunger_switch"),
+               ("control_box_base", "ScreenHousing"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder")]   # bolts in slots
     ok = lambda a, b: any((a.startswith(p) and b.startswith(q)) or (a.startswith(q) and b.startswith(p)) for p, q in allowed)
     hits = {}
     samples = sorted({(l, a) for _, l, a in KEYS} | {(0.5, 0), (0.5, 1), (1, 0.5), (0, 0.5)})

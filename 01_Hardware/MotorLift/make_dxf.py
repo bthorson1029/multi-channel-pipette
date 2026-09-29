@@ -57,6 +57,21 @@ PLG_BRACKET_PLATE_XY = [(61.0, 14.0), (70.0, 32.0)]    # per corner (mirrored): 
 PLG_BRACKET_RAIL_Y = (24.0, 40.0)                # rail-plate M4 bolts into the bracket
 PLG_BRACKET_ROW_BELOW_MID = 7.5                  # rail-plate bolt row, below the plunger plate's mid-plane
 PLG_BRACKET_HOLES = [(sx * x, sy * y) for sx in (-1, 1) for sy in (-1, 1) for x, y in PLG_BRACKET_PLATE_XY]
+# 2020 stiffening frame on the plunger holder plate: long bars along x at y = +/-STIFF_LONG_Y (bolted
+# through the bracket bolt at (+/-70, +/-32) into an M4 T-nut), short bars along y at x = +/-STIFF_SHORT_X
+# (one M5 each, up from under the plunger plate at mid-span).
+STIFF_LONG_Y = 32.0
+STIFF_SHORT_X = 60.0
+STIFF_SHORT_HOLES = [(sx * STIFF_SHORT_X, 0.0) for sx in (-1, 1)]
+# Plunger limit-switch posts on the pipette plate (any one homes the plunger; three for redundancy),
+# 2 M3 each, STRIDE apart along x. Well-plate nest on the lift plate: 4 M4.
+SWITCH_POSTS = [(-55.0, -92.0), (55.0, -92.0), (-55.0, 92.0)]
+SWITCH_POST_HOLE_DX = 14.0
+SWITCH_POST_HOLES = [(x + s * SWITCH_POST_HOLE_DX, y) for x, y in SWITCH_POSTS for s in (-1, 1)]
+NEST_HOLES = [(sx * 55.0, sy * 15.0) for sx in (-1, 1) for sy in (-1, 1)]
+# Holes the repo plates carry for parts this layout no longer has (corner blocks, old mounts).
+PIPETTE_UNUSED_M4 = [(sx * 32.5, sy * 90.0) for sx in (-1, 1) for sy in (-1, 1)] +                     [(sx * 65.0, sy * 32.5) for sx in (-1, 1) for sy in (-1, 1)]
+PLUNGER_UNUSED_M4 = [(sx * 47.5, sy * 90.0) for sx in (-1, 1) for sy in (-1, 1)] +                     [(sx * 65.0, sy * 47.5) for sx in (-1, 1) for sy in (-1, 1)]
 
 # Hole diameters
 M3, M4, M5 = 3.4, 4.5, 5.5
@@ -169,6 +184,12 @@ def near_r(e, r):
     return e[0] == "CIRCLE" and abs(e[3] - r) < 0.02
 
 
+def at_any(e, pts, offset):
+    """A circle centered on one of pts (machine frame; offset maps machine -> DXF)."""
+    return e[0] == "CIRCLE" and any(abs(e[1] - x - offset[0]) < 0.05 and abs(e[2] - y - offset[1]) < 0.05
+                                    for x, y in pts)
+
+
 # ---------------------------------------------------------------- parts
 # The repo plates are drawn in their own frames; these offsets map machine -> DXF coordinates.
 PIPETTE_OFFSET = (-49.5, 31.5)     # array center in pipette_plate.DXF
@@ -178,7 +199,8 @@ PLUNGER_OFFSET = (-49.5, -31.5)    # array center in plunger_plate.DXF
 def pipette_plate():
     src = read_entities(os.path.join(REPO_DXF, "pipette_plate.DXF"))
     # drop the old per-motor T8 nut bores (d 11) and their flange screws (d 3.5)
-    keep = [e for e in src if not (near_r(e, 5.5) or near_r(e, 1.75))]
+    # and the unused repo M4 holes
+    keep = [e for e in src if not (near_r(e, 5.5) or near_r(e, 1.75) or at_any(e, PIPETTE_UNUSED_M4, PIPETTE_OFFSET))]
     ox, oy = PIPETTE_OFFSET
     new = []
     for x, y in PS_XY:                                       # screw clearance + KFL08 (flange along y)
@@ -187,18 +209,21 @@ def pipette_plate():
     new += motor_holes(*PLG_MOTOR_XY)
     new += tensioner_holes(0.0, PLG_IDLER_Y)
     new += [circle(x, y, M4) for x, y in HEAD_MOUNT_XY]
+    new += [circle(x, y, M3) for x, y in SWITCH_POST_HOLES]
     return keep + [shift(e, ox, oy) for e in new]
 
 
 def plunger_plate():
     src = read_entities(os.path.join(REPO_DXF, "plunger_plate.DXF"))
     # drop the old motor cutouts (d 33) and motor screws (d 3.4)
-    keep = [e for e in src if not (near_r(e, 16.5) or near_r(e, 1.7))]
+    # and the unused repo M4 holes
+    keep = [e for e in src if not (near_r(e, 16.5) or near_r(e, 1.7) or at_any(e, PLUNGER_UNUSED_M4, PLUNGER_OFFSET))]
     ox, oy = PLUNGER_OFFSET
     new = []
     for x, y in PS_XY:                                       # nuts sit on the holder plate, body up
         new += nut_holes(x, y, SCREW_CLEAR_D)
     new += [circle(x, y, M4) for x, y in PLG_BRACKET_HOLES]  # carriage brackets underneath
+    new += [circle(x, y, M5) for x, y in STIFF_SHORT_HOLES]  # stiffening frame, short bars
     return keep + [shift(e, ox, oy) for e in new]
 
 
@@ -220,6 +245,7 @@ def lift_plate():
     for s in (-1, 1):                                        # nut flange underneath, body up through
         ents += nut_holes(s * LIFT_X, 0.0, T8_NUT_BODY_BORE_D)
     ents += [circle(x, y, M4) for x, y in LIFT_BRACKET_HOLES]
+    ents += [circle(x, y, M4) for x, y in NEST_HOLES]
     return ents
 
 

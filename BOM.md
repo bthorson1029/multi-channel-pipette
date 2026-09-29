@@ -19,9 +19,9 @@ would be lighter but about 3x more flexible, which costs plunger accuracy.
 
 | Part | Qty | File | Status | Notes |
 |---|---|---|---|---|
-| Pipette plate | 1 | `MotorLift/ToLaserCut-DXF/pipette_plate_motorlift.dxf` | Generated | Plunger screws + KFL08s, plunger motor, tensioner slot, side-bracket holes. |
-| Plunger plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 4 T8 nut cutouts, 8 carriage-bracket holes; old motor cutouts removed. |
-| Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 160 x 200 mm, 2 T8 nut cutouts, 8 carriage-bracket holes. |
+| Pipette plate | 1 | `MotorLift/ToLaserCut-DXF/pipette_plate_motorlift.dxf` | Generated | Plunger screws + KFL08s, plunger motor, tensioner slot, side-bracket holes, 3 switch posts; the repo's unused M4 holes removed. |
+| Plunger plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 4 T8 nut cutouts, 8 carriage-bracket holes, 2 stiffening-frame bolts; old motor cutouts and unused M4 holes removed. |
+| Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 160 x 200 mm, 2 T8 nut cutouts, 8 carriage-bracket holes, 4 well-plate-nest holes. |
 | Lift base plate | 1 | `MotorLift/ToLaserCut-DXF/lift_base_plate.dxf` | Generated | 229.2 x 120 mm. |
 | Interface plate, high | 4 | `ToLaserCut-DXF/interface_plate_high.DXF` | Repo | Lift platform rail plates. |
 | Plunger rail plate | 4 | `MotorLift/ToLaserCut-DXF/plunger_rail_plate.dxf` | Generated | A taller, rectangular `interface_plate_high` that reaches down to the plunger carriage brackets. |
@@ -40,11 +40,11 @@ least 220 mm.
 |---|---|---|---|---|
 | Syringe barrel grip | 1 | `ToPrint-STL/syringe_grip_static.STL` | Repo | Barrels press-fit into it. |
 | Syringe/plunger retainer | 1 | `ToPrint-STL/S-P_plate.STL` | Repo | |
-| Plunger holder plate | 1 | `MotorLift/ToPrint-STL/plunger_holder_plate_motorlift.stl` | Generated | The plunger nuts sit on it; clearance holes over the carriage-bracket bolt heads. |
-| Corner block + switch, pipette level | 4 | `ToPrint-STL/LimitSwitch_holder_B.STL` | Repo | |
-| Electronics housing (sloped) | 1 | `MotorLift/ToPrint-STL/control_box_housing_sloped.stl` | Generated | Repo housing with the screen panel tilted 10 deg toward the user. Lies in front of the base; 2 screws through its back wall into the bottom front bar. |
-| Electronics lid | 1 | `ToPrint-STL/electronics_lid.STL` | Repo | |
-| Well-plate tray | 1 | `ToPrint-STL/Optional/vertical_tray.STL` | Repo | Laid flat; it sets the well-plate height the firmware expects. |
+| Plunger holder plate | 1 | `MotorLift/ToPrint-STL/plunger_holder_plate_motorlift.stl` | Generated | The plunger nuts and the stiffening frame sit on it; clearance holes over the carriage-bracket bolt heads; the repo's four 33 mm motor holes filled. |
+| Plunger switch post | 3 | `MotorLift/ToPrint-STL/plunger_switch_post.stl` | Generated | Holds a KW12-type switch at the plunger plate's home height; 2 M3 to the pipette plate. |
+| Electronics housing (sloped) | 1 | `MotorLift/ToPrint-STL/control_box_housing_sloped.stl` | Generated | Repo housing with the screen panel tilted 10 deg toward the user, a skirt that runs its walls down to the bench, the lid bosses extended to the base, and a back pad with 2 M5 into T-nuts in the bottom front bar. |
+| Control box base | 1 | `MotorLift/ToPrint-STL/control_box_base.stl` | Generated | Closes the housing's underside (replaces the repo lid, which was sized to sit between the posts). 4 countersunk M3 into the bosses. |
+| Well-plate nest | 1 | `MotorLift/ToPrint-STL/well_plate_nest.stl` | Generated | Locates an SBS plate on the lift platform at the height the firmware expects (replaces the flat repo tray). 4 M4 to the platform. |
 | Head bracket | 2 | `MotorLift/ToPrint-STL/head_bracket.stl` | Generated | Bolts the pipette plate to the side bars. |
 | Belt tensioner bracket (lift) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_lift.stl` | Generated | |
 | Belt tensioner bracket (plunger) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_plunger.stl` | Generated | |
@@ -53,7 +53,8 @@ least 220 mm.
 | Lift home-switch holder | 1 | `MotorLift/ToPrint-STL/lift_home_switch_holder.stl` | Generated | For a KW12-type switch. |
 
 Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_insert_lid`,
-`lever_handle`, `slide_block`, `slider_holder`. Optional: the comb jigs and `horizontal_tray`.
+`lever_handle`, `slide_block`, `slider_holder`, `LimitSwitch_holder_A/B`, `electronics_lid`,
+`vertical_tray`. Optional: the comb jigs and `horizontal_tray`.
 
 ## 3. Frame and motion
 
@@ -62,9 +63,9 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 | 2020 aluminum extrusion, 400 mm *est.* | 4 | Posts. |
 | 2020 extrusion, 189.2 mm | 4 | Front/back of the bottom and top rings. |
 | 2020 extrusion, 178 mm | 8 | Sides of the bottom, bed-level and top rings, plus the two head side bars. |
-| 2020 inside corner bracket | 4 | Head side bars to the posts. |
+| 2020 inside corner bracket | 12 | Head side bars (4) and bed-level side bars (4) to the posts; stiffening-frame corners (4). |
 | 2020 extrusion, 150 mm | 2 | Plunger-plate stiffening frame. |
-| 2020 extrusion, 54 mm | 2 | Plunger-plate stiffening frame. |
+| 2020 extrusion, 44 mm | 2 | Plunger-plate stiffening frame. |
 | MGN9 linear rail, 330 mm *est.* | 4 | One per post. |
 | MGN9H carriage | 8 | Lift platform (4) + plunger plate (4). |
 | NEMA17 stepper, 40 mm body (~0.4 N m) | 1 | Lift. 5 mm shaft. |
@@ -109,17 +110,20 @@ T-nuts.
 
 | Fastener | Approx. qty | Where |
 |---|---|---|
-| M5 x 10 + M5 T-nut (2020) | 90 | Corner brackets (64), inside brackets (8), stiffening frame (8), base plate (4), head brackets (4) |
+| M5 x 10 + M5 T-nut (2020) | 96 | Corner brackets (64), inside corner brackets (24), base plate (4), head brackets (4) |
+| M5 x 12 + M5 T-nut (2020) | 4 | Control box pad to the bottom front bar (2); stiffening-frame short bars, up through the plunger and holder plates (2) |
 | M3 x 8 + M3 T-nut (2020) | 70 | MGN9 rails (20 mm hole pitch) |
 | M3 x 6-8 | 40 | Carriages to interface plates, electronics housing |
-| M3 x 10 + nut | 24 | Motors (8), lift nuts (8), tensioner brackets (4), switch holder (2), spares |
+| M3 x 10 + nut | 24 | Motors (8), lift nuts (8), tensioner brackets (4), lift switch holder (2), spares |
+| M3 x 12 + nut | 6 | Plunger switch posts to the pipette plate |
+| M3 x 10 countersunk, self-tapping | 4 | Control box base into the housing bosses |
 | M3 x 16 + nut | 16 | Plunger nuts (through nut flange, holder plate, 1.5 mm washers and plunger plate) |
 | M3 flat washer (7 mm OD) | 24 | Under the M3 nuts at the T8 nut cutouts, to span the slots (lift 8, plunger 16) |
 | M4 x 10 + nut | 16 | KFL08 bearings (12), head brackets to the pipette plate (4) |
 | M4 x 12 + nut | 16 | Lift and plunger rail plates into the carriage brackets' captive nuts (8 + 8) |
-| M4 x 16 + nut | 16 | Lift brackets down through the platform (8); plunger plate down into its brackets' captive nuts (8) |
-| M2 x 16 + nut | 2 | Lift home switch |
-| M2/M2.5 screws | 6 | Plunger-level limit switches |
+| M4 x 16 + nut | 16 | Lift brackets down through the platform (8); plunger plate down into its brackets' captive nuts (4); well-plate nest (4) |
+| M4 x 20 + M4 T-nut (2020) | 4 | Plunger brackets up through both plates into the stiffening frame's long bars |
+| M2 x 16 + nut | 8 | Limit switches in their holders (lift 2, plunger posts 6) |
 | Shoulder bolt + nut for idlers | 2 | Tensioners |
 
 ## 7. Tools and supplies

@@ -20,6 +20,9 @@ PARTS = {   # object -> (file, rotation for printing)
     "lift_tensioner_bracket": ("tensioner_bracket_lift.stl", Matrix.Identity(3)),
     "plunger_tensioner_bracket": ("tensioner_bracket_plunger.stl", Matrix.Identity(3)),
     "lift_home_switch_holder": ("lift_home_switch_holder.stl", Matrix.Identity(3)),
+    "plunger_switch_LF_holder": ("plunger_switch_post.stl", Matrix.Identity(3)),       # 3 alike
+    "well_plate_nest": ("well_plate_nest.stl", Matrix.Identity(3)),
+    "control_box_base": ("control_box_base.stl", Matrix.Rotation(math.pi, 3, "X")),   # countersinks down
     "lift_carriage_bracket_RF": ("lift_carriage_bracket.stl", Matrix.Identity(3)),   # all 4 corners alike
     # hang under the plunger plate: print plate-face down, nut pockets and slots open upward.
     # Two mirror-image hands: RF is the same part as LB turned around, RB the same as LF.
