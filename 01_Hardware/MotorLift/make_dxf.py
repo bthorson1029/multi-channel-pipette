@@ -43,7 +43,9 @@ T8_NUT_SCREW_D = 3.4                             # M3 clearance; slot width in t
 LIFT_PLATE = (160.0, 200.0)
 BASE_PLATE = (229.2, 120.0)
 BASE_MOUNT_XY = [(sx * 104.6, sy * 45.0) for sx in (-1, 1) for sy in (-1, 1)]  # into side extrusions
-CORNER_BLOCK_HOLES = [(sx * 65.0, sy * 90.0) for sx in (-1, 1) for sy in (-1, 1)]   # same as the plunger plate
+LIFT_BRACKET_X = 71.0                            # lift carriage brackets: 2 M4 down through the plate each,
+LIFT_BRACKET_Y = (38.0, 80.0)                    # either side of the rail plate's M4 holes (y 49, 69)
+LIFT_BRACKET_HOLES = [(sx * LIFT_BRACKET_X, sy * y) for sx in (-1, 1) for sy in (-1, 1) for y in LIFT_BRACKET_Y]
 
 # Hole diameters
 M3, M4, M5 = 3.4, 4.5, 5.5
@@ -193,7 +195,7 @@ def lift_plate():
     ents = rounded_rect(w, h)
     for s in (-1, 1):                                        # nut flange underneath, body up through
         ents += nut_holes(s * LIFT_X, 0.0, T8_NUT_BODY_BORE_D)
-    ents += [circle(x, y, M4) for x, y in CORNER_BLOCK_HOLES]
+    ents += [circle(x, y, M4) for x, y in LIFT_BRACKET_HOLES]
     return ents
 
 

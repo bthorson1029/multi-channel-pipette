@@ -20,6 +20,7 @@ PARTS = {   # object -> (file, rotation for printing)
     "lift_tensioner_bracket": ("tensioner_bracket_lift.stl", Matrix.Identity(3)),
     "plunger_tensioner_bracket": ("tensioner_bracket_plunger.stl", Matrix.Identity(3)),
     "lift_home_switch_holder": ("lift_home_switch_holder.stl", Matrix.Identity(3)),
+    "lift_carriage_bracket_RF": ("lift_carriage_bracket.stl", Matrix.Identity(3)),   # all 4 corners alike
     # L profile printed on its side: the y = -30 face goes down
     "head_bracket_R": ("head_bracket.stl", Matrix.Rotation(math.radians(-90), 3, 'X')),
     # sloped control box: panel face down (undo the slope, then flip), open side up

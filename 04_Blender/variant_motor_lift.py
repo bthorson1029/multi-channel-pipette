@@ -17,7 +17,7 @@ Builds the baseline (build_pipette.py) and then modifies it:
     micro switch pressed by the platform underside at the bottom of travel
   * frees two of the CNC shield's four driver slots (X = plunger, Y = lift)
   * the pipette plate is bolted through two printed brackets to a 2020 bar along each side of
-    the frame; the lift platform's rail plates hang from four printed corner blocks
+    the frame; the lift platform's rail plates bolt to four printed carriage brackets on the plate
   * the control box lies in front of the base with its screen panel sloped toward the user
     (CONTROL_SLOPE_DEG), low enough that well plates still slide in from the front over it
 Layout numbers and the laser-cut plates come from 01_Hardware/MotorLift/make_dxf.py (run it first
@@ -72,6 +72,9 @@ TRAY_H, PLATE_H = 15.0, 14.4
 TIP_DEPTH = 9.0                   # tips this far into the wells at the top of travel
 LIFT_TRAVEL = (P - 112 + TIP_DEPTH) - (LIFT0 + T + TRAY_H + PLATE_H)
 LIFT_LEAD = 2.0                   # T8x2 on the lift: force + self-locking
+BRK_H = 18.0                      # lift carriage bracket height above the plate
+BRK_BOLT_Z = LIFT0 + T + 10.0     # rail-plate M4 row: the rail plates ride this high so it clears the plate
+LIFT_IF_HOLE_Y = (PY - 30.0, PY - 50.0)   # the rail plate's 2 M4 holes (DXF x 20, 40; anchor x -10 at PY)
 # plunger
 PS_XY = L.PS_XY                   # order: LF, RF, LB, RB
 PLG_MOTOR_XY = L.PLG_MOTOR_XY
@@ -333,6 +336,32 @@ def head_bracket(name, sx, coll):
     return o
 
 
+def lift_carriage_bracket(name, sx, sy, coll):
+    """Printed block joining the lift plate to one rail plate. It sits on the plate, its outer
+    face against the rail plate: 2 M4 from outside through the rail plate's own holes into
+    captive nuts (slots from the top), 2 M4 down through the block and the plate (counterbored,
+    nuts under the plate). Its inner face stays 2 mm outside the well plate's path."""
+    zb, zt = LIFT0 + T, LIFT0 + T + BRK_H
+    x_in, x_out = 66.0, IF_X - T / 2                  # inner face; outer face = rail plate
+    y0, y1 = L.LIFT_BRACKET_Y[0] - 5, L.LIFT_BRACKET_Y[1] + 5
+    o = box(name, (x_out - x_in, y1 - y0, BRK_H), (sx * (x_in + x_out) / 2, sy * (y0 + y1) / 2, (zb + zt) / 2),
+            coll, M["pla"])
+    bm = bmesh.new()                                  # two passes so no cutters overlap each other
+    for y in LIFT_IF_HOLE_Y:                          # rail-plate bolts
+        _bar(bm, (sx * (x_in - 1), sy * y, BRK_BOLT_Z), (sx * (x_out + 1), sy * y, BRK_BOLT_Z), L.M4 / 2)
+    for y in L.LIFT_BRACKET_Y:                        # plate bolts
+        _cone(bm, L.M4 / 2, L.M4 / 2, zb - 1, zt + 1, xy=(sx * L.LIFT_BRACKET_X, sy * y))
+    boolean(o, bm)
+    bm = bmesh.new()
+    for y in LIFT_IF_HOLE_Y:                          # M4 nut slots (7 mm AF), open at the top
+        xa, xb = sorted((sx * 73.0, sx * 76.5))
+        _block(bm, xa, xb, sy * y - 3.7, sy * y + 3.7, BRK_BOLT_Z - 4.0, zt + 1)
+    for y in L.LIFT_BRACKET_Y:                        # counterbores for the plate-bolt heads
+        _cone(bm, 4.2, 4.2, zb + 8, zt + 1, xy=(sx * L.LIFT_BRACKET_X, sy * y))
+    boolean(o, bm)
+    return o
+
+
 def fab_plate(fname, obj_name, coll, loc):
     """A laser-cut plate from the generated DXFs (01_Hardware/MotorLift/ToLaserCut-DXF)."""
     o = dxf_part(os.path.join(FAB_DXF, fname), obj_name, T, coll, M["steel"])
@@ -523,13 +552,11 @@ def modify():
     # platform (+ carriages, interface plates, nuts, tray, plate)
     lp = fab_plate("lift_plate.dxf", "lift_plate", "Bed", (0, 0, LIFT0 + T / 2))
     members = [lp]
-    src_blk = obj["LimitSwitch_holder_A"]            # same corner blocks as the plunger plate
-    for i, (sx, sy) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1)), 1):
-        b = dup(src_blk, f"lift_corner_block_{i}", "Bed")
-        b.location = (sx * 63, sy * (100 - src_blk.dimensions.y / 2), LIFT0 + T)
-        members.append(b)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            members.append(lift_carriage_bracket(f"lift_carriage_bracket_{'LR'[sx > 0]}{'FB'[sy > 0]}", sx, sy, "Bed"))
     src = dxf_part("interface_plate_high.DXF", "lift_interface", T, "Bed", M["steel"])
-    zc = LIFT0 + T / 2 - 10
+    zc = BRK_BOLT_Z - 10                              # DXF hole row y = 10 lands on the bracket bolts
     for i, (sx, sy) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1))):
         o = src if i == 0 else dup(src, f"lift_interface.{i:03d}")
         g["frame_to"](o, -sy * Vector((0, 1, 0)), Vector((0, 0, 1)), (-10, 0), (sx * IF_X, sy * PY, zc))
