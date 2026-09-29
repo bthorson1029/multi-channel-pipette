@@ -38,17 +38,54 @@ const uint8_t LIFT_UP_LEVEL          = HIGH;   // DIR level that raises the bed
 const uint16_t MOTOR_STEPS        = 200;   // 1.8 deg steppers
 const uint8_t  PLUNGER_MICROSTEPS = 8;     // X-slot jumpers
 const uint8_t  LIFT_MICROSTEPS    = 8;     // Y-slot jumpers
-const float    LIFT_LEAD_MM       = 2.0;   // T8x2 lead screws on the lift
+const float    PLUNGER_LEAD_MM    = 2.0;   // T8x2 with anti-backlash nuts
+const float    LIFT_LEAD_MM       = 2.0;   // T8x2
 
-// Carried over from the original firmware (T8x8 screws, same microstepping; the 20T:20T belt
-// is 1:1). Calibrate by weighing dispensed water: 1 uL = 1 mg.
-const float PLUNGER_STEPS_PER_UL = 12.0;
+// The original firmware used 12 steps/uL with T8x8 screws (8 mm lead) at the same
+// microstepping; that scales with the lead. Refine with the calibration tables below.
+const float PLUNGER_STEPS_PER_UL = 12.0 * (8.0 / PLUNGER_LEAD_MM);   // 48
 const float LIFT_STEPS_PER_MM    = MOTOR_STEPS * (float)LIFT_MICROSTEPS / LIFT_LEAD_MM;
 
 const float LIFT_TRAVEL_MM = 46.0;         // soft limit above home (Blender model: 45.9 mm)
-const long  VOLUME_MIN_UL  = 10;
-const long  VOLUME_MAX_UL  = 990;          // most the syringes will hold in total
-const long  VOLUME_STEP_UL = 10;
+
+// ---------------------------------------------------------------- tips and volumes
+const long  TIP_CAPACITY_UL = 200;         // yellow 200 uL tips: never draw liquid past this
+const long  VOLUME_MIN_UL   = 1;
+// Volume knob steps: 1 uL below 20, 5 uL below 100, 10 uL above.
+
+// The working zero ("first stop") sits BLOWOUT_UL above the switches ("second stop"): a
+// forward dispense ends at the working zero, then blows out down to the switches.
+const float BLOWOUT_UL = 10.0;
+
+// Reverse mode: draw REVERSE_EXCESS_UL more than asked (it stays in the tip and is discarded
+// with "Empty tips"), plus REVERSE_PRELOAD_UL that is pushed straight back into the source so
+// the nut's slack is taken up in the dispense direction before the first dispense.
+const float REVERSE_EXCESS_UL  = 10.0;
+const float REVERSE_PRELOAD_UL = 5.0;
+
+// Extra steps added whenever the plunger reverses direction. Anti-backlash nuts should make
+// this ~0; measure by reversing and watching the plate with a dial indicator.
+const float BACKLASH_UL = 0.0;
+
+// ---------------------------------------------------------------- calibration
+// Measured volume for a commanded volume, per mode (0 must map to 0; keep it increasing).
+// Weigh water dispensed at several volumes (1 uL = 1 mg at room temperature; ISO 8655
+// describes the method) and enter commanded -> measured pairs. Identity until measured.
+struct CalPoint { float commandedUl; float measuredUl; };
+const CalPoint CAL_FORWARD[] = {{0, 0}, {200, 200}};
+const CalPoint CAL_REVERSE[] = {{0, 0}, {200, 200}};
+
+// ---------------------------------------------------------------- liquid handling
+const float ASPIRATE_UL_S  = 40.0;         // slower draws are more accurate
+const float DISPENSE_UL_S  = 80.0;
+const float BLOWOUT_UL_S   = 100.0;
+const float PLUNGER_ACCEL_UL_S2 = 400.0;
+const unsigned int ASPIRATE_DELAY_MS = 500;   // let liquid follow the plunger (air cushion)
+const unsigned int DISPENSE_DELAY_MS = 300;
+const unsigned int BLOWOUT_DELAY_MS  = 300;
+const uint8_t PREWET_CYCLES = 0;           // aspirate/dispense this many times before drawing
+const float WITHDRAW_MM   = 6.0;           // leave the liquid slowly so fewer drops cling
+const float WITHDRAW_MM_S = 2.0;
 
 // ---------------------------------------------------------------- speeds (all trapezoidal)
 const float LIFT_FAST_MM_S       = 6.0;    // travel moves
@@ -58,14 +95,10 @@ const float LIFT_HOME_FAST_MM_S  = 4.0;
 const float LIFT_HOME_SLOW_MM_S  = 0.5;
 const float LIFT_BACKOFF_MM      = 2.0;
 
-const float PLUNGER_MAX_STEPS_S   = 900.0;  // about the original 1.1 ms/step
-const float PLUNGER_ACCEL_STEPS_S2 = 4000.0;
-const float PLUNGER_HOME_FAST_STEPS_S = 600.0;
-const float PLUNGER_HOME_SLOW_STEPS_S = 150.0;
-const long  PLUNGER_BACKOFF_STEPS = 120;    // 10 uL
-const float PLUNGER_HOME_MAX_UL   = 1100;   // give up homing after this much travel
-
-const unsigned int SETTLE_MS = 400;        // let liquid follow the plunger before moving the bed
+const float PLUNGER_HOME_FAST_UL_S = 50.0;
+const float PLUNGER_HOME_SLOW_UL_S = 10.0;
+const float PLUNGER_BACKOFF_UL     = 10.0;
+const float PLUNGER_HOME_MAX_UL    = 1100;  // give up homing after this much travel
 
 // ---------------------------------------------------------------- labware
 // engageMm = bed height above home where the tips are at working depth.
@@ -93,12 +126,13 @@ long stepAxis(uint8_t stepPin, uint8_t dirPin, uint8_t dirLevel, long steps,
               float vmax, float accel, bool (*stopCheck)());
 bool homeLift();
 bool homePlunger();
-bool moveLiftTo(float mm, float approachMmS);
+bool moveLiftTo(float mm, float approachMmS, float downMmS);
 bool lowerLiftToHome();
-long aspirateUl(long ul);
-long dispenseUl(long ul);
 float liftMm();
 float heldUl();
+bool plungerToHeld(float ul, float ulPerS);
+bool plungerBlowout();
+bool plungerReset();
 extern bool liftHomed, plungerHomed;
 // MotorLift.ino
 void showStatus(const char *msg);

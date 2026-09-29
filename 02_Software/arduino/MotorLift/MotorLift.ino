@@ -1,14 +1,17 @@
 // Multi-channel pipette firmware for the motorized-lift layout (fixed head, lead-screw bed
-// lift, belt-synced plunger). Pins, mechanics, speeds and labware heights are in Config.h.
+// lift, belt-synced plunger). Pins, mechanics, speeds, calibration and labware are in Config.h.
 //
 // Menu (turn to move, press to select; a '*' marks a value being edited):
-//   Volume      press, turn to set (10 uL steps), press to confirm
-//   Aspirate    raise bed -> draw Volume -> settle -> lower bed
-//   Dispense    raise bed -> push Volume (or everything held) -> settle -> lower bed
+//   Volume      press, turn to set (1 uL steps below 20, 5 below 100, then 10), press to confirm
+//   Aspirate    raise bed -> draw -> settle -> withdraw slowly -> lower bed
+//   Dispense    Forward: dispense everything, blow out, withdraw, then reset the plunger
+//               Reverse: dispense Volume (repeatable), keeping the excess in the tip
+//   Mode        Forward (single transfers) / Reverse (repeat dispenses); only while empty
 //   Labware     press to cycle presets (bed must be down)
 //   Height      press, turn to trim the preset's working height by 0.1 mm (the bed follows
 //               live if it is up), press to save to EEPROM
-//   Raise/Lower bed (Aspirate/Dispense leave a manually raised bed up)
+//   Raise/Lower bed (a manually raised bed stays up for Aspirate and reverse Dispense)
+//   Empty tips  dispense everything held + blow out into the current labware (e.g. waste)
 //   Home all    re-home lift, then plunger
 #include <Wire.h>
 #include <EEPROM.h>
@@ -17,10 +20,11 @@
 
 LiquidCrystal_I2C lcd(LCD_ADDR, 20, 4);
 
-enum Item { ITEM_VOLUME, ITEM_ASPIRATE, ITEM_DISPENSE, ITEM_LABWARE, ITEM_HEIGHT, ITEM_RAISE,
-            ITEM_HOME, ITEM_COUNT };
+enum Item { ITEM_VOLUME, ITEM_ASPIRATE, ITEM_DISPENSE, ITEM_MODE, ITEM_LABWARE, ITEM_HEIGHT,
+            ITEM_RAISE, ITEM_EMPTY, ITEM_HOME, ITEM_COUNT };
 
-long volumeUl = 100;
+long volumeUl = 50;
+bool reverseMode = false;
 uint8_t labwareIdx = 0;
 float heightTrim[LABWARE_COUNT];     // mm, per preset
 bool bedUp = false;
@@ -51,7 +55,25 @@ void loop() {
   render();
 }
 
-// ---------------------------------------------------------------- actions
+// ---------------------------------------------------------------- calibration
+// Commanded volume that delivers `wantUl`, by inverting a commanded->measured table
+// (linear between points, extrapolated from the last segment).
+float calCommand(const CalPoint *t, uint8_t n, float wantUl) {
+  uint8_t i = 1;
+  while (i < n - 1 && wantUl > t[i].measuredUl) i++;
+  float m0 = t[i - 1].measuredUl, m1 = t[i].measuredUl;
+  float c0 = t[i - 1].commandedUl, c1 = t[i].commandedUl;
+  if (m1 == m0) return c0;
+  return c0 + (wantUl - m0) * (c1 - c0) / (m1 - m0);
+}
+
+float commandFor(float wantUl) {
+  if (reverseMode)
+    return calCommand(CAL_REVERSE, sizeof(CAL_REVERSE) / sizeof(CAL_REVERSE[0]), wantUl);
+  return calCommand(CAL_FORWARD, sizeof(CAL_FORWARD) / sizeof(CAL_FORWARD[0]), wantUl);
+}
+
+// ---------------------------------------------------------------- bed
 float engageMm() {
   float h = LABWARE[labwareIdx].engageMm + heightTrim[labwareIdx];
   return constrain(h, 0.0, LIFT_TRAVEL_MM);
@@ -59,7 +81,7 @@ float engageMm() {
 
 bool raiseBed() {
   showStatus("Raising...");
-  if (!moveLiftTo(engageMm(), LABWARE[labwareIdx].approachMmS)) {
+  if (!moveLiftTo(engageMm(), LABWARE[labwareIdx].approachMmS, LIFT_FAST_MM_S)) {
     showStatus("Lift error: home");
     return false;
   }
@@ -67,14 +89,16 @@ bool raiseBed() {
   return true;
 }
 
+// Leave the liquid slowly for the first WITHDRAW_MM, then drop to home (re-zeroing on it).
 bool lowerBed() {
   showStatus("Lowering...");
-  bool ok = lowerLiftToHome();
+  bool ok = moveLiftTo(liftMm() - WITHDRAW_MM, LIFT_FAST_MM_S, WITHDRAW_MM_S) && lowerLiftToHome();
   bedUp = false;
   if (!ok) showStatus("Lift error: home");
   return ok;
 }
 
+// ---------------------------------------------------------------- sequences
 void homeAll() {
   bedUp = false;
   showStatus("Homing lift...");
@@ -90,32 +114,80 @@ bool ready() {
   return false;
 }
 
+bool plungerFail() {
+  showStatus("Plunger: home all");
+  return false;
+}
+
 void runAspirate() {
   if (!ready()) return;
-  if (lround(heldUl()) + volumeUl > VOLUME_MAX_UL) { showStatus("Over capacity"); return; }
+  float held = heldUl();
+  // Forward: draw the calibrated command. Reverse: draw the volume plus the preload (pushed
+  // back below), plus the excess if the tips are empty.
+  float draw = reverseMode ? volumeUl + REVERSE_PRELOAD_UL + (held < 0.5 ? REVERSE_EXCESS_UL : 0)
+                           : commandFor(volumeUl);
+  if (held + draw > TIP_CAPACITY_UL) { showStatus("Over tip capacity"); return; }
   bool stayUp = bedUp;
   if (!bedUp && !raiseBed()) return;
+  for (uint8_t n = PREWET_CYCLES; n--;) {
+    showStatus("Pre-wetting...");
+    if (!plungerToHeld(held + draw, ASPIRATE_UL_S)) { plungerFail(); return; }
+    delay(ASPIRATE_DELAY_MS);
+    if (!plungerToHeld(held, DISPENSE_UL_S)) { plungerFail(); return; }
+    delay(DISPENSE_DELAY_MS);
+  }
   showStatus("Aspirating...");
-  aspirateUl(volumeUl);
-  delay(SETTLE_MS);
+  if (!plungerToHeld(held + draw, ASPIRATE_UL_S)) { plungerFail(); return; }
+  delay(ASPIRATE_DELAY_MS);
+  if (reverseMode) {                   // take up the slack in the dispense direction
+    if (!plungerToHeld(held + draw - REVERSE_PRELOAD_UL, DISPENSE_UL_S)) { plungerFail(); return; }
+    delay(DISPENSE_DELAY_MS);
+  }
   if (!stayUp && !lowerBed()) return;
   showStatus("Aspirate DONE");
 }
 
+// Everything out at the current labware: dispense to the working zero, blow out, withdraw,
+// and only then return the plunger (it draws air on the way back up).
+bool dispenseAll(const char *doneMsg) {
+  if (!bedUp && !raiseBed()) return false;
+  showStatus("Dispensing...");
+  if (!plungerToHeld(0, DISPENSE_UL_S)) return plungerFail();
+  delay(DISPENSE_DELAY_MS);
+  showStatus("Blowing out...");
+  if (!plungerBlowout()) return plungerFail();
+  delay(BLOWOUT_DELAY_MS);
+  if (!lowerBed()) return false;
+  if (!plungerReset()) return plungerFail();
+  showStatus(doneMsg);
+  return true;
+}
+
 void runDispense() {
   if (!ready()) return;
-  if (lround(heldUl()) <= 0) { showStatus("Nothing held"); return; }
+  float held = heldUl();
+  if (held < 0.5) { showStatus("Nothing held"); return; }
+  if (!reverseMode) { dispenseAll("Dispense DONE"); return; }
+  float cmd = commandFor(volumeUl);
+  if (held - cmd < REVERSE_EXCESS_UL - 0.5) { showStatus("Low: Empty tips"); return; }
   bool stayUp = bedUp;
   if (!bedUp && !raiseBed()) return;
   showStatus("Dispensing...");
-  dispenseUl(volumeUl);
-  delay(SETTLE_MS);
-  if (!plungerHomed) { showStatus("Plunger: home all"); return; }
+  if (!plungerToHeld(held - cmd, DISPENSE_UL_S)) { plungerFail(); return; }
+  delay(DISPENSE_DELAY_MS);
   if (!stayUp && !lowerBed()) return;
   showStatus("Dispense DONE");
 }
 
+void runEmpty() {
+  if (!ready()) return;
+  if (heldUl() < 0.5) { showStatus("Tips are empty"); return; }
+  dispenseAll("Tips emptied");
+}
+
 // ---------------------------------------------------------------- input
+long volumeStep(long v) { return v < 20 ? 1 : (v < 100 ? 5 : 10); }
+
 void onClick() {
   statusMsg[0] = '\0';
   switch (menuIdx) {
@@ -125,6 +197,10 @@ void onClick() {
     case ITEM_HEIGHT:
       if (editItem == ITEM_HEIGHT) { editItem = -1; saveTrims(); showStatus("Height saved"); }
       else editItem = ITEM_HEIGHT;
+      break;
+    case ITEM_MODE:
+      if (heldUl() >= 0.5) showStatus("Empty tips first");
+      else reverseMode = !reverseMode;
       break;
     case ITEM_LABWARE:
       if (bedUp) showStatus("Lower bed first");
@@ -137,6 +213,7 @@ void onClick() {
       if (bedUp) { if (lowerBed()) showStatus("Bed down"); }
       else if (raiseBed()) showStatus("Bed up");
       break;
+    case ITEM_EMPTY: runEmpty(); break;
     case ITEM_HOME: homeAll(); break;
   }
   dirty = true;
@@ -145,12 +222,13 @@ void onClick() {
 void onTurn(int8_t d) {
   statusMsg[0] = '\0';
   if (editItem == ITEM_VOLUME) {
-    volumeUl = constrain(volumeUl + d * VOLUME_STEP_UL, VOLUME_MIN_UL, VOLUME_MAX_UL);
+    long v = volumeUl + (d > 0 ? volumeStep(volumeUl) : -volumeStep(volumeUl - 1));
+    volumeUl = constrain(v, VOLUME_MIN_UL, TIP_CAPACITY_UL);
   } else if (editItem == ITEM_HEIGHT) {
     float base = LABWARE[labwareIdx].engageMm;
     float t = heightTrim[labwareIdx] + d * HEIGHT_STEP_MM;
     heightTrim[labwareIdx] = constrain(base + t, 0.0, LIFT_TRAVEL_MM) - base;
-    if (bedUp) moveLiftTo(engageMm(), LABWARE[labwareIdx].approachMmS);   // follow live
+    if (bedUp) moveLiftTo(engageMm(), LABWARE[labwareIdx].approachMmS, LIFT_FAST_MM_S);   // follow live
   } else {
     menuIdx = (menuIdx + d + ITEM_COUNT) % ITEM_COUNT;
     if (menuIdx < menuTop) menuTop = menuIdx;
@@ -177,12 +255,14 @@ void rowText(int8_t item, char *buf) {
     case ITEM_VOLUME:   snprintf(buf, 21, "%c Volume    %4ld uL", sel, volumeUl); break;
     case ITEM_ASPIRATE: snprintf(buf, 21, "%c Aspirate", sel); break;
     case ITEM_DISPENSE: snprintf(buf, 21, "%c Dispense  held %3ld", sel, lround(heldUl())); break;
+    case ITEM_MODE:     snprintf(buf, 21, "%c Mode: %s", sel, reverseMode ? "Reverse" : "Forward"); break;
     case ITEM_LABWARE:  snprintf(buf, 21, "%c %s", sel, LABWARE[labwareIdx].name); break;
     case ITEM_HEIGHT:
       dtostrf(engageMm(), 5, 1, num);
       snprintf(buf, 21, "%c Height   %s mm", sel, num);
       break;
     case ITEM_RAISE:    snprintf(buf, 21, "%c %s", sel, bedUp ? "Lower bed" : "Raise bed"); break;
+    case ITEM_EMPTY:    snprintf(buf, 21, "%c Empty tips", sel); break;
     case ITEM_HOME:     snprintf(buf, 21, "%c Home all", sel); break;
     default:            buf[0] = '\0';
   }

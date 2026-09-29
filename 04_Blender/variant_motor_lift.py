@@ -10,6 +10,9 @@ Builds the baseline (build_pipette.py) and then modifies it:
     moved out to (+/-65, +/-58.9) so the belt passes outside the 96-syringe array. With the head
     fixed, motor, bearings and pulleys all sit on the stationary pipette plate; only the nuts ride
     on the plunger plate. Mechanically synced -> the plate cannot rack if a step is missed.
+    Accuracy upgrades: T8x2 plunger screws with anti-backlash nuts (spring + second nut), a 2020
+    stiffening frame on the plunger holder plate so the plate bends less under stopper friction,
+    and a 48 mm (~0.5 N m class) motor so one motor matches the original four's thrust.
   * both belts have a smooth-idler tensioner on a slotted printed bracket; the lift homes onto a
     micro switch pressed by the platform underside at the bottom of travel
   * frees two of the CNC shield's four driver slots (X = plunger, Y = lift)
@@ -63,7 +66,7 @@ PLG_MOTOR_XY = (0.0, -85.0)
 SWITCH_TOP = P + 39 + 11.5        # limit-switch lever tops on the pipette-plate corner blocks
 PLG_REST = (SWITCH_TOP + 0.5) - (PLG_MID - T / 2)   # home = plate just off the switches (firmware homes onto them)
 ASPIRATE = 12.0                   # animation stroke (~215 uL in a 4.78 mm-bore 1 mL syringe)
-PLG_LEAD = 8.0                    # T8x8 as on the original integrated-screw motors
+PLG_LEAD = 2.0                    # T8x2: 4x the resolution and thrust of the original T8x8
 # tensioners / homing
 IDLER_R = 8.8                     # belt pitch-line radius on a 16 mm smooth idler (back-side wrap)
 TENSION_TAKEUP = 16.0             # idler deflects the run this far; slot gives +/-6 mm.
@@ -108,14 +111,38 @@ def kfl08(name, x, y, z_face, down, coll, rot=0.0):
     return o
 
 
-def nema17(prefix, x, y, z_face, face_up, coll):
-    """Motor hanging from a plate: mounting face at z_face, body below (face_up) or above."""
+def nema17(prefix, x, y, z_face, face_up, coll, length=40.0):
+    """Motor hanging from a plate: mounting face at z_face, body below (face_up) or above.
+    length: 40 mm body (~0.4 N m) or 48 mm (~0.5 N m class)."""
     s = -1 if face_up else 1
-    zc = z_face + s * 20
-    box(prefix + "_body", (42.3, 42.3, 32), (x, y, zc), coll, M["motor"], bevel=0.8)
+    zc = z_face + s * length / 2
+    box(prefix + "_body", (42.3, 42.3, length - 8), (x, y, zc), coll, M["motor"], bevel=0.8)
     box(prefix + "_capF", (42.3, 42.3, 4), (x, y, z_face + s * 2), coll, M["chrome"], bevel=1.5)
-    box(prefix + "_capB", (42.3, 42.3, 4), (x, y, z_face + s * 38), coll, M["chrome"], bevel=1.5)
+    box(prefix + "_capB", (42.3, 42.3, 4), (x, y, z_face + s * (length - 2)), coll, M["chrome"], bevel=1.5)
     cyl(prefix + "_shaft", 2.5, 18, (x, y, z_face - s * 9 + s * 0), coll, M["chrome"], seg=16)
+
+
+def spring(name, x, y, z0, z1, r_coil, r_wire, turns, coll, m):
+    """Helical compression spring from z0 to z1 (swept circle along a helix)."""
+    cu = bpy.data.curves.new(name, 'CURVE')
+    cu.dimensions, cu.bevel_depth, cu.bevel_resolution = '3D', r_wire, 2
+    n = int(turns * 24)
+    sp = cu.splines.new('POLY')
+    sp.points.add(n)
+    for i in range(n + 1):
+        a = 2 * math.pi * turns * i / n
+        sp.points[i].co = (r_coil * math.cos(a), r_coil * math.sin(a), z0 + (z1 - z0) * i / n, 1)
+    tmp = bpy.data.objects.new(name + "_crv", cu)
+    bpy.data.collections[coll].objects.link(tmp)
+    bpy.context.view_layer.update()
+    me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bpy.data.objects.remove(tmp)
+    bpy.data.curves.remove(cu)
+    o = bpy.data.objects.new(name, me)
+    bpy.data.collections[coll].objects.link(o)
+    me.materials.append(m)
+    o.location = (x, y, 0)
+    return o
 
 
 def belt_route(seq, n_arc=48):
@@ -361,7 +388,7 @@ def modify():
         kfl08(f"KFL08_plunger_{i}", x, y, P - T, True, "Motors", rot=D(90))   # flange along y: clears interface plates
         cyl(f"plunger_screw_{i}", 4, FH - 35 - (P - 16), (x, y, (FH - 35 + P - 16) / 2), "Motors", M["chrome"], seg=16)
         pulley(f"plunger_pulley_{i}", x, y, P + 1, "Motors")
-    nema17("plunger_motor", *PLG_MOTOR_XY, P - T, True, "Motors")
+    nema17("plunger_motor", *PLG_MOTOR_XY, P - T, True, "Motors", length=48.0)
     obj["plunger_motor_shaft"].location.z = P + 6
     pulley("plunger_pulley_motor", *PLG_MOTOR_XY, P + 1, "Motors")
     # tensioner: idler pushes the back run (behind the array) inward (-y)
@@ -373,14 +400,24 @@ def modify():
                (0, pi_y, -IDLER_R), (*lb, PULLEY_R)]
     plg_belt = belt("plunger_belt", plg_seq, P + 11, "Motors")
 
-    # moving plunger carriage: plate, holder, plungers, corner blocks, carriages, nuts
+    # moving plunger carriage: plate, holder, plungers, corner blocks, carriages, nuts, stiffener
     zb = PLG_MID - T / 2
     members = [plg, hold, obj["plungers_x96"]]
     members += [o for o in obj if o.name.startswith(("LimitSwitch_holder_A", "interface_plate_high",
                                                       "MGN9H_carriage_high"))]
     for i, (x, y) in enumerate(PS_XY, 1):
+        # anti-backlash T8 nut: flange nut + preload spring + second nut, hanging under the plate
         members.append(cyl(f"plunger_nut_flange_{i}", 11, 3.5, (x, y, zb - 1.75), "Motors", M["brass"]))
         members.append(cyl(f"plunger_nut_body_{i}", 5.1, 16, (x, y, zb + 8), "Motors", M["brass"]))
+        members.append(spring(f"plunger_nut_spring_{i}", x, y, zb - 11.5, zb - 3.5, 6.0, 0.6, 4, "Motors", M["chrome"]))
+        members.append(cyl(f"plunger_nut_lower_{i}", 7.0, 10, (x, y, zb - 16.5), "Motors", M["brass"], seg=6))
+    # 2020 stiffening frame on the holder plate, around the syringe array and inside the screws:
+    # two bars along x carry the load toward the screw rows, two short bars close the frame.
+    zf = g["HOLD_TOP"] + 10
+    for sy in (-1, 1):
+        members.append(box(f"plunger_stiffener_{'FB'[sy > 0]}", (150, 20, 20), (0, sy * 42, zf), "Head", M["ext"], bevel=1.0))
+    for sx in (-1, 1):
+        members.append(box(f"plunger_stiffener_{'LR'[sx > 0]}", (20, 64, 20), (sx * 48, 0, zf), "Head", M["ext"], bevel=1.0))
     rig_empty("plunger_carriage", "Head", members)
     def span(seq, idx, sign):         # belt length with the idler at each end of its slot
         out = []
