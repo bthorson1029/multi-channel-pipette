@@ -12,6 +12,7 @@ millimeters.
 | `plunger_plate_motorlift.dxf` | 1 | From `plunger_plate.DXF`: old motor cutouts removed; adds 4 T8 nut cutouts (the nuts sit on the holder plate, body up), 8 M4 holes for the carriage brackets underneath and 2 M5 for the stiffening frame; the repo's unused M4 holes removed. |
 | `plunger_rail_plate.dxf` | 4 | From `interface_plate_high.DXF`: rectangular and 24 mm longer so it reaches down beside the plunger plate; same carriage holes, M4 pair moved into the carriage bracket. |
 | `lift_plate.dxf` | 1 | New: 160 x 200 lift platform with 2 T8 nut cutouts (body through), 8 holes for the carriage brackets and 4 for the well-plate nest. |
+| `tip_ejector_plate.dxf` | 1 | New: tip ejector under the barrel ends, 123 x 76 mm with a 5.8 mm hole around each nozzle and 6 mm holes for its 4 M4 rods (loose, so it can tilt). |
 | `lift_base_plate.dxf` | 1 | New: 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
 
 Each T8 nut mounts through one cloverleaf cutout (the center bore with four 3.4 mm slots out to
@@ -34,14 +35,15 @@ plate). The pipette plate's 96 syringe holes keep the repo plate's 2.5 mm webs.
 | `control_box_housing_sloped.stl` | 1 | The repo `ScreenHousing` with its screen panel tilted 10 deg toward the user (front 17.5 mm lower), a 3 mm skirt that runs every wall down to the base, the lid bosses extended down to it, and a back pad with 2 M5 holes into the bottom front bar. The repo's USB opening in the front wall (which faces the user once the box lies down) is filled; a panel-mount USB-B socket goes in the left end instead, beside the DC jack, with a short USB-B extension to the Arduino. The panel moves as one piece with the LCD, encoder and Arduino standoffs under it. Prints panel-down. |
 | `plunger_carriage_bracket_RF_LB.stl`, `plunger_carriage_bracket_RB_LF.stl` | 2 + 2 | Join the plunger plate to its rail plates, hanging under the plate's side edges between the syringe array and the nut screws. 2 M4 x 16 down through the plate into captive nuts in pockets from below (heads sit in the holder plate's clearance holes, so fit these before the holder plate), and 2 M4 x 12 in from outside through the rail plate into captive nuts in slots from below. Mirror-image hands: RF and LB are one, RB and LF the other. Print plate-face down. |
 | `lift_carriage_bracket.stl` | 4 | Joins the lift platform to a rail plate (one per corner, all alike). Sits on the platform with its outer face on the rail plate: 2 M4 x 12 in from outside through the rail plate's holes into captive nuts (slots open at the top), 2 M4 x 16 down through counterbores and the platform. Prints as oriented; its inner face stays 2 mm outside the well plate's path. |
-| `plunger_switch_post.stl` | 3 | Plunger home-switch post (replaces the repo's corner blocks, which stood unbolted): a KW12-type switch clamped by 2 M2 at the plunger plate's home height, 2 M3 x 12 through counterbores into the pipette plate. Three are fitted (the firmware homes on any one). |
+| `optical_switch_post.stl` | 3 | Plunger home-sensor post: holds a slotted optical endstop laid flat, 13 mm below the plunger plate at home so the plate can go on 11.5 mm to eject tips; a pocket under the slot takes the flag. 2 M3 x 12 through counterbores into the pipette plate. |
+| `plunger_flag.stl` | 3 | Hangs from the plunger plate (2 M3) with a 2 x 4 mm vane that reaches the sensor's beam at home and passes on through the slot. Prints tab down. |
 | `well_plate_nest.stl` | 1 | Locates the well plate on the lift platform (replaces the flat repo tray): a 15 mm base (the height the firmware expects), walls 4 mm above it on the back and sides, a 2 mm lip at the front, 0.4 mm clearance around the SBS footprint. 4 M4 x 16 through counterbores into the platform. |
 | `control_box_base.stl` | 1 | Closes the control box (replaces the repo lid). 4 countersunk M3 self-tappers into the housing bosses. |
 | `syringe_lock_frame.stl` | 1 | Holds the 96 syringes by their flanges, with the finger tabs trimmed to stubs instead of the flanged end cut off: each flange sits on the pipette plate in a slot along its row (7.4 mm wide, 1.1 mm deep, so the frame presses 0.1 mm on every flange and the stubs can't turn), and 5.2 mm holes pass the plunger rods. The head-bracket M4s (now M4 x 35) come up through its ears. Prints slot side up. To swap a syringe: take off the holder plate and lift the plungers out, remove the frame, lift the barrel out. |
 | `syringe_grip_slipfit.stl` | 1 | The repo grip with its 96 holes opened from 6.5 to 6.9 mm, so the barrels slide in; it just keeps their lower ends in line. |
 | `lift_home_switch_holder.stl` | 1 | For a KW12-type lever micro switch (20 x 10 x 6.4 mm, mounting holes 9.5 mm apart), clamped by 2 M2 through the walls; 2 M3 to the base plate. Check the hole positions against your switch. |
 
-All fourteen are closed solids (every edge shared by exactly two triangles).
+All fifteen are closed solids (every edge shared by exactly two triangles).
 
 ## Check against your hardware before cutting
 
@@ -52,6 +54,20 @@ All fourteen are closed solids (every edge shared by exactly two triangles).
   Measure one of yours; if the flange is thicker, the slot depth follows `SYR_FLANGE_T`.
 - The plunger holder plate stands 1.5 mm off the plunger plate (the plunger thumb pads are
   between them), so put 1.5 mm of washers on each nut screw there.
+
+## Tip ejector
+
+A 3 mm plate under the barrel ends, with a hole around each nozzle that the tip rims can't pass.
+Four springs on its M4 rods hold it up against the barrel ends, where it is also the stop the tips
+seat against when they are loaded. To eject, the plunger goes on past home: the carriage brackets
+meet the front rods 1.0 mm below home and the back rods 5.5 mm below, so the plate tilts (about
+5 deg) and strips the tips a few rows at a time, front to back, instead of breaking all 96 loose at
+once; at 11.5 mm every tip has been pushed 6 mm off its nozzle. Because the plate goes past home,
+the plunger's home sensors are slotted optical endstops with flags, not lever switches. The tips
+sit 5 mm lower than in the repo model to make room for the plate, so the lift travels 5 mm less.
+
+Before relying on it, pull one tip off a heat-shrunk nozzle with a luggage scale: the plunger drive
+has roughly 300-500 N, and the staggering keeps the peak to about two rows of tips.
 
 ## Regenerating
 

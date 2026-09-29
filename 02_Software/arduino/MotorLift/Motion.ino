@@ -26,9 +26,11 @@ bool liftSwitch() {
 
 bool plungerSwitch() {
   for (uint8_t i = 0; i < PLUNGER_SW_COUNT; i++)
-    if (digitalRead(PLUNGER_SW_PINS[i]) == LOW) return true;
+    if (digitalRead(PLUNGER_SW_PINS[i]) == PLUNGER_SW_ACTIVE) return true;
   return false;
 }
+
+bool plungerClear() { return !plungerSwitch(); }
 
 // (No `static` on these helpers: the Arduino IDE's prototype generator mishandles it.)
 
@@ -212,7 +214,7 @@ long plungerSeatAndLevel(long maxSteps) {
     taken++;
     for (uint8_t k = 0; k < PLUNGER_SW_COUNT; k++) {
       if (closedAt[k] >= 0) continue;
-      hits[k] = digitalRead(PLUNGER_SW_PINS[k]) == LOW ? hits[k] + 1 : 0;
+      hits[k] = digitalRead(PLUNGER_SW_PINS[k]) == PLUNGER_SW_ACTIVE ? hits[k] + 1 : 0;
       if (hits[k] >= 3) {
         closedAt[k] = taken - 2;                  // the first of the three reads
         if (first < 0) first = closedAt[k];
@@ -242,7 +244,13 @@ bool homePlunger() {
   plungerTiltMm = -1;
   plungerLateSw = -1;
   const long backoff = lround(PLUNGER_BACKOFF_UL * PLUNGER_STEPS_PER_UL);
-  if (plungerSwitch()) plungerUp(backoff, PLUNGER_HOME_FAST_UL_S);
+  if (plungerSwitch()) {                         // below home (a flag in its sensor): back up clear
+    stepAxis(PLUNGER_STEP_PIN, PLUNGER_DIR_PIN, !PLUNGER_DISPENSE_LEVEL,
+             lround(PLUNGER_BELOW_HOME_MAX_MM * PLUNGER_STEPS_PER_MM),
+             PLUNGER_HOME_FAST_UL_S * PLUNGER_STEPS_PER_UL, PLUNGER_ACCEL_STEPS_S2, plungerClear);
+    if (plungerSwitch()) return false;           // still blocked: stuck or unplugged sensor
+    plungerUp(backoff, PLUNGER_HOME_FAST_UL_S);
+  }
   plungerDown(PLUNGER_HOME_MAX_UL * PLUNGER_STEPS_PER_UL, PLUNGER_HOME_FAST_UL_S);
   if (!plungerSwitch()) return false;
   plungerUp(backoff, PLUNGER_HOME_FAST_UL_S);
@@ -274,6 +282,23 @@ bool plungerBlowout() {
   if (!plungerSwitch()) { plungerHomed = false; return false; }
   plungerPos = 0;
   return true;
+}
+
+// Eject the tips: down to home, on EJECT_MM past it (the plate's brackets drive the ejector),
+// back up above home, then re-home, which also re-checks the level. Whatever sits on the bed
+// catches the tips, so only call with the bed lowered.
+bool plungerEject() {
+  if (!plungerHomed) return false;
+  plungerLastDir = -1;
+  plungerMoveTo(0, DISPENSE_UL_S);               // to the sensors (stops there)
+  if (!plungerSwitch()) { plungerHomed = false; return false; }
+  const long ej = lround(EJECT_MM * PLUNGER_STEPS_PER_MM);
+  const float v = EJECT_MM_S * PLUNGER_STEPS_PER_MM;
+  stepAxis(PLUNGER_STEP_PIN, PLUNGER_DIR_PIN, PLUNGER_DISPENSE_LEVEL, ej, v, PLUNGER_ACCEL_STEPS_S2, nullptr);
+  delay(EJECT_DWELL_MS);
+  const long clear = ej + lround(PLUNGER_BACKOFF_UL * PLUNGER_STEPS_PER_UL);
+  stepAxis(PLUNGER_STEP_PIN, PLUNGER_DIR_PIN, !PLUNGER_DISPENSE_LEVEL, clear, v * 4, PLUNGER_ACCEL_STEPS_S2, nullptr);
+  return homePlunger();
 }
 
 // Back up to the working zero (draws air: tips must be out of the liquid).

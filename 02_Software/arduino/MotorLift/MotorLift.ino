@@ -12,6 +12,9 @@
 //               live if it is up), press to save to EEPROM
 //   Raise/Lower bed (a manually raised bed stays up for Aspirate and reverse Dispense)
 //   Empty tips  dispense everything held + blow out into the current labware (e.g. waste)
+//   Eject tips  push the tips off onto whatever is on the bed (a waste tray, or the rack to return
+//               them): plunger past home drives the ejector plate. Only with the bed down and the
+//               tips empty; re-homes the plunger afterwards.
 //   Home all    re-home lift, then plunger. Shows "Homed, level 0.04" (spread of the plunger
 //               switches in mm), or "Level: pin 11 late" if one switch closed more than
 //               PLUNGER_TILT_MAX_MM after the first (plate tilted, e.g. a skipped belt tooth, or a
@@ -24,7 +27,7 @@
 LiquidCrystal_I2C lcd(LCD_ADDR, 20, 4);
 
 enum Item { ITEM_VOLUME, ITEM_ASPIRATE, ITEM_DISPENSE, ITEM_MODE, ITEM_LABWARE, ITEM_HEIGHT,
-            ITEM_RAISE, ITEM_EMPTY, ITEM_HOME, ITEM_COUNT };
+            ITEM_RAISE, ITEM_EMPTY, ITEM_EJECT, ITEM_HOME, ITEM_COUNT };
 
 long volumeUl = 50;
 bool reverseMode = false;
@@ -201,6 +204,15 @@ void runDispense() {
   showStatus("Dispense DONE");
 }
 
+void runEject() {
+  if (!ready()) return;
+  if (bedUp) { showStatus("Lower bed first"); return; }
+  if (heldUl() >= 0.5) { showStatus("Empty tips first"); return; }
+  showStatus("Ejecting tips...");
+  if (!plungerEject()) { showStatus("Eject: home FAIL"); return; }
+  showStatus("Tips ejected");
+}
+
 void runEmpty() {
   if (!ready()) return;
   if (heldUl() < 0.5) { showStatus("Tips are empty"); return; }
@@ -236,6 +248,7 @@ void onClick() {
       else if (raiseBed()) showStatus("Bed up");
       break;
     case ITEM_EMPTY: runEmpty(); break;
+    case ITEM_EJECT: runEject(); break;
     case ITEM_HOME: homeAll(); break;
   }
   dirty = true;
@@ -285,6 +298,7 @@ void rowText(int8_t item, char *buf) {
       break;
     case ITEM_RAISE:    snprintf(buf, 21, "%c %s", sel, bedUp ? "Lower bed" : "Raise bed"); break;
     case ITEM_EMPTY:    snprintf(buf, 21, "%c Empty tips", sel); break;
+    case ITEM_EJECT:    snprintf(buf, 21, "%c Eject tips", sel); break;
     case ITEM_HOME:     snprintf(buf, 21, "%c Home all", sel); break;
     default:            buf[0] = '\0';
   }

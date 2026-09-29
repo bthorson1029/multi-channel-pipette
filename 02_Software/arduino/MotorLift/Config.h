@@ -14,12 +14,17 @@ const uint8_t PLUNGER_DIR_PIN  = 5;
 const uint8_t LIFT_STEP_PIN    = 3;    // Y
 const uint8_t LIFT_DIR_PIN     = 6;
 
-// Limit switches: normally-open to GND, read with INPUT_PULLUP (LOW = pressed).
-// The plunger keeps three of the original corner switches (X-, Z-, CoolEn); the first to close
-// sets home, since the belt keeps the plate level, and homing checks that the other two close
-// within PLUNGER_TILT_MAX_MM of it (a belt that skipped a tooth on one screw tilts the plate).
-// The fourth original switch moves to the lift's home position on Y-.
+// Home sensors, read with INPUT_PULLUP. The plunger uses three slotted optical endstops on the
+// original corner-switch inputs (X-, Z-, CoolEn), each with a flag on the plunger plate: optical,
+// because the plate carries on past home to eject tips. The first to trigger sets home, since the
+// belt keeps the plate level, and homing checks that the other two follow within
+// PLUNGER_TILT_MAX_MM (a belt that skipped a tooth on one screw tilts the plate). The fourth
+// original input, Y-, is the lift's home switch (a lever switch to GND: LOW = pressed).
 const uint8_t PLUNGER_SW_PINS[] = {9, 11, A3};
+// Level the optical endstops output when the flag blocks the beam. Most endstop boards for 3D
+// printers read HIGH when blocked, so a missing or unplugged sensor also reads "blocked" and
+// homing fails safe ("stuck"). Check yours with a flag and a multimeter.
+const uint8_t PLUNGER_SW_ACTIVE = HIGH;
 const uint8_t PLUNGER_SW_COUNT  = sizeof(PLUNGER_SW_PINS) / sizeof(PLUNGER_SW_PINS[0]);
 const uint8_t LIFT_SW_PIN       = 10;
 
@@ -48,7 +53,7 @@ const float PLUNGER_STEPS_PER_UL = 12.0 * (8.0 / PLUNGER_LEAD_MM);   // 48
 const float PLUNGER_STEPS_PER_MM = MOTOR_STEPS * (float)PLUNGER_MICROSTEPS / PLUNGER_LEAD_MM;   // 800
 const float LIFT_STEPS_PER_MM    = MOTOR_STEPS * (float)LIFT_MICROSTEPS / LIFT_LEAD_MM;
 
-const float LIFT_TRAVEL_MM = 46.0;         // soft limit above home (Blender model: 45.9 mm)
+const float LIFT_TRAVEL_MM = 41.0;         // soft limit above home (Blender model: 40.9 mm)
 
 // ---------------------------------------------------------------- tips and volumes
 const long  TIP_CAPACITY_UL = 200;         // yellow 200 uL tips: never draw liquid past this
@@ -109,6 +114,18 @@ const float PLUNGER_HOME_MAX_UL    = 1100;  // give up homing after this much tr
 // well under the switches' overtravel (1 mm or more for KW12 levers), since homing presses on.
 const float PLUNGER_TILT_MAX_MM    = 0.10;
 
+// ---------------------------------------------------------------- tip ejection
+// Below home the plunger carriage brackets push the ejector's rods: the front pair 1.0 mm below
+// home, the back pair 5.5 mm, so the plate tilts and strips the tips a few rows at a time; at
+// EJECT_MM every tip is pushed 6 mm off its nozzle. Slow, for full thrust (it is the peak load).
+const float EJECT_MM       = 11.5;
+const float EJECT_MM_S     = 1.5;
+const unsigned int EJECT_DWELL_MS = 300;   // let the tips drop before the plate comes back up
+// Deepest the plate can sit below home (stoppers bottom out ~28 mm below it in the model). A flag
+// stays in its sensor all the way down, so homing first backs up this far at most to clear them
+// (e.g. after power was lost mid-eject).
+const float PLUNGER_BELOW_HOME_MAX_MM = 30.0;
+
 // ---------------------------------------------------------------- labware
 // engageMm = bed height above home where the tips are at working depth.
 // approachMmS = speed for the last LIFT_SEAT_ZONE_MM of the rise.
@@ -119,7 +136,7 @@ struct Labware {
   float approachMmS;
 };
 const Labware LABWARE[] = {
-  {"96-well plate", 45.9, 2.0},   // 15 mm tray + SBS plate: tips 9 mm into the wells
+  {"96-well plate", 40.9, 2.0},   // 15 mm nest + SBS plate: tips 9 mm into the wells
   {"Tip loading",   40.0, 0.8},   // PLACEHOLDER: set where the tips finish seating on your rack
   {"Reservoir",     40.0, 2.0},   // PLACEHOLDER: set for your reservoir
 };
@@ -142,6 +159,7 @@ float heldUl();
 bool plungerToHeld(float ul, float ulPerS);
 bool plungerBlowout();
 bool plungerReset();
+bool plungerEject();
 extern bool liftHomed, plungerHomed;
 extern float plungerTiltMm;          // switch spread at the last plunger homing; -1 = a switch never closed
 extern int8_t plungerLateSw;         // index into PLUNGER_SW_PINS of the last (or missing) switch

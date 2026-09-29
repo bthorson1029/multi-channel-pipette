@@ -68,6 +68,19 @@ STIFF_SHORT_HOLES = [(sx * STIFF_SHORT_X, 0.0) for sx in (-1, 1)]
 SWITCH_POSTS = [(-55.0, -92.0), (55.0, -92.0), (-55.0, 92.0)]
 SWITCH_POST_HOLE_DX = 14.0
 SWITCH_POST_HOLES = [(x + s * SWITCH_POST_HOLE_DX, y) for x, y in SWITCH_POSTS for s in (-1, 1)]
+# Plunger home sensors: slotted optical endstops on the switch posts, each with a flag hanging from
+# the plunger plate (2 M3 into the plate, FLAG_HOLE_DX either side of the post along x).
+FLAG_HOLE_DX = 6.0
+FLAG_HOLES = [(x + s * FLAG_HOLE_DX, y) for x, y in SWITCH_POSTS for s in (-1, 1)]
+# Tip ejector: one plate under the barrel ends with a hole around each nozzle, hung on 4 M4 rods
+# that pass up through the pipette plate; the plunger carriage brackets push them down when the
+# plunger goes below home.
+ARRAY_GRID = [(-49.5 + 9 * i, -31.5 + 9 * j) for j in range(8) for i in range(12)]
+EJ_ROD_X, EJ_ROD_Y = 57.5, 27.0
+EJ_ROD_HOLES = [(sx * EJ_ROD_X, sy * EJ_ROD_Y) for sx in (-1, 1) for sy in (-1, 1)]
+EJ_PLATE = (123.0, 76.0)
+EJ_HOLE_D = 5.8                                  # passes the heat-shrunk nozzle, not the tip rim
+EJ_ROD_HOLE_D = 6.0                              # loose: the plate tilts a few degrees on the rods
 NEST_HOLES = [(sx * 55.0, sy * 15.0) for sx in (-1, 1) for sy in (-1, 1)]
 # Holes the repo plates carry for parts this layout no longer has (corner blocks, old mounts).
 PIPETTE_UNUSED_M4 = [(sx * 32.5, sy * 90.0) for sx in (-1, 1) for sy in (-1, 1)] +                     [(sx * 65.0, sy * 32.5) for sx in (-1, 1) for sy in (-1, 1)]
@@ -210,6 +223,7 @@ def pipette_plate():
     new += tensioner_holes(0.0, PLG_IDLER_Y)
     new += [circle(x, y, M4) for x, y in HEAD_MOUNT_XY]
     new += [circle(x, y, M3) for x, y in SWITCH_POST_HOLES]
+    new += [circle(x, y, M4) for x, y in EJ_ROD_HOLES]      # tip-ejector rods
     return keep + [shift(e, ox, oy) for e in new]
 
 
@@ -224,6 +238,7 @@ def plunger_plate():
         new += nut_holes(x, y, SCREW_CLEAR_D)
     new += [circle(x, y, M4) for x, y in PLG_BRACKET_HOLES]  # carriage brackets underneath
     new += [circle(x, y, M5) for x, y in STIFF_SHORT_HOLES]  # stiffening frame, short bars
+    new += [circle(x, y, M3) for x, y in FLAG_HOLES]         # optical-endstop flags underneath
     return keep + [shift(e, ox, oy) for e in new]
 
 
@@ -236,6 +251,14 @@ def plunger_rail_plate():
     ents += rounded_rect(x1 - x0, y1 - y0, 2.0, (x0 + x1) / 2, (y0 + y1) / 2)
     row = RAIL_ZC_BELOW_MID - PLG_BRACKET_ROW_BELOW_MID
     ents += [circle(CARRIAGE_Y - 10.0 - y, row, M4) for y in PLG_BRACKET_RAIL_Y]
+    return ents
+
+
+def tip_ejector_plate():
+    w, h = EJ_PLATE
+    ents = rounded_rect(w, h)
+    ents += [circle(x, y, EJ_HOLE_D) for x, y in ARRAY_GRID]
+    ents += [circle(x, y, EJ_ROD_HOLE_D) for x, y in EJ_ROD_HOLES]
     return ents
 
 
@@ -274,6 +297,7 @@ PARTS = {
     "pipette_plate_motorlift": pipette_plate,
     "plunger_plate_motorlift": plunger_plate,
     "plunger_rail_plate": plunger_rail_plate,
+    "tip_ejector_plate": tip_ejector_plate,
     "lift_plate": lift_plate,
     "lift_base_plate": lift_base_plate,
 }

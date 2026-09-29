@@ -70,7 +70,9 @@ LIFT_PLUS = BASE_Z + T + 1        # pulley stack starts 1 mm above the base plat
 LIFT0 = 78.0                      # platform underside at the bottom of travel
 TRAY_H, PLATE_H = 15.0, 14.4
 TIP_DEPTH = 9.0                   # tips this far into the wells at the top of travel
-LIFT_TRAVEL = (P - 112 + TIP_DEPTH) - (LIFT0 + T + TRAY_H + PLATE_H)
+TIP_DROP = 5.0                    # tips sit this much lower than the repo model: the ejector plate
+TIP_BOTTOM = P - 112 - TIP_DROP   # (3 mm) lies between the barrel ends and the tip rims
+LIFT_TRAVEL = (TIP_BOTTOM + TIP_DEPTH) - (LIFT0 + T + TRAY_H + PLATE_H)
 LIFT_LEAD = 2.0                   # T8x2 on the lift: force + self-locking
 BRK_H = 18.0                      # lift carriage bracket height above the plate
 BRK_BOLT_Z = LIFT0 + T + 10.0     # rail-plate M4 row: the rail plates ride this high so it clears the plate
@@ -104,6 +106,20 @@ FRAME_T = 4.0                     # locking frame thickness
 USB_PANEL_YZ = (-185.0, 36.0)     # socket center on the left end wall
 USB_PANEL_CUT = (12.5, 11.5)      # body cutout (y x z)
 USB_PANEL_EARS = 30.0             # M3 hole spacing, along y
+# Tip ejector (see tip_ejector()): the carriage brackets reach the front rods EJ_GAP_F below home
+# and the back rods EJ_GAP_B below, so the plate tilts and strips the tips a few rows at a time,
+# front to back; EJECT_MM below home every tip has been pushed EJ_STROKE off its nozzle.
+EJ_GAP_F, EJ_GAP_B = 1.0, 5.5
+EJ_STROKE = 6.0
+EJECT_MM = EJ_GAP_B + EJ_STROKE
+# Plunger home sensors: slotted optical endstops (TCST2103-type fork, 24.5 x 10.8 x 6.3 mm body,
+# 3.1 mm slot, M3 ears 19 mm apart; check yours). Laid flat, so each flag passes straight through
+# its slot; the sensor sits OPT_BELOW under the plunger plate at home so the plate and the flag's
+# 3 mm tab clear it when it goes EJECT_MM lower.
+OPT_BODY = (24.5, 10.8, 6.3)
+OPT_SLOT = 3.1
+OPT_EARS = 19.0
+OPT_BELOW = EJECT_MM + 3.0 + 1.5
 CBOX_BOSSES = [(sx * 79.0, y) for sx in (-1, 1) for y in (-207.5, -117.5)]   # repo lid screw bosses (measured)
 CONTROL_SLOPE_DEG = 10.0          # control-box screen panel tilted toward the user (front edge lowered)
 
@@ -337,6 +353,69 @@ def microswitch(prefix, x, y, z_base, lever_top, coll, cbore=None):
     box(prefix + "_lever", (18, 4, lev), (x + 1, y, lever_top - lev / 2), coll, M["chrome"])
 
 
+def optical_post(prefix, x, y, beam_z, coll):
+    """Printed post on the pipette plate carrying a slotted optical endstop laid flat, its beam at
+    beam_z; a pocket under the slot lets the flag carry on EJECT_MM past the beam. 2 M3 x 12 through
+    counterbores into the plate, 2 M3 through the sensor's ears into the post (self-tapping)."""
+    bl, bw, bt = OPT_BODY
+    zs = beam_z - bt / 2                              # sensor underside = post top
+    h = box(prefix + "_post", (34, 16, zs - P), (x, y, (P + zs) / 2), coll, M["pla"])
+    bm = bmesh.new()
+    _block(bm, x - 2.5, x + 2.5, y - 3.5, y + 3.5, zs - (EJECT_MM - bt / 2) - 1.5, zs + 1)   # flag pocket
+    for s_ in (-1, 1):
+        _cone(bm, L.M3 / 2, L.M3 / 2, P - 1, zs + 1, xy=(x + s_ * 14, y))
+    boolean(h, bm)
+    bm = bmesh.new()
+    for s_ in (-1, 1):
+        _cone(bm, 3.2, 3.2, P + 6, zs + 1, xy=(x + s_ * 14, y))                             # counterbores
+        _cone(bm, 1.25, 1.25, zs - 8, zs + 1, xy=(x + s_ * OPT_EARS / 2, y))                # sensor screws
+    boolean(h, bm)
+    sen = box(prefix + "_sensor", (bl, bw, bt), (x, y, zs + bt / 2), coll, M["pla_grey"])
+    bm = bmesh.new()                                  # the fork's slot, open toward +y
+    _block(bm, x - OPT_SLOT / 2, x + OPT_SLOT / 2, y - 2.5, y + bw, zs - 1, zs + bt + 1)
+    boolean(sen, bm)
+
+
+def plunger_flag(name, x, y, coll):
+    """Printed flag under the plunger plate (build frame): a tab with 2 M3 into the plate and a
+    2 x 4 mm vane that reaches the optical beam at home."""
+    zu = PLG_MID - T / 2                              # plate underside, build frame
+    vane = OPT_BELOW + OPT_BODY[2] / 2                # plate underside to the beam at home
+    o = box(name, (2 * (L.FLAG_HOLE_DX + 4), 8, 3), (x, y, zu - 1.5), coll, M["pla"])
+    bm = bmesh.new()
+    _block(bm, x - 1.0, x + 1.0, y - 2.0, y + 2.0, zu - vane, zu - 2.9)
+    boolean(o, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()
+    for s_ in (-1, 1):
+        _cone(bm, L.M3 / 2, L.M3 / 2, zu - 5, zu + 1, xy=(x + s_ * L.FLAG_HOLE_DX, y))
+    boolean(o, bm)
+    return o
+
+
+def tip_ejector(coll):
+    """Tip ejector: a 3 mm plate (tip_ejector_plate.dxf) under the barrel ends, on 4 M4 threaded rods
+    that run up past the grip, through the pipette plate and the syringe frame. A spring over each
+    rod, between the frame and a nut, holds the plate up against the barrel ends, where it is also
+    the stop the tips seat against. Going below home, the plunger carriage brackets meet the rod
+    tops (the front pair EJ_GAP_F below home, the back pair EJ_GAP_B), so the plate tilts front
+    first and pushes the tips off a few rows at a time."""
+    z_top = P - 58                                    # barrel ends = ejector plate top
+    plate = fab_plate("tip_ejector_plate.dxf", "eject_plate", coll, (0, 0, z_top - T / 2))
+    brk_bot = SWITCH_TOP + 0.5 - PLG_BRK_H            # carriage-bracket underside at home
+    z_col = P + FRAME_T + 20                          # spring top / nut
+    for x, y in L.EJ_ROD_HOLES:
+        tag = f"{'LR'[x > 0]}{'FB'[y > 0]}"
+        top = brk_bot - (EJ_GAP_B if y > 0 else EJ_GAP_F)
+        bm = bmesh.new()
+        _cone(bm, 2.0, 2.0, z_top - T - 5, top, seg=16, xy=(x, y))                   # M4 rod
+        _cone(bm, 3.8, 3.8, z_top - T - 3.2, z_top - T, seg=6, xy=(x, y))            # nut under the plate
+        _cone(bm, 3.8, 3.8, z_top, z_top + 3.2, seg=6, xy=(x, y))                    # nut on top
+        _cone(bm, 3.8, 3.8, z_col, z_col + 3.2, seg=6, xy=(x, y))                    # spring nut
+        new_obj(f"eject_rod_{tag}", bm, coll, M["chrome"])
+        spring(f"eject_spring_{tag}", x, y, P + FRAME_T, z_col, 3.2, 0.4, 7, coll, M["chrome"])
+    return plate
+
+
 def head_bracket(name, sx, coll):
     """Printed bracket joining the pipette plate to the side bar. An L profile (so it prints on
     its side with no overhang): the upper block sits under the plate edge (2 M4 up through the
@@ -454,7 +533,7 @@ def syringe_lock_frame(name, coll):
     bm = bmesh.new()                                      # ears to the head-bracket bolts
     for s_ in (-1, 1):
         xa, xb = sorted((s_ * 57.5, s_ * 72.0))
-        _block(bm, xa, xb, -28, 28, z0, z1)
+        _block(bm, xa, xb, -32, 32, z0, z1)
     boolean(o, bm, 'UNION', self_intersect=True)
     bm = bmesh.new()                                      # flange slots, one per row
     for y in ys:
@@ -465,6 +544,8 @@ def syringe_lock_frame(name, coll):
         _cone(bm, 2.6, 2.6, z0 - 1, z1 + 1, seg=16, xy=(x, y))
     for x, y in L.HEAD_MOUNT_XY:                          # head-bracket M4s
         _cone(bm, L.M4 / 2, L.M4 / 2, z0 - 1, z1 + 1, xy=(x, y))
+    for x, y in L.EJ_ROD_HOLES:                           # tip-ejector rods
+        _cone(bm, 2.4, 2.4, z0 - 1, z1 + 1, xy=(x, y))
     boolean(o, bm)
     return o
 
@@ -723,13 +804,16 @@ def modify():
     syringe_barrels("syringe_barrels_x96", "Syringes")
     syringe_lock_frame("syringe_lock_frame", "Head")
     drill(obj["syringe_grip_static"], g["GRID"], GRIP_SLIP_D / 2)
+    obj["pipette_tips_x96"].location.z -= TIP_DROP
+    tip_ejector("Head")
     obj["syringe_grip_static"].name = "syringe_grip_slipfit"
-    # plunger home switches: the repo corner blocks stood on their sides unbolted; printed posts
-    # bolted to the pipette plate carry three switches (the firmware homes on any one)
+    # plunger home sensors: the repo corner blocks stood on their sides unbolted; printed posts
+    # bolted to the pipette plate carry three slotted optical endstops (the firmware homes on the
+    # first and checks the other two). Optical, because the plunger goes on past home to eject tips.
     for o in [o for o in obj if o.name.startswith(("LimitSwitch_holder_B", "limit_switch_"))]:
         obj.remove(o)
     for x, y in L.SWITCH_POSTS:
-        microswitch(f"plunger_switch_{'LR'[x > 0]}{'FB'[y > 0]}", x, y, P, SWITCH_TOP, "Head", cbore=6.0)
+        optical_post(f"plunger_optical_{'LR'[x > 0]}{'FB'[y > 0]}", x, y, SWITCH_TOP + 0.5 - OPT_BELOW - OPT_BODY[2] / 2, "Head")
 
     # ---------------- LIFT
     fab_plate("lift_base_plate.dxf", "lift_base_plate", "Frame", (0, 0, BASE_Z + T / 2))
@@ -821,6 +905,7 @@ def modify():
         o.data = tmp.data
     bpy.data.objects.remove(tmp)
     members = [plg, hold, obj["plungers_x96"]] + rails
+    members += [plunger_flag(f"plunger_flag_{'LR'[x > 0]}{'FB'[y > 0]}", x, y, "Head") for x, y in L.SWITCH_POSTS]
     members += [o for o in obj if o.name.startswith("MGN9H_carriage_high")]
     for sx in (-1, 1):
         for sy in (-1, 1):
@@ -886,9 +971,23 @@ def spinners():
 
 
 def pose(lift_mm, plg_mm):
+    """plg_mm < 0 goes below home: the tip ejector follows (see tip_ejector)."""
     obj = bpy.data.objects
     obj["lift_platform"].location.z = lift_mm
     obj["plunger_carriage"].location.z = PLG_REST + plg_mm
+    e = max(0.0, -plg_mm)
+    df, db = max(0.0, e - EJ_GAP_F), max(0.0, e - EJ_GAP_B)
+    z0, z1 = P + FRAME_T, P + FRAME_T + 20             # springs: frame top to the spring nut
+    for o in obj:
+        d = db if o.name.endswith("B") else df
+        if o.name.startswith("eject_rod_"):
+            o.location.z = -d
+        elif o.name.startswith("eject_spring_"):          # compress with the rod, bottom fixed
+            k = (z1 - d - z0) / (z1 - z0)
+            o.scale.z, o.location.z = k, z0 * (1 - k)
+    ep = obj["eject_plate"]
+    ep.location.z = P - 58 - T / 2 - (df + db) / 2
+    ep.rotation_euler.x = math.atan2(df - db, 2 * L.EJ_ROD_Y)
     lift, plg = spinners()
     for o in lift:
         o.rotation_euler.z = D(360) * lift_mm / LIFT_LEAD
@@ -899,12 +998,15 @@ def pose(lift_mm, plg_mm):
 # (frame, lift mm, plunger mm): raise -> aspirate -> lower -> raise -> dispense -> lower
 KEYS = [(1, 0, 0), (28, 1, 0), (34, 1, 0), (58, 1, 1), (64, 1, 1), (90, 0, 1), (100, 0, 1),
         (126, 1, 1), (132, 1, 1), (156, 1, 0), (162, 1, 0), (188, 0, 0), (196, 0, 0)]
+EJ_A = -EJECT_MM / ASPIRATE       # plunger fraction for the eject pose
+KEYS += [(220, 0, EJ_A), (228, 0, EJ_A), (252, 0, 0), (260, 0, 0)]
 
 
 def animate():
     sc = bpy.context.scene
     lift, plg = spinners()
     movers = [bpy.data.objects["lift_platform"], bpy.data.objects["plunger_carriage"]] + lift + plg
+    movers += [o for o in bpy.data.objects if o.name.startswith(("eject_rod_", "eject_plate"))]
     for o in movers:
         o.animation_data_clear()
     for f, l, a in KEYS:
@@ -936,7 +1038,7 @@ def collision_report():
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
-                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket"))}
+                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket", "eject_", "plunger_optical"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -954,11 +1056,15 @@ def collision_report():
                ("head_bracket", "pipette_plate"), ("head_bracket", "ext_head"), ("ext_head", "post"),
                ("plunger_idler", "pipette_plate"), ("lift_idler", "lift_base_plate"),
                ("plunger_switch", "pipette_plate"), ("plunger_switch", "plunger_switch"),
-               ("control_box_base", "ScreenHousing"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
+               ("control_box_base", "ScreenHousing"),
+               ("eject_rod", "plunger_carriage_bracket"), ("eject_rod", "eject_plate"), ("eject_rod", "eject_spring"),
+               ("eject_spring", "syringe_lock_frame"), ("eject_plate", "pipette_tips"), ("eject_plate", "syringe_barrels"),
+               ("plunger_optical", "pipette_plate"), ("plunger_optical", "plunger_optical"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
                ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder")]   # bolts in slots
     ok = lambda a, b: any((a.startswith(p) and b.startswith(q)) or (a.startswith(q) and b.startswith(p)) for p, q in allowed)
     hits = {}
-    samples = sorted({(l, a) for _, l, a in KEYS} | {(0.5, 0), (0.5, 1), (1, 0.5), (0, 0.5)})
+    samples = sorted({(l, a) for _, l, a in KEYS} | {(0.5, 0), (0.5, 1), (1, 0.5), (0, 0.5)} |
+                     {(0, -e / ASPIRATE) for e in (EJ_GAP_F + 1, EJ_GAP_B, EJ_GAP_B + 3)})
     for l, a in samples:
         pose(l * LIFT_TRAVEL, a * ASPIRATE)
         bpy.context.view_layer.update()
@@ -986,5 +1092,5 @@ summary = {
     "lift_travel_mm": round(LIFT_TRAVEL, 2),
     "lift_revs": round(LIFT_TRAVEL / LIFT_LEAD, 1),
     "wellplate_top_mm": [round(LIFT0 + T + TRAY_H + PLATE_H, 1), round(LIFT0 + T + TRAY_H + PLATE_H + LIFT_TRAVEL, 1)],
-    "tip_bottom_mm": round(P - 112, 1),
+    "tip_bottom_mm": round(TIP_BOTTOM, 1),
 }

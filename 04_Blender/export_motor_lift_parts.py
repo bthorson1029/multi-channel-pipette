@@ -20,7 +20,8 @@ PARTS = {   # object -> (file, rotation for printing)
     "lift_tensioner_bracket": ("tensioner_bracket_lift.stl", Matrix.Identity(3)),
     "plunger_tensioner_bracket": ("tensioner_bracket_plunger.stl", Matrix.Identity(3)),
     "lift_home_switch_holder": ("lift_home_switch_holder.stl", Matrix.Identity(3)),
-    "plunger_switch_LF_holder": ("plunger_switch_post.stl", Matrix.Identity(3)),       # 3 alike
+    "plunger_optical_LF_post": ("optical_switch_post.stl", Matrix.Identity(3)),       # 3 alike
+    "plunger_flag_LF": ("plunger_flag.stl", Matrix.Rotation(math.pi, 3, "X")),        # 3 alike; tab down
     "well_plate_nest": ("well_plate_nest.stl", Matrix.Identity(3)),
     "syringe_lock_frame": ("syringe_lock_frame.stl", Matrix.Rotation(math.pi, 3, "X")),   # slots up
     "syringe_grip_slipfit": ("syringe_grip_slipfit.stl", Matrix.Identity(3)),
