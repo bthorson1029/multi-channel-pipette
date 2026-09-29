@@ -511,11 +511,22 @@ def stage():
     bg = sc.world.node_tree.nodes["Background"]
     bg.inputs[0].default_value = (0.8, 0.82, 0.86, 1)
     bg.inputs[1].default_value = 0.5
-    for a in bpy.context.screen.areas:
-        if a.type == 'VIEW_3D':
+    # Every saved screen (not just the active one, which is None under `blender -b`), so a .blend
+    # saved headless opens with the view far enough out and without clipping the 3 m ground
+    # (mm-as-unit: Blender's default 1000-unit clip end is only 1 m here).
+    target = Vector((0, 0, 190))
+    for scr in bpy.data.screens:
+        for a in scr.areas:
+            if a.type != 'VIEW_3D':
+                continue
             s = a.spaces[0]
-            s.clip_start, s.clip_end = 1, 100000
+            s.clip_start, s.clip_end = 1, 20000
             s.shading.type = 'MATERIAL'
+            r = s.region_3d
+            r.view_perspective = 'PERSP'
+            r.view_location = target
+            r.view_rotation = cam.rotation_euler.to_quaternion()
+            r.view_distance = (cam.location - target).length
 
 
 if __name__ != "pipette_lib":        # exec with this name to load functions only
