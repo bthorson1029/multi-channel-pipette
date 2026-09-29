@@ -90,6 +90,7 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 | Stepper driver (A4988 or DRV8825) | 2 | Set to 1/8 microstepping (first two jumpers on for either). |
 | 20x4 LCD with I2C backpack (address 0x27) | 1 | |
 | Rotary encoder with push switch | 1 | |
+| Panel-mount USB-B extension, B female (panel) to B male, ~30 cm | 1 | Arduino USB out through the control box's left end, beside the DC jack. Typical socket: 12.5 x 11.5 mm cutout, M3 ears 30 mm apart; check yours against `USB_PANEL_*` in the model. |
 | 12 V power supply, 5 A suggested | 1 | Plus a DC socket for the housing. |
 | LM2596 buck converter | 1 | Optional; in the original electronics. |
 | Wire, Dupont leads, heat-shrink | | |
@@ -115,7 +116,7 @@ T-nuts.
 | M3 x 8 + M3 T-nut (2020) | 70 | MGN9 rails (20 mm hole pitch) |
 | M3 x 6-8 | 40 | Carriages to interface plates, electronics housing |
 | M3 x 10 + nut | 24 | Motors (8), lift nuts (8), tensioner brackets (4), lift switch holder (2), spares |
-| M3 x 12 + nut | 6 | Plunger switch posts to the pipette plate |
+| M3 x 12 + nut | 8 | Plunger switch posts to the pipette plate (6), USB panel socket (2) |
 | M3 x 10 countersunk, self-tapping | 4 | Control box base into the housing bosses |
 | M3 x 16 + nut | 16 | Plunger nuts (through nut flange, holder plate, 1.5 mm washers and plunger plate) |
 | M3 flat washer (7 mm OD) | 24 | Under the M3 nuts at the T8 nut cutouts, to span the slots (lift 8, plunger 16) |

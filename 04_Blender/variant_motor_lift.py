@@ -98,6 +98,12 @@ SYR_FLANGE_T = 1.2                # flange thickness
 SYR_KEY_L, SYR_KEY_W = 8.2, 7.2   # trimmed flange: across the tab stubs (x) x width (y)
 GRIP_SLIP_D = 6.9                 # printed grip holes: a slip fit, no press (prints come out small)
 FRAME_T = 4.0                     # locking frame thickness
+# USB: a panel-mount USB-B socket on the control box's left end, forward of the DC jack, joined
+# to the Arduino by a short USB-B extension. Typical socket: 12.5 x 11.5 mm body, 2 M3 ears 30 mm
+# apart (check yours).
+USB_PANEL_YZ = (-185.0, 36.0)     # socket center on the left end wall
+USB_PANEL_CUT = (12.5, 11.5)      # body cutout (y x z)
+USB_PANEL_EARS = 30.0             # M3 hole spacing, along y
 CBOX_BOSSES = [(sx * 79.0, y) for sx in (-1, 1) for y in (-207.5, -117.5)]   # repo lid screw bosses (measured)
 CONTROL_SLOPE_DEG = 10.0          # control-box screen panel tilted toward the user (front edge lowered)
 
@@ -521,6 +527,16 @@ def close_control_box(h):
     for x in (-25.0, 25.0):                           # M5 into the bar's front slot (z 10)
         _bar(bm, (x, y1 - 12, 10), (x, -g["FY"] / 2 + 1, 10), L.M5 / 2)
     boolean(h, bm)
+    bm = bmesh.new()                                  # panel-mount USB-B socket, left end wall
+    uy, uz = USB_PANEL_YZ
+    cw, ch = USB_PANEL_CUT
+    _block(bm, -x1 - 5, -x1 + w + 5, uy - cw / 2, uy + cw / 2, uz - ch / 2, uz + ch / 2)
+    for s_ in (-1, 1):
+        _bar(bm, (-x1 - 5, uy + s_ * USB_PANEL_EARS / 2, uz), (-x1 + w + 5, uy + s_ * USB_PANEL_EARS / 2, uz), L.M3 / 2)
+    boolean(h, bm)
+    coll = h.users_collection[0].name
+    box("usb_panel_socket_flange", (1.5, USB_PANEL_EARS + 8, ch + 3), (-x1 - 0.75, uy, uz), coll, M["pla_grey"])
+    box("usb_panel_socket_body", (18, cw - 0.4, ch - 0.4), (-x1 + w + 9, uy, uz), coll, M["pla_grey"])
     base = box("control_box_base", (2 * (x1 - w - 0.3), (y1 - y0) - 2 * (w + 0.3), 3),
                (0, (y0 + y1) / 2, 1.5), h.users_collection[0].name, M["pla"])
     bm = bmesh.new()
@@ -608,8 +624,9 @@ def slope_control_box(theta, parts):
     The panel, and everything hanging within 8 mm under it (LCD, encoder and Arduino standoffs,
     ribs), rotates as one rigid piece about the box's back top edge, so the boards keep their
     mounting. The walls are trimmed to meet it, the panel is extended to close the gap it leaves
-    at the front, and the front-wall cutout (the Arduino's USB port, mounted on the panel) is
-    filled and re-cut where the port ends up. The screen, bezel and knob tilt with the panel."""
+    at the front, and the front-wall cutout (the Arduino's USB port) is filled: laid down, that
+    wall faces the user, so USB moves to the left end (see close_control_box). The screen, bezel
+    and knob tilt with the panel."""
     obj = bpy.data.objects
     h = obj["ScreenHousing"]
     bpy.context.view_layer.update()
@@ -656,8 +673,6 @@ def slope_control_box(theta, parts):
     strip = y_front + wall + 2
     boolean(h, block(*big, strip, y_back + 50, zu + 1.0, zu + 300, rot=True))
     boolean(h, block(*big, y_front - 400, strip + 1, zt, zt + 300, rot=True))   # overlap: no sliver at the seam
-    if cut:                                           # re-cut the port opening where the port now is
-        boolean(h, block(cx0, cx1, y_front - 10, y_front + wall + 10, cz0, cz1, rot=True))
     # The panel's wall rims share their outer faces with the walls below, which the exact solver
     # only merges in self-intersection mode. export_motor_lift_parts.py refuses to write the part
     # if the result has any open edges.
@@ -921,7 +936,7 @@ def collision_report():
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
-                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame"))}
+                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -939,7 +954,7 @@ def collision_report():
                ("head_bracket", "pipette_plate"), ("head_bracket", "ext_head"), ("ext_head", "post"),
                ("plunger_idler", "pipette_plate"), ("lift_idler", "lift_base_plate"),
                ("plunger_switch", "pipette_plate"), ("plunger_switch", "plunger_switch"),
-               ("control_box_base", "ScreenHousing"), ("syringe_lock_frame", "syringe_barrels"),
+               ("control_box_base", "ScreenHousing"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
                ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder")]   # bolts in slots
     ok = lambda a, b: any((a.startswith(p) and b.startswith(q)) or (a.startswith(q) and b.startswith(p)) for p, q in allowed)
     hits = {}
