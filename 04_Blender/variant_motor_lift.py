@@ -90,6 +90,14 @@ TENSION_TAKEUP = L.TENSION_TAKEUP # idler deflects the run this far; slot gives 
                                   # (take-up ~ deflection^2 / span, so a shallow idler takes up almost nothing)
 HOME_SW_XY = L.HOME_SW_XY         # lift home switch: under the platform, clear of belt + nuts
 HOME_OVERTRAVEL = 0.8             # lever deflection when the platform is home
+# Syringes: typical 1 mL (Luer-slip) values; measure yours and adjust. The finger tabs are cut
+# back to short stubs so the flange is SYR_KEY_L across the tabs and SYR_KEY_W wide; the stubs key
+# each barrel into its row's slot under the locking frame (tabs along x).
+SYR_BARREL_D = 6.4                # barrel OD (the pipette plate's holes are 6.5)
+SYR_FLANGE_T = 1.2                # flange thickness
+SYR_KEY_L, SYR_KEY_W = 8.2, 7.2   # trimmed flange: across the tab stubs (x) x width (y)
+GRIP_SLIP_D = 6.9                 # printed grip holes: a slip fit, no press (prints come out small)
+FRAME_T = 4.0                     # locking frame thickness
 CBOX_BOSSES = [(sx * 79.0, y) for sx in (-1, 1) for y in (-207.5, -117.5)]   # repo lid screw bosses (measured)
 CONTROL_SLOPE_DEG = 10.0          # control-box screen panel tilted toward the user (front edge lowered)
 
@@ -397,6 +405,64 @@ def plunger_carriage_bracket(name, sx, sy, coll):
     return o
 
 
+def syringe_barrels(name, coll):
+    """96 barrels with the finger tabs trimmed to stubs (see SYR_KEY_L / SYR_KEY_W): the flange's
+    underside sits on the pipette plate, the barrel hangs through the plate and the grip."""
+    bm = bmesh.new()
+    r = SYR_BARREL_D / 2
+    for x, y in g["GRID"]:
+        t = bmesh.new()
+        _cone(t, r, r, P - 58, P, seg=20, xy=(x, y))
+        _block(t, x - SYR_KEY_L / 2, x + SYR_KEY_L / 2, y - SYR_KEY_W / 2, y + SYR_KEY_W / 2, P, P + SYR_FLANGE_T)
+        for f in t.faces:
+            f.material_index = 0
+        n0 = len(t.faces)
+        _cone(t, 1.5, 2.0, P - 66, P - 58, seg=20, xy=(x, y))   # Luer nozzle
+        for f in list(t.faces)[n0:]:
+            f.material_index = 1
+        me = bpy.data.meshes.new("tmp")
+        t.to_mesh(me)
+        t.free()
+        bm.from_mesh(me)
+        bpy.data.meshes.remove(me)
+    o = new_obj(name, bm, coll)
+    o.data.materials.append(M["syr"])
+    o.data.materials.append(M["white"])
+    for f in o.data.polygons:
+        f.use_smooth = False
+    return o
+
+
+def syringe_lock_frame(name, coll):
+    """Printed frame that clamps the trimmed syringe flanges to the pipette plate (replaces the
+    repo S-P retainer and the press fit). Its underside has one slot per row, SYR_KEY_W + 0.2 wide
+    and 0.1 mm shallower than the flange, so the stubs can't turn and the frame presses every
+    flange down; 5.2 mm holes pass the plunger rods and bear on each barrel's rim. Two ears take
+    the head-bracket M4s that already come up through the plate at (+/-68, +/-20)."""
+    z0, z1 = P, P + FRAME_T
+    xs = [x for x, _ in g["GRID"]]
+    ys = sorted({y for _, y in g["GRID"]})
+    x_end = max(xs) + SYR_KEY_L / 2 + 0.3
+    hy = max(ys) + SYR_KEY_W / 2 + 0.1 + 1.6            # 1.6 mm outer wall past the last slot
+    o = box(name, (2 * 58.0, 2 * hy, FRAME_T), (0, 0, (z0 + z1) / 2), coll, M["pla"])
+    bm = bmesh.new()                                      # ears to the head-bracket bolts
+    for s_ in (-1, 1):
+        xa, xb = sorted((s_ * 57.5, s_ * 72.0))
+        _block(bm, xa, xb, -28, 28, z0, z1)
+    boolean(o, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()                                      # flange slots, one per row
+    for y in ys:
+        _block(bm, -x_end, x_end, y - SYR_KEY_W / 2 - 0.1, y + SYR_KEY_W / 2 + 0.1, z0 - 1, z0 + SYR_FLANGE_T - 0.1)
+    boolean(o, bm)
+    bm = bmesh.new()
+    for x, y in g["GRID"]:                                # plunger rods
+        _cone(bm, 2.6, 2.6, z0 - 1, z1 + 1, seg=16, xy=(x, y))
+    for x, y in L.HEAD_MOUNT_XY:                          # head-bracket M4s
+        _cone(bm, L.M4 / 2, L.M4 / 2, z0 - 1, z1 + 1, xy=(x, y))
+    boolean(o, bm)
+    return o
+
+
 def well_plate_nest(name, z0, coll):
     """Printed nest that locates the well plate on the lift platform (replaces the flat repo tray).
     A TRAY_H base keeps the plate at the height the firmware expects; walls 4 mm above it on the
@@ -635,6 +701,14 @@ def modify():
     for sx in (-1, 1):
         box(f"ext_head_{'LR'[sx > 0]}", (20, g["FY"] - 40, 20), (sx * g["PX"], 0, P - T - 10), "Frame", M["ext"], bevel=1.0)
         head_bracket(f"head_bracket_{'LR'[sx > 0]}", sx, "Head")
+    # syringes: tab stubs keyed under a locking frame instead of cut-off ends hammered into the grip
+    # (the grip stays as a slip-fit guide for the barrels' lower ends)
+    for n in ("syringe_barrels_x96", "S-P_plate"):
+        obj.remove(obj[n])
+    syringe_barrels("syringe_barrels_x96", "Syringes")
+    syringe_lock_frame("syringe_lock_frame", "Head")
+    drill(obj["syringe_grip_static"], g["GRID"], GRIP_SLIP_D / 2)
+    obj["syringe_grip_static"].name = "syringe_grip_slipfit"
     # plunger home switches: the repo corner blocks stood on their sides unbolted; printed posts
     # bolted to the pipette plate carry three switches (the firmware homes on any one)
     for o in [o for o in obj if o.name.startswith(("LimitSwitch_holder_B", "limit_switch_"))]:
@@ -847,7 +921,7 @@ def collision_report():
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
-                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base"))}
+                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -865,7 +939,8 @@ def collision_report():
                ("head_bracket", "pipette_plate"), ("head_bracket", "ext_head"), ("ext_head", "post"),
                ("plunger_idler", "pipette_plate"), ("lift_idler", "lift_base_plate"),
                ("plunger_switch", "pipette_plate"), ("plunger_switch", "plunger_switch"),
-               ("control_box_base", "ScreenHousing"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder")]   # bolts in slots
+               ("control_box_base", "ScreenHousing"), ("syringe_lock_frame", "syringe_barrels"),
+               ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder")]   # bolts in slots
     ok = lambda a, b: any((a.startswith(p) and b.startswith(q)) or (a.startswith(q) and b.startswith(p)) for p, q in allowed)
     hits = {}
     samples = sorted({(l, a) for _, l, a in KEYS} | {(0.5, 0), (0.5, 1), (1, 0.5), (0, 0.5)})

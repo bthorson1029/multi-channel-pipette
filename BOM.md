@@ -38,8 +38,8 @@ least 220 mm.
 
 | Part | Qty | File | Status | Notes |
 |---|---|---|---|---|
-| Syringe barrel grip | 1 | `ToPrint-STL/syringe_grip_static.STL` | Repo | Barrels press-fit into it. |
-| Syringe/plunger retainer | 1 | `ToPrint-STL/S-P_plate.STL` | Repo | |
+| Syringe barrel grip (slip fit) | 1 | `MotorLift/ToPrint-STL/syringe_grip_slipfit.stl` | Generated | The repo grip with its holes opened to 6.9 mm: it only guides the barrels' lower ends now, nothing is pressed in. |
+| Syringe locking frame | 1 | `MotorLift/ToPrint-STL/syringe_lock_frame.stl` | Generated | Clamps the trimmed syringe flanges to the pipette plate; a slot per row keys the tab stubs. Held by the head-bracket M4s. Replaces the repo `S-P_plate`. |
 | Plunger holder plate | 1 | `MotorLift/ToPrint-STL/plunger_holder_plate_motorlift.stl` | Generated | The plunger nuts and the stiffening frame sit on it; clearance holes over the carriage-bracket bolt heads; the repo's four 33 mm motor holes filled. |
 | Plunger switch post | 3 | `MotorLift/ToPrint-STL/plunger_switch_post.stl` | Generated | Holds a KW12-type switch at the plunger plate's home height; 2 M3 to the pipette plate. |
 | Electronics housing (sloped) | 1 | `MotorLift/ToPrint-STL/control_box_housing_sloped.stl` | Generated | Repo housing with the screen panel tilted 10 deg toward the user, a skirt that runs its walls down to the bench, the lid bosses extended to the base, and a back pad with 2 M5 into T-nuts in the bottom front bar. |
@@ -54,7 +54,7 @@ least 220 mm.
 
 Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_insert_lid`,
 `lever_handle`, `slide_block`, `slider_holder`, `LimitSwitch_holder_A/B`, `electronics_lid`,
-`vertical_tray`. Optional: the comb jigs and `horizontal_tray`.
+`vertical_tray`, `S-P_plate`, `syringe_grip_static`. Optional: the comb jigs and `horizontal_tray`.
 
 ## 3. Frame and motion
 
@@ -98,7 +98,7 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 
 | Part | Qty | Notes |
 |---|---|---|
-| 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. |
+| 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. Instead of cutting the flanged end off, trim the finger tabs to stubs: flange 8.2 mm across the stubs and at most 7.2 mm wide, face left flat (the model assumes a 6.4 mm barrel and a 1.2 mm flange; measure yours). |
 | 200 uL pipette tips, racked | as needed | The firmware caps volumes at 200 uL. |
 | Heat-shrink tubing | 96 pieces | Over each syringe tip so the pipette tips seal (per the video); size it by test fitting. |
 | 96-well plates (SBS format) | as needed | |
@@ -119,7 +119,8 @@ T-nuts.
 | M3 x 10 countersunk, self-tapping | 4 | Control box base into the housing bosses |
 | M3 x 16 + nut | 16 | Plunger nuts (through nut flange, holder plate, 1.5 mm washers and plunger plate) |
 | M3 flat washer (7 mm OD) | 24 | Under the M3 nuts at the T8 nut cutouts, to span the slots (lift 8, plunger 16) |
-| M4 x 10 + nut | 16 | KFL08 bearings (12), head brackets to the pipette plate (4) |
+| M4 x 10 + nut | 12 | KFL08 bearings |
+| M4 x 35 + nut | 4 | Head brackets up through the pipette plate and the syringe locking frame |
 | M4 x 12 + nut | 16 | Lift and plunger rail plates into the carriage brackets' captive nuts (8 + 8) |
 | M4 x 16 + nut | 16 | Lift brackets down through the platform (8); plunger plate down into its brackets' captive nuts (4); well-plate nest (4) |
 | M4 x 20 + M4 T-nut (2020) | 4 | Plunger brackets up through both plates into the stiffening frame's long bars |

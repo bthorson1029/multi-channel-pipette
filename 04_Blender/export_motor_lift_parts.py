@@ -22,6 +22,8 @@ PARTS = {   # object -> (file, rotation for printing)
     "lift_home_switch_holder": ("lift_home_switch_holder.stl", Matrix.Identity(3)),
     "plunger_switch_LF_holder": ("plunger_switch_post.stl", Matrix.Identity(3)),       # 3 alike
     "well_plate_nest": ("well_plate_nest.stl", Matrix.Identity(3)),
+    "syringe_lock_frame": ("syringe_lock_frame.stl", Matrix.Rotation(math.pi, 3, "X")),   # slots up
+    "syringe_grip_slipfit": ("syringe_grip_slipfit.stl", Matrix.Identity(3)),
     "control_box_base": ("control_box_base.stl", Matrix.Rotation(math.pi, 3, "X")),   # countersinks down
     "lift_carriage_bracket_RF": ("lift_carriage_bracket.stl", Matrix.Identity(3)),   # all 4 corners alike
     # hang under the plunger plate: print plate-face down, nut pockets and slots open upward.

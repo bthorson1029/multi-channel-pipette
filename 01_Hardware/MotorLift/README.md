@@ -37,14 +37,19 @@ plate). The pipette plate's 96 syringe holes keep the repo plate's 2.5 mm webs.
 | `plunger_switch_post.stl` | 3 | Plunger home-switch post (replaces the repo's corner blocks, which stood unbolted): a KW12-type switch clamped by 2 M2 at the plunger plate's home height, 2 M3 x 12 through counterbores into the pipette plate. Three are fitted (the firmware homes on any one). |
 | `well_plate_nest.stl` | 1 | Locates the well plate on the lift platform (replaces the flat repo tray): a 15 mm base (the height the firmware expects), walls 4 mm above it on the back and sides, a 2 mm lip at the front, 0.4 mm clearance around the SBS footprint. 4 M4 x 16 through counterbores into the platform. |
 | `control_box_base.stl` | 1 | Closes the control box (replaces the repo lid). 4 countersunk M3 self-tappers into the housing bosses. |
+| `syringe_lock_frame.stl` | 1 | Holds the 96 syringes by their flanges, with the finger tabs trimmed to stubs instead of the flanged end cut off: each flange sits on the pipette plate in a slot along its row (7.4 mm wide, 1.1 mm deep, so the frame presses 0.1 mm on every flange and the stubs can't turn), and 5.2 mm holes pass the plunger rods. The head-bracket M4s (now M4 x 35) come up through its ears. Prints slot side up. To swap a syringe: take off the holder plate and lift the plungers out, remove the frame, lift the barrel out. |
+| `syringe_grip_slipfit.stl` | 1 | The repo grip with its 96 holes opened from 6.5 to 6.9 mm, so the barrels slide in; it just keeps their lower ends in line. |
 | `lift_home_switch_holder.stl` | 1 | For a KW12-type lever micro switch (20 x 10 x 6.4 mm, mounting holes 9.5 mm apart), clamped by 2 M2 through the walls; 2 M3 to the base plate. Check the hole positions against your switch. |
 
-All twelve are closed solids (every edge shared by exactly two triangles).
+All fourteen are closed solids (every edge shared by exactly two triangles).
 
 ## Check against your hardware before cutting
 
 - **KFL08 bolt spacing** is set to 37 mm (`KFL08_BOLTS` in `make_dxf.py`). Measure your bearings.
 - **Frame height** (400 mm) and rail lengths were estimated from the build video.
+- **Syringes**: the frame and grip assume a 6.4 mm barrel, a 1.2 mm flange, and tabs trimmed so
+  the flange is 8.2 x 7.2 mm (typical 1 mL values, `SYR_*` in `04_Blender/variant_motor_lift.py`).
+  Measure one of yours; if the flange is thicker, the slot depth follows `SYR_FLANGE_T`.
 - The plunger holder plate stands 1.5 mm off the plunger plate (the plunger thumb pads are
   between them), so put 1.5 mm of washers on each nut screw there.
 
