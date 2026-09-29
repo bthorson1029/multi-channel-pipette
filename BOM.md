@@ -20,8 +20,8 @@ would be lighter but about 3x more flexible, which costs plunger accuracy.
 | Part | Qty | File | Status | Notes |
 |---|---|---|---|---|
 | Pipette plate | 1 | `MotorLift/ToLaserCut-DXF/pipette_plate_motorlift.dxf` | Generated | Plunger screws + KFL08s, plunger motor, tensioner slot, side-bracket holes. |
-| Plunger plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 4 T8 nut patterns; old motor cutouts removed. |
-| Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 160 x 200 mm. |
+| Plunger plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 4 T8 nut cutouts; old motor cutouts removed. |
+| Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 160 x 200 mm, 2 T8 nut cutouts. |
 | Lift base plate | 1 | `MotorLift/ToLaserCut-DXF/lift_base_plate.dxf` | Generated | 229.2 x 120 mm. |
 | Interface plate, high | 8 | `ToLaserCut-DXF/interface_plate_high.DXF` | Repo | 4 for the plunger plate, 4 for the lift platform. |
 | Frame corner bracket | 16 | `ToLaserCut-DXF/angle_bracket-(optionally can be purchased).DXF` | Repo | Or buy 2020 flat L corner plates. |
@@ -112,6 +112,7 @@ T-nuts.
 | M3 x 6-8 | 40 | Carriages to interface plates, electronics housing |
 | M3 x 10 + nut | 24 | Motors (8), lift nuts (8), tensioner brackets (4), switch holder (2), spares |
 | M3 x 16 + nut | 16 | Plunger nuts (through nut flange, holder plate, 1.5 mm washers and plunger plate) |
+| M3 flat washer (7 mm OD) | 24 | Under the M3 nuts at the T8 nut cutouts, to span the slots (lift 8, plunger 16) |
 | M4 x 10 + nut | 32 | Interface plates (16), KFL08 bearings (12), head brackets to the pipette plate (4) |
 | M2 x 16 + nut | 2 | Lift home switch |
 | M2/M2.5 screws | 6 | Plunger-level limit switches |

@@ -38,7 +38,7 @@ NEMA17_BOLTS = 31.0
 NEMA17_BOSS_D = 23.0
 T8_NUT_BODY_BORE_D = 10.4                        # nut body passes through the plate (10.2 mm body)
 T8_NUT_PCD = 16.0                                # flange screw circle
-T8_NUT_SCREW_D = 3.2                             # M3, close clearance to keep the web to the bore
+T8_NUT_SCREW_D = 3.4                             # M3 clearance; slot width in the nut cutout
 
 LIFT_PLATE = (160.0, 200.0)
 BASE_PLATE = (229.2, 120.0)
@@ -121,12 +121,26 @@ def rounded_rect(w, h, r=2.0, cx=0.0, cy=0.0):
 
 
 def nut_holes(x, y, bore_d):
-    """T8 flange nut: center bore + 4 M3 flange screws on a 16 mm circle at 45 deg.
-    bore_d = SCREW_CLEAR_D when the nut body points away from the plate (plunger), or
-    T8_NUT_BODY_BORE_D when the body passes through it (lift)."""
-    q = T8_NUT_PCD / 2 / math.sqrt(2)
-    return [circle(x, y, bore_d)] + [circle(x + sx * q, y + sy * q, T8_NUT_SCREW_D)
-                                     for sx in (-1, 1) for sy in (-1, 1)]
+    """T8 flange nut: one cloverleaf cutout, a center bore with 4 radial slots for the M3 flange
+    screws (16 mm circle, at 45 deg). Separate holes would leave only 1-2 mm of steel between the
+    bore and each screw, under the plate thickness most laser shops accept; the slots remove that
+    web. The screws only locate the nut (the flange carries the load), and a washer under each
+    M3 nut spans the slot. bore_d = SCREW_CLEAR_D when the nut body points away from the plate
+    (plunger), or T8_NUT_BODY_BORE_D when the body passes through it (lift)."""
+    R, w, pr = bore_d / 2, T8_NUT_SCREW_D / 2, T8_NUT_PCD / 2
+    t0 = math.sqrt(R * R - w * w)                  # where a slot side meets the bore
+    da = math.degrees(math.asin(w / R))
+    ents = []
+    for k in range(4):
+        a = 45.0 + 90.0 * k
+        ux, uy = math.cos(math.radians(a)), math.sin(math.radians(a))
+        nx, ny = -uy, ux
+        for s in (-1, 1):                          # slot sides
+            ents.append(("LINE", x + t0 * ux + s * w * nx, y + t0 * uy + s * w * ny,
+                         x + pr * ux + s * w * nx, y + pr * uy + s * w * ny))
+        ents.append(("ARC", x + pr * ux, y + pr * uy, w, a - 90.0, a + 90.0))   # slot end
+        ents.append(("ARC", x, y, R, a + da, a + 90.0 - da))                    # bore to next slot
+    return ents
 
 
 def motor_holes(x, y):

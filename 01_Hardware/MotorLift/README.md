@@ -13,10 +13,14 @@ millimeters.
 | `lift_plate.dxf` | 1 | New: 160 x 200 lift platform with 2 T8 nut patterns (body through) and 4 corner-block holes. |
 | `lift_base_plate.dxf` | 1 | New: 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
 
-Checked: all outlines closed, smallest hole 3.2 mm (above half the thickness), and at least
-2.7 mm of material to every plate edge. The thinnest web is **1.2 mm, between each lift nut's
-10.4 mm bore and its four M3 holes** (`lift_plate.dxf`); if your cutter flags it, delete those
-eight small holes and drill them after cutting, using the nut as a template.
+Each T8 nut mounts through one cloverleaf cutout (the center bore with four 3.4 mm slots out to
+the flange screws) instead of a bore and four separate holes, which left only 1.2 mm (lift) and
+1.9 mm (plunger) of steel between them. The flange covers the slots and carries the load; put a
+washer under each M3 nut so it spans its slot.
+
+Checked: all outlines closed, smallest hole or slot 3.4 mm (above the thickness), and at least
+2.7 mm of material to every plate edge. The thinnest web in the new features is 4.1 mm (plunger
+plate). The pipette plate's 96 syringe holes keep the repo plate's 2.5 mm webs.
 
 ## 3D-printed (`ToPrint-STL/`, PETG suggested; oriented for printing)
 
