@@ -20,7 +20,7 @@ without the UI. Units are millimeters (Z up, front = -Y).
 |---|---|---|
 | `build_pipette.py` | The original: the lever lowers the whole head. | `original_*.jpg` |
 | `variant_raise_bed.py` | Head fixed; the geared lever raises the bed through short links arranged as a toggle that locks at the top. Handle on the right. | `lever_lift_*.jpg` |
-| `variant_motor_lift.py` | Head fixed; one NEMA17 lifts the bed on two T8x2 screws through a GT2 belt, and one motor (48 mm body) drives all four T8x2 plunger screws through a second belt. Anti-backlash plunger nuts, a 2020 stiffening frame on the plunger plate, idler tensioners, a lift home switch, the pipette plate bolted to side bars, and the control box laid in front of the base (screen up, below the plate-loading path). Its plates come from `01_Hardware/MotorLift/make_dxf.py`, which also holds the layout numbers. Firmware: `02_Software/arduino/MotorLift`. | `motor_lift_*.jpg` |
+| `variant_motor_lift.py` | Head fixed; one NEMA17 lifts the bed on two T8x2 screws through a GT2 belt, and one motor (48 mm body) drives all four T8x2 plunger screws through a second belt. Anti-backlash plunger nuts, a 2020 stiffening frame on the plunger plate, idler tensioners, a lift home switch, the pipette plate bolted to side bars, and the control box laid in front of the base with its screen panel sloped 10 deg toward the user (`CONTROL_SLOPE_DEG`), below the plate-loading path. Its plates come from `01_Hardware/MotorLift/make_dxf.py`, which also holds the layout numbers. Firmware: `02_Software/arduino/MotorLift`. | `motor_lift_*.jpg` |
 
 The variants build on `build_pipette.py`, so it has to stay in the same folder.
 

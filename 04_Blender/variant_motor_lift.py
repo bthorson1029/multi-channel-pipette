@@ -18,8 +18,8 @@ Builds the baseline (build_pipette.py) and then modifies it:
   * frees two of the CNC shield's four driver slots (X = plunger, Y = lift)
   * the pipette plate is bolted through two printed brackets to a 2020 bar along each side of
     the frame; the lift platform's rail plates hang from four printed corner blocks
-  * the control box lies in front of the base, screen and knob up, low enough that well plates
-    still slide in from the front over it
+  * the control box lies in front of the base with its screen panel sloped toward the user
+    (CONTROL_SLOPE_DEG), low enough that well plates still slide in from the front over it
 Layout numbers and the laser-cut plates come from 01_Hardware/MotorLift/make_dxf.py (run it first
 if the DXFs are missing); export_motor_lift_parts.py writes the printed parts as STL.
 Run: blender --python 04_Blender/variant_motor_lift.py  (or open it in Blender's Text Editor and Run Script)
@@ -85,6 +85,7 @@ TENSION_TAKEUP = L.TENSION_TAKEUP # idler deflects the run this far; slot gives 
                                   # (take-up ~ deflection^2 / span, so a shallow idler takes up almost nothing)
 HOME_SW_XY = L.HOME_SW_XY         # lift home switch: under the platform, clear of belt + nuts
 HOME_OVERTRAVEL = 0.8             # lever deflection when the platform is home
+CONTROL_SLOPE_DEG = 10.0          # control-box screen panel tilted toward the user (front edge lowered)
 
 
 # ---------------------------------------------------------------- part helpers
@@ -247,11 +248,12 @@ def slot_prism(bm, cx, cy, length, width, z0, z1):
     bmesh.ops.translate(bm, verts=[v for v in ext['geom'] if isinstance(v, bmesh.types.BMVert)], vec=(0, 0, z1 - z0))
 
 
-def boolean(obj, bm, op='DIFFERENCE'):
+def boolean(obj, bm, op='DIFFERENCE', solver='EXACT', self_intersect=False):
     """Apply a cutter (or union) built in world coordinates to obj and bake the result."""
     cut = new_obj(obj.name + "_tool", bm, obj.users_collection[0].name)
     mod = obj.modifiers.new("tool", 'BOOLEAN')
-    mod.object, mod.operation, mod.solver = cut, op, 'EXACT'
+    mod.object, mod.operation, mod.solver = cut, op, solver
+    mod.use_self = self_intersect
     bpy.context.view_layer.update()
     mats = list(obj.data.materials)
     obj.data = bpy.data.meshes.new_from_object(obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
@@ -378,6 +380,99 @@ def rig_empty(name, coll, members):
         k.matrix_parent_inverse = Matrix.Identity(4)
         k.matrix_basis = mw
     return e
+
+
+def _find_front_cutout(h, y_front, zu):
+    """Bounds (x0, x1, z0, z1) of the opening in the housing's front wall below the panel,
+    found by shooting rays through the wall on a 0.5 mm grid."""
+    dg = bpy.context.evaluated_depsgraph_get()
+    he = h.evaluated_get(dg)
+    inv = h.matrix_world.inverted()
+    d = (inv.to_3x3() @ Vector((0, 1, 0))).normalized()
+    pts = []
+    for i in range(-200, 201):
+        for k in range(int((zu - 30) * 2), int(zu * 2)):
+            x, z = i * 0.5, k * 0.5
+            ok, loc, _, _ = he.ray_cast(inv @ Vector((x, y_front - 5, z)), d)
+            if not ok or (h.matrix_world @ loc).y > y_front + 3.5:     # passed the wall
+                pts.append((x, z))
+    if not pts:
+        return None
+    return (min(p[0] for p in pts), max(p[0] for p in pts), min(p[1] for p in pts), max(p[1] for p in pts))
+
+
+def slope_control_box(theta, parts):
+    """Tilt the control box's screen panel toward the user by theta, lowering the front edge.
+
+    The panel, and everything hanging within 8 mm under it (LCD, encoder and Arduino standoffs,
+    ribs), rotates as one rigid piece about the box's back top edge, so the boards keep their
+    mounting. The walls are trimmed to meet it, the panel is extended to close the gap it leaves
+    at the front, and the front-wall cutout (the Arduino's USB port, mounted on the panel) is
+    filled and re-cut where the port ends up. The screen, bezel and knob tilt with the panel."""
+    obj = bpy.data.objects
+    h = obj["ScreenHousing"]
+    bpy.context.view_layer.update()
+    h.data.transform(h.matrix_world)                 # work in world coordinates
+    h.matrix_world = Matrix.Identity(4)
+    vs = [v.co for v in h.data.vertices]
+    x0, x1 = min(v.x for v in vs), max(v.x for v in vs)
+    y_front, y_back = min(v.y for v in vs), max(v.y for v in vs)
+    zt = max(v.z for v in vs)
+    wall = T                                          # 3 mm shell (measured)
+    zu, zf = zt - wall, zt - wall - 7.5               # panel underside; depth of panel-mounted features
+    pivot = Vector((0, y_back, zt))
+    R = Matrix.Translation(pivot) @ Matrix.Rotation(theta, 4, 'X') @ Matrix.Translation(-pivot)
+    cut = _find_front_cutout(h, y_front, zu)
+
+    def block(*b, rot=False):
+        bm = bmesh.new()
+        _block(bm, *b)
+        if rot:
+            bm.transform(R)
+        return bm
+
+    big = (x0 - 50, x1 + 50)
+    # The panel piece is cut out in ONE intersection with a T-shaped tool: a full-width slab
+    # (panel + wall rims) over a box that reaches 0.5 mm into the walls (standoffs, ribs, bosses).
+    # Gluing separately cut pieces together instead leaves self-intersections that the exact
+    # solver later turns into non-manifold slivers.
+    tool = new_obj("ScreenHousing_Ttool", block(*big, y_front - 50, y_back + 50, zu, zt + 50), h.users_collection[0].name)
+    boolean(tool, block(x0 + wall - 0.5, x1 - wall + 0.5, y_front + wall - 0.5, y_back - wall + 0.5, zf, zu + 0.5), 'UNION')
+    pnl = h.copy()
+    pnl.data = h.data.copy()
+    pnl.name = "ScreenHousing_panel"
+    h.users_collection[0].objects.link(pnl)
+    boolean(pnl, _mesh_bm(tool), 'INTERSECT')
+    pnl.data.transform(R)
+    # walls = the rest, with the old port cutout filled
+    boolean(h, _mesh_bm(tool))
+    obj.remove(tool)
+    if cut:
+        cx0, cx1, cz0, cz1 = cut
+        boolean(h, block(cx0 - 1, cx1 + 1, y_front, y_front + wall, cz0 - 1, min(cz1 + 1, zu)), 'UNION')
+    # trim to the slope: side and back walls run 1 mm up into the tilted panel; the front wall runs
+    # up to the panel's top surface, which fills the ~1.5 mm the tilted panel falls short at the front
+    strip = y_front + wall + 2
+    boolean(h, block(*big, strip, y_back + 50, zu + 1.0, zu + 300, rot=True))
+    boolean(h, block(*big, y_front - 400, strip + 1, zt, zt + 300, rot=True))   # overlap: no sliver at the seam
+    if cut:                                           # re-cut the port opening where the port now is
+        boolean(h, block(cx0, cx1, y_front - 10, y_front + wall + 10, cz0, cz1, rot=True))
+    # The panel's wall rims share their outer faces with the walls below, which the exact solver
+    # only merges in self-intersection mode. export_motor_lift_parts.py refuses to write the part
+    # if the result has any open edges.
+    boolean(h, _mesh_bm(pnl), 'UNION', self_intersect=True)
+    obj.remove(pnl)
+    for o in parts[2:]:                               # bezel, screen, knob ride on the panel
+        o.matrix_world = R @ o.matrix_world
+    return cut
+
+
+def _mesh_bm(o):
+    """A bmesh of o's mesh in world coordinates (for use as a boolean tool)."""
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    bm.transform(o.matrix_world)
+    return bm
 
 
 # ================================================================ modify baseline
@@ -515,6 +610,7 @@ def modify():
                     back - max(p.y for p in pts), -min(p.z for p in pts)))
     for o in parts:
         o.matrix_world = Matrix.Translation(shift) @ o.matrix_world
+    slope_control_box(D(CONTROL_SLOPE_DEG), parts)
 
     def span(seq, idx, sign):         # belt length with the idler at each end of its slot
         out = []

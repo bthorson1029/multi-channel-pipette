@@ -26,9 +26,10 @@ eight small holes and drill them after cutting, using the nut as a template.
 | `head_bracket.stl` | 2 | Joins the pipette plate to the side bar: 2 M4 up through the plate, 2 M5 up into the bar's bottom slot. Prints on its side; the same part works on both sides (turn it around). |
 | `tensioner_bracket_lift.stl` | 1 | 6.5 mm tall. Idler shoulder bolt in the 12 mm slot, 2 M3 to the plate. |
 | `tensioner_bracket_plunger.stl` | 1 | 5.5 mm tall; otherwise the same. |
+| `control_box_housing_sloped.stl` | 1 | The repo `ScreenHousing` with its screen panel tilted 10 deg toward the user (front 17.5 mm lower). The panel moves as one piece with the LCD, encoder and Arduino standoffs under it, and the USB opening in the front wall is moved to where the port now sits. Prints panel-down. |
 | `lift_home_switch_holder.stl` | 1 | For a KW12-type lever micro switch (20 x 10 x 6.4 mm, mounting holes 9.5 mm apart), clamped by 2 M2 through the walls; 2 M3 to the base plate. Check the hole positions against your switch. |
 
-All five are closed solids (every edge shared by exactly two triangles).
+All six are closed solids (every edge shared by exactly two triangles).
 
 ## Check against your hardware before cutting
 
