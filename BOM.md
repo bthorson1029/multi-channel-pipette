@@ -42,7 +42,7 @@ least 220 mm.
 | Plunger holder plate | 1 | `MotorLift/ToPrint-STL/plunger_holder_plate_motorlift.stl` | Generated | The plunger nuts sit on it. |
 | Corner block | 8 | `ToPrint-STL/LimitSwitch_holder_A.STL` | Repo | 4 on the plunger plate, 4 on the lift platform. |
 | Corner block + switch, pipette level | 4 | `ToPrint-STL/LimitSwitch_holder_B.STL` | Repo | |
-| Electronics housing | 1 | `ToPrint-STL/ScreenHousing.STL` | Repo | |
+| Electronics housing | 1 | `ToPrint-STL/ScreenHousing.STL` | Repo | Lies in front of the base, screen up; 2 screws through its back wall into the bottom front bar. |
 | Electronics lid | 1 | `ToPrint-STL/electronics_lid.STL` | Repo | |
 | Well-plate tray | 1 | `ToPrint-STL/Optional/vertical_tray.STL` | Repo | Laid flat; it sets the well-plate height the firmware expects. |
 | Head bracket | 2 | `MotorLift/ToPrint-STL/head_bracket.stl` | Generated | Bolts the pipette plate to the side bars. |

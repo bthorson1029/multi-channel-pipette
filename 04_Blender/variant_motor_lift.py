@@ -18,6 +18,8 @@ Builds the baseline (build_pipette.py) and then modifies it:
   * frees two of the CNC shield's four driver slots (X = plunger, Y = lift)
   * the pipette plate is bolted through two printed brackets to a 2020 bar along each side of
     the frame; the lift platform's rail plates hang from four printed corner blocks
+  * the control box lies in front of the base, screen and knob up, low enough that well plates
+    still slide in from the front over it
 Layout numbers and the laser-cut plates come from 01_Hardware/MotorLift/make_dxf.py (run it first
 if the DXFs are missing); export_motor_lift_parts.py writes the printed parts as STL.
 Run: blender --python 04_Blender/variant_motor_lift.py  (or open it in Blender's Text Editor and Run Script)
@@ -497,6 +499,23 @@ def modify():
     for sx in (-1, 1):
         members.append(box(f"plunger_stiffener_{'LR'[sx > 0]}", (20, 54, 20), (sx * 48, 0, zf), "Head", M["ext"], bevel=1.0))
     rig_empty("plunger_carriage", "Head", members)
+
+    # ---------------- control box: laid down in front of the base, screen and knob facing up,
+    # lid on the bench. At 72 mm tall it stays below the lowered tray (96 mm), so well plates
+    # still slide in from the front; two screws through its back wall into the bottom front bar.
+    parts = [obj[n] for n in ("ScreenHousing", "electronics_lid", "LCD_2004_bezel", "LCD_2004_screen", "encoder_knob")]
+    bpy.context.view_layer.update()
+    R = Matrix.Rotation(D(-90), 4, 'X')               # screen normal -y -> +z, box top -> toward the frame
+    for o in parts:
+        o.matrix_world = R @ o.matrix_world
+    bpy.context.view_layer.update()
+    pts = [o.matrix_world @ Vector(c) for o in parts for c in o.bound_box]
+    back = -(g["FY"] / 2 + T + 0.5)                   # just clear of the corner brackets
+    shift = Vector((-(min(p.x for p in pts) + max(p.x for p in pts)) / 2,
+                    back - max(p.y for p in pts), -min(p.z for p in pts)))
+    for o in parts:
+        o.matrix_world = Matrix.Translation(shift) @ o.matrix_world
+
     def span(seq, idx, sign):         # belt length with the idler at each end of its slot
         out = []
         for take in (TENSION_TAKEUP - 6, TENSION_TAKEUP + 6):
