@@ -4,7 +4,8 @@ A 96-channel pipette for 8 x 12 well plates, built from low-cost parts: 2020 alu
 laser-cut 3 mm steel, 3D-printed parts, NEMA17 steppers and an Arduino. This fork redesigns
 [Its-Triggy/multi-channel-pipette](https://github.com/Its-Triggy/multi-channel-pipette) (build
 video: [youtu.be/2TTu-Lkz2Eo](https://youtu.be/2TTu-Lkz2Eo)) to run itself instead of being worked
-by hand with a lever. The redesign lives on the `motorized-lift` branch.
+by hand with a lever. This repo holds only the redesign; the original design's files are in its
+history (commit `4b765e6` and earlier).
 
 ![The motorized-lift build mid-dispense](04_Blender/renders/motor_lift_hero.jpg)
 
