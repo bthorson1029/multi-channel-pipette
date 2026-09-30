@@ -7,11 +7,11 @@ Builds the baseline (build_pipette.py) and then modifies it:
     members; the motor hangs below that plate. Brass nuts under the platform, which rides the same
     four MGN9H rails as before. Positions are programmable per labware; the screw holds position.
   * PLUNGER: the four per-screw steppers become one NEMA17 + closed GT2 loop around four T8 screws
-    moved out to (+/-65, +/-58.9) so the belt passes outside the 96-syringe array. With the head
-    fixed, motor, bearings and pulleys all sit on the stationary pipette plate; only the nuts ride
-    on the plunger plate. Mechanically synced -> the plate cannot rack if a step is missed.
+    at (+/-65, +/-58.9). The screws hang from KFL08s on a plate across the frame's top ring, with
+    the pulleys, belt and idler under it and the motor standing on it; only the nuts ride on the
+    drive (plunger) plate. Mechanically synced -> the plate cannot rack if a step is missed.
     Accuracy upgrades: T8x2 plunger screws with anti-backlash nuts (spring + second nut), a 2020
-    stiffening frame on the plunger holder plate so the plate bends less under stopper friction,
+    stiffening frame on the drive plate so the plate bends less under stopper friction,
     and a 48 mm (~0.5 N m class) motor so one motor matches the original four's thrust.
   * both belts have a smooth-idler tensioner on a slotted printed bracket; the lift homes onto a
     micro switch pressed by the platform underside at the bottom of travel
@@ -20,6 +20,10 @@ Builds the baseline (build_pipette.py) and then modifies it:
     the frame; the lift platform's rail plates bolt to four printed carriage brackets on the plate
   * the control box lies in front of the base with its screen panel sloped toward the user
     (CONTROL_SLOPE_DEG), low enough that well plates still slide in from the front over it
+  * everything syringe- and tip-specific is a cartridge that slides in at the front like a drawer:
+    its plate runs in channels under the pipette plate (a U, open at the front), its plunger carrier
+    over two D-shaft clamps under the drive plate; a tip ejector and optical home sensors let the
+    plunger go past home to push the tips off (see "Syringe cartridge" in 01_Hardware/MotorLift/README.md)
 Layout numbers and the laser-cut plates come from 01_Hardware/MotorLift/make_dxf.py (run it first
 if the DXFs are missing); export_motor_lift_parts.py writes the printed parts as STL.
 Run: blender --python 04_Blender/variant_motor_lift.py  (or open it in Blender's Text Editor and Run Script)
@@ -70,8 +74,9 @@ LIFT_PLUS = BASE_Z + T + 1        # pulley stack starts 1 mm above the base plat
 LIFT0 = 78.0                      # platform underside at the bottom of travel
 TRAY_H, PLATE_H = 15.0, 14.4
 TIP_DEPTH = 9.0                   # tips this far into the wells at the top of travel
-TIP_DROP = 5.0                    # tips sit this much lower than the repo model: the ejector plate
-TIP_BOTTOM = P - 112 - TIP_DROP   # (3 mm) lies between the barrel ends and the tip rims
+SEAT = P - T                      # syringe flanges sit on the cartridge carrier plate, under the pipette plate
+TIP_DROP = 8.0                    # tips sit this much lower than the repo model: the carrier plate (3 mm)
+TIP_BOTTOM = P - 112 - TIP_DROP   # and the ejector plate (3 mm) under the barrel ends, plus 2 mm
 LIFT_TRAVEL = (TIP_BOTTOM + TIP_DEPTH) - (LIFT0 + T + TRAY_H + PLATE_H)
 LIFT_LEAD = 2.0                   # T8x2 on the lift: force + self-locking
 BRK_H = 18.0                      # lift carriage bracket height above the plate
@@ -100,6 +105,14 @@ SYR_FLANGE_T = 1.2                # flange thickness
 SYR_KEY_L, SYR_KEY_W = 8.2, 7.2   # trimmed flange: across the tab stubs (x) x width (y)
 GRIP_SLIP_D = 6.9                 # printed grip holes: a slip fit, no press (prints come out small)
 FRAME_T = 4.0                     # locking frame thickness
+FRAME_HALF = (55.5, 41.0)         # locking frame, inside the pipette plate's drawer slot
+PC_BELOW = 6.0                    # plunger carrier (3 mm steel) + pad retainer (3 mm) under the drive plate
+TOP_PZ0 = FH - 1 - 16             # plunger pulleys hang under the top plate, inside the top ring
+CART_HANDLE_H = 12.0              # cartridge handle, under the front of the cartridge plate
+EJ_SPRING_Z = (SEAT, SEAT + 20)   # ejector springs: carrier plate top to the spring nut
+# Parts that come out with the syringe cartridge (see check_cartridge_removal)
+CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_lock_frame", "syringe_grip",
+             "eject_", "plunger_carrier", "pad_retainer", "plungers_x96")
 # USB: a panel-mount USB-B socket on the control box's left end, forward of the DC jack, joined
 # to the Arduino by a short USB-B extension. Typical socket: 12.5 x 11.5 mm body, 2 M3 ears 30 mm
 # apart (check yours).
@@ -354,55 +367,58 @@ def microswitch(prefix, x, y, z_base, lever_top, coll, cbore=None):
 
 
 def optical_post(prefix, x, y, beam_z, coll):
-    """Printed post on the pipette plate carrying a slotted optical endstop laid flat, its beam at
-    beam_z; a pocket under the slot lets the flag carry on EJECT_MM past the beam. 2 M3 x 12 through
-    counterbores into the plate, 2 M3 through the sensor's ears into the post (self-tapping)."""
+    """Printed post on the pipette plate's arm carrying a slotted optical endstop laid flat (long
+    side along y), its beam at beam_z; a pocket under the slot lets the flag carry on EJECT_MM past
+    the beam. 2 M3 x 12 through counterbores into the plate, 2 M3 through the sensor's ears into the
+    post (self-tapping)."""
     bl, bw, bt = OPT_BODY
     zs = beam_z - bt / 2                              # sensor underside = post top
-    h = box(prefix + "_post", (34, 16, zs - P), (x, y, (P + zs) / 2), coll, M["pla"])
+    dy = L.SWITCH_POST_HOLE_DY
+    h = box(prefix + "_post", (11, 2 * dy + 6, zs - P), (x, y, (P + zs) / 2), coll, M["pla"])
     bm = bmesh.new()
-    _block(bm, x - 2.5, x + 2.5, y - 3.5, y + 3.5, zs - (EJECT_MM - bt / 2) - 1.5, zs + 1)   # flag pocket
+    _block(bm, x - 3.5, x + 3.5, y - 2.5, y + 2.5, zs - (EJECT_MM - bt / 2) - 1.5, zs + 1)   # flag pocket
     for s_ in (-1, 1):
-        _cone(bm, L.M3 / 2, L.M3 / 2, P - 1, zs + 1, xy=(x + s_ * 14, y))
+        _cone(bm, L.M3 / 2, L.M3 / 2, P - 1, zs + 1, xy=(x, y + s_ * dy))
     boolean(h, bm)
     bm = bmesh.new()
     for s_ in (-1, 1):
-        _cone(bm, 3.2, 3.2, P + 6, zs + 1, xy=(x + s_ * 14, y))                             # counterbores
-        _cone(bm, 1.25, 1.25, zs - 8, zs + 1, xy=(x + s_ * OPT_EARS / 2, y))                # sensor screws
+        _cone(bm, 3.2, 3.2, P + 6, zs + 1, xy=(x, y + s_ * dy))                             # counterbores
+        _cone(bm, 1.25, 1.25, zs - 8, zs + 1, xy=(x, y + s_ * OPT_EARS / 2))                # sensor screws
     boolean(h, bm)
-    sen = box(prefix + "_sensor", (bl, bw, bt), (x, y, zs + bt / 2), coll, M["pla_grey"])
-    bm = bmesh.new()                                  # the fork's slot, open toward +y
-    _block(bm, x - OPT_SLOT / 2, x + OPT_SLOT / 2, y - 2.5, y + bw, zs - 1, zs + bt + 1)
+    sen = box(prefix + "_sensor", (bw, bl, bt), (x, y, zs + bt / 2), coll, M["pla_grey"])
+    bm = bmesh.new()                                  # the fork's slot, open toward the frame side
+    xa, xb = sorted((x - (2.5 if x > 0 else -2.5), x + (bw if x > 0 else -bw)))
+    _block(bm, xa, xb, y - OPT_SLOT / 2, y + OPT_SLOT / 2, zs - 1, zs + bt + 1)
     boolean(sen, bm)
 
 
 def plunger_flag(name, x, y, coll):
-    """Printed flag under the plunger plate (build frame): a tab with 2 M3 into the plate and a
-    2 x 4 mm vane that reaches the optical beam at home."""
+    """Printed flag under the drive plate (build frame): a tab with 2 M3 into the plate (along y)
+    and a 4 x 2 mm vane that reaches the optical beam at home."""
     zu = PLG_MID - T / 2                              # plate underside, build frame
     vane = OPT_BELOW + OPT_BODY[2] / 2                # plate underside to the beam at home
-    o = box(name, (2 * (L.FLAG_HOLE_DX + 4), 8, 3), (x, y, zu - 1.5), coll, M["pla"])
+    o = box(name, (8, 2 * (L.FLAG_HOLE_DY + 4), 3), (x, y, zu - 1.5), coll, M["pla"])
     bm = bmesh.new()
-    _block(bm, x - 1.0, x + 1.0, y - 2.0, y + 2.0, zu - vane, zu - 2.9)
+    _block(bm, x - 2.0, x + 2.0, y - 1.0, y + 1.0, zu - vane, zu - 2.9)
     boolean(o, bm, 'UNION', self_intersect=True)
     bm = bmesh.new()
     for s_ in (-1, 1):
-        _cone(bm, L.M3 / 2, L.M3 / 2, zu - 5, zu + 1, xy=(x + s_ * L.FLAG_HOLE_DX, y))
+        _cone(bm, L.M3 / 2, L.M3 / 2, zu - 5, zu + 1, xy=(x, y + s_ * L.FLAG_HOLE_DY))
     boolean(o, bm)
     return o
 
 
 def tip_ejector(coll):
-    """Tip ejector: a 3 mm plate (tip_ejector_plate.dxf) under the barrel ends, on 4 M4 threaded rods
-    that run up past the grip, through the pipette plate and the syringe frame. A spring over each
-    rod, between the frame and a nut, holds the plate up against the barrel ends, where it is also
-    the stop the tips seat against. Going below home, the plunger carriage brackets meet the rod
-    tops (the front pair EJ_GAP_F below home, the back pair EJ_GAP_B), so the plate tilts front
-    first and pushes the tips off a few rows at a time."""
-    z_top = P - 58                                    # barrel ends = ejector plate top
+    """Tip ejector, all in the cartridge: a 3 mm plate (tip_ejector_plate.dxf) under the barrel
+    ends, on 4 M4 threaded rods that slide up through the carrier plate (and ride in the pipette
+    plate's slot). A spring over each rod, between the carrier plate and a nut, holds the plate up
+    against the barrel ends, where it is also the stop the tips seat against. Going below home,
+    the plunger carrier meets the rod tops (the front pair EJ_GAP_F below home, the back
+    pair EJ_GAP_B), so the plate tilts front first and pushes the tips off a few rows at a time."""
+    z_top = SEAT - 58                                 # barrel ends = ejector plate top
     plate = fab_plate("tip_ejector_plate.dxf", "eject_plate", coll, (0, 0, z_top - T / 2))
-    brk_bot = SWITCH_TOP + 0.5 - PLG_BRK_H            # carriage-bracket underside at home
-    z_col = P + FRAME_T + 20                          # spring top / nut
+    brk_bot = SWITCH_TOP + 0.5 - PC_BELOW             # plunger carrier underside at home
+    z_col = EJ_SPRING_Z[1]                            # spring top / nut
     for x, y in L.EJ_ROD_HOLES:
         tag = f"{'LR'[x > 0]}{'FB'[y > 0]}"
         top = brk_bot - (EJ_GAP_B if y > 0 else EJ_GAP_F)
@@ -412,7 +428,7 @@ def tip_ejector(coll):
         _cone(bm, 3.8, 3.8, z_top, z_top + 3.2, seg=6, xy=(x, y))                    # nut on top
         _cone(bm, 3.8, 3.8, z_col, z_col + 3.2, seg=6, xy=(x, y))                    # spring nut
         new_obj(f"eject_rod_{tag}", bm, coll, M["chrome"])
-        spring(f"eject_spring_{tag}", x, y, P + FRAME_T, z_col, 3.2, 0.4, 7, coll, M["chrome"])
+        spring(f"eject_spring_{tag}", x, y, EJ_SPRING_Z[0], z_col, 3.2, 0.4, 7, coll, M["chrome"])
     return plate
 
 
@@ -421,7 +437,7 @@ def head_bracket(name, sx, coll):
     its side with no overhang): the upper block sits under the plate edge (2 M4 up through the
     plate), the foot runs under the bar (2 M5 up into the bar's bottom slot)."""
     zt = P - T                                        # pipette plate underside = bar top
-    x_in, x_bar, x_out = 60.0, IX, IX + 17.4          # inner face, bar inner face, foot end
+    x_in, x_bar, x_out = 69.5, IX, IX + 17.4          # inner face (outside the cartridge channel), bar, foot
     o = box(name, (x_bar - x_in, 60, 20), (sx * (x_in + x_bar) / 2, 0, zt - 10), coll, M["pla"])
     bm = bmesh.new()
     xa, xb = sorted((sx * (x_bar - 0.01), sx * x_out))
@@ -464,14 +480,14 @@ def lift_carriage_bracket(name, sx, sy, coll):
 
 
 def plunger_carriage_bracket(name, sx, sy, coll):
-    """Printed block hanging under a side edge of the plunger plate, clear of the syringe array
-    (inboard) and the nut screws (y > 48): 2 M4 down through the plate into captive nuts in
-    pockets from below (heads under the holder plate, in clearance holes), and 2 M4 from outside
-    through the plunger rail plate into captive nuts in slots from below."""
+    """Printed block hanging under a side edge of the drive plate, outside the cartridge's D-shaft
+    trough (x > 67.5) and clear of the nut screws: 2 M4 through the plate (one into a captive nut in
+    a pocket from below, one up from the pocket into a T-nut in the stiffener's long bar), and 2 M4
+    from outside through the plunger rail plate into captive nuts in slots from below."""
     zt = PLG_MID - T / 2                              # plate underside
     zb, zr = zt - PLG_BRK_H, PLG_MID - L.PLG_BRACKET_ROW_BELOW_MID
-    x_in, x_out = 56.0, IF_X - T / 2
-    y0, y1 = 8.0, 48.0
+    x_in, x_out = 67.5, IF_X - T / 2
+    y0, y1 = 5.0, 50.0
     o = box(name, (x_out - x_in, y1 - y0, PLG_BRK_H), (sx * (x_in + x_out) / 2, sy * (y0 + y1) / 2, (zb + zt) / 2),
             coll, M["pla"])
     bm = bmesh.new()                                  # two passes so no cutters overlap each other
@@ -492,17 +508,17 @@ def plunger_carriage_bracket(name, sx, sy, coll):
 
 def syringe_barrels(name, coll):
     """96 barrels with the finger tabs trimmed to stubs (see SYR_KEY_L / SYR_KEY_W): the flange's
-    underside sits on the pipette plate, the barrel hangs through the plate and the grip."""
+    underside sits on the cartridge carrier plate, the barrel hangs through it and the grip."""
     bm = bmesh.new()
     r = SYR_BARREL_D / 2
     for x, y in g["GRID"]:
         t = bmesh.new()
-        _cone(t, r, r, P - 58, P, seg=20, xy=(x, y))
-        _block(t, x - SYR_KEY_L / 2, x + SYR_KEY_L / 2, y - SYR_KEY_W / 2, y + SYR_KEY_W / 2, P, P + SYR_FLANGE_T)
+        _cone(t, r, r, SEAT - 58, SEAT, seg=20, xy=(x, y))
+        _block(t, x - SYR_KEY_L / 2, x + SYR_KEY_L / 2, y - SYR_KEY_W / 2, y + SYR_KEY_W / 2, SEAT, SEAT + SYR_FLANGE_T)
         for f in t.faces:
             f.material_index = 0
         n0 = len(t.faces)
-        _cone(t, 1.5, 2.0, P - 66, P - 58, seg=20, xy=(x, y))   # Luer nozzle
+        _cone(t, 1.5, 2.0, SEAT - 66, SEAT - 58, seg=20, xy=(x, y))   # Luer nozzle
         for f in list(t.faces)[n0:]:
             f.material_index = 1
         me = bpy.data.meshes.new("tmp")
@@ -519,22 +535,17 @@ def syringe_barrels(name, coll):
 
 
 def syringe_lock_frame(name, coll):
-    """Printed frame that clamps the trimmed syringe flanges to the pipette plate (replaces the
-    repo S-P retainer and the press fit). Its underside has one slot per row, SYR_KEY_W + 0.2 wide
-    and 0.1 mm shallower than the flange, so the stubs can't turn and the frame presses every
-    flange down; 5.2 mm holes pass the plunger rods and bear on each barrel's rim. Two ears take
-    the head-bracket M4s that already come up through the plate at (+/-68, +/-20)."""
-    z0, z1 = P, P + FRAME_T
+    """Printed frame that clamps the trimmed syringe flanges to the cartridge carrier plate
+    (replaces the repo S-P retainer and the press fit). Its underside has one slot per row,
+    SYR_KEY_W + 0.2 wide and 0.1 mm shallower than the flange, so the stubs can't turn and the
+    frame presses every flange down; 5.2 mm holes pass the plunger rods and bear on each barrel's
+    rim. 4 M3 through the frame and the carrier into the grip's ears clamp the three together; it
+    passes through the pipette plate's drawer slot with 1.5 mm to spare."""
+    z0, z1 = SEAT, SEAT + FRAME_T
     xs = [x for x, _ in g["GRID"]]
     ys = sorted({y for _, y in g["GRID"]})
     x_end = max(xs) + SYR_KEY_L / 2 + 0.3
-    hy = max(ys) + SYR_KEY_W / 2 + 0.1 + 1.6            # 1.6 mm outer wall past the last slot
-    o = box(name, (2 * 58.0, 2 * hy, FRAME_T), (0, 0, (z0 + z1) / 2), coll, M["pla"])
-    bm = bmesh.new()                                      # ears to the head-bracket bolts
-    for s_ in (-1, 1):
-        xa, xb = sorted((s_ * 57.5, s_ * 72.0))
-        _block(bm, xa, xb, -32, 32, z0, z1)
-    boolean(o, bm, 'UNION', self_intersect=True)
+    o = box(name, (2 * FRAME_HALF[0], 2 * FRAME_HALF[1], FRAME_T), (0, 0, (z0 + z1) / 2), coll, M["pla"])
     bm = bmesh.new()                                      # flange slots, one per row
     for y in ys:
         _block(bm, -x_end, x_end, y - SYR_KEY_W / 2 - 0.1, y + SYR_KEY_W / 2 + 0.1, z0 - 1, z0 + SYR_FLANGE_T - 0.1)
@@ -542,12 +553,140 @@ def syringe_lock_frame(name, coll):
     bm = bmesh.new()
     for x, y in g["GRID"]:                                # plunger rods
         _cone(bm, 2.6, 2.6, z0 - 1, z1 + 1, seg=16, xy=(x, y))
-    for x, y in L.HEAD_MOUNT_XY:                          # head-bracket M4s
-        _cone(bm, L.M4 / 2, L.M4 / 2, z0 - 1, z1 + 1, xy=(x, y))
-    for x, y in L.EJ_ROD_HOLES:                           # tip-ejector rods
-        _cone(bm, 2.4, 2.4, z0 - 1, z1 + 1, xy=(x, y))
+    for x, y in L.FRAME_SCREWS:                           # M3 into the grip's ears
+        _cone(bm, L.M3 / 2, L.M3 / 2, z0 - 1, z1 + 1, xy=(x, y))
     boolean(o, bm)
     return o
+
+
+def cartridge_grip(grip):
+    """The repo grip, opened to a slip fit and hung from the carrier plate: 4 ears under the frame
+    screws (FRAME_SCREWS) take M3 self-tappers, so it can't slide down the barrels."""
+    drill(grip, g["GRID"], GRIP_SLIP_D / 2)
+    grip.location.z -= T                              # under the carrier plate, not the pipette plate
+    bpy.context.view_layer.update()
+    zt = SEAT - T                                     # carrier underside
+    bm = bmesh.new()
+    for x, y in L.FRAME_SCREWS:
+        xa, xb = sorted((x - 4.0, x + 4.0))
+        ya, yb = (35.5, 40.8) if y > 0 else (-40.8, -35.5)       # clear of the outer barrels (34.7)
+        _block(bm, xa, xb, ya, yb, zt - 10, zt)
+    boolean(grip, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()
+    for x, y in L.FRAME_SCREWS:
+        _cone(bm, 1.25, 1.25, zt - 9, zt + 1, xy=(x, y))
+    boolean(grip, bm)
+    grip.name = "syringe_grip_slipfit"
+    return grip
+
+
+def plunger_carrier(members):
+    """The cartridge's plunger carrier (build frame, under the drive plate): 3 mm steel under the
+    96 thumb pads, a printed retainer (pockets for the pads) over them, and the plungers. It slides
+    in under the drive plate on the D-shaft clamps, which then press it up against the plate; it
+    pushes the ejector rods."""
+    zu = PLG_MID - T / 2                              # drive plate underside
+    pc = dxf_part(os.path.join(FAB_DXF, "plunger_carrier.dxf"), "plunger_carrier", T, "Head", M["steel"])
+    pc.location.z = zu - 3.0 - T / 2
+    rt = box("pad_retainer", (2 * 55.7, 2 * 48.0, 3.0), (0, 0, zu - 1.5), "Head", M["pla"])
+    bm = bmesh.new()
+    for x, y in g["GRID"]:                            # pad pockets from below
+        _cone(bm, 4.1, 4.1, zu - 4.0, zu - 1.5, seg=24, xy=(x, y))
+    boolean(rt, bm)
+    # plungers: stoppers where they were relative to the barrels
+    bm = bmesh.new()
+    for x, y in g["GRID"]:
+        t = bmesh.new()
+        _cone(t, 3.05, 3.05, SEAT - 30 - PLG_REST, SEAT - 24 - PLG_REST, seg=20, xy=(x, y))
+        for f in t.faces:
+            f.material_index = 1
+        n0 = len(t.faces)
+        _cone(t, 1.5, 1.5, SEAT - 24 - PLG_REST, zu - 3.0, seg=12, xy=(x, y))
+        _cone(t, 3.9, 3.9, zu - 3.0, zu - 1.5, seg=20, xy=(x, y))
+        for f in list(t.faces)[n0:]:
+            f.material_index = 0
+        me = bpy.data.meshes.new("tmp")
+        t.to_mesh(me)
+        t.free()
+        bm.from_mesh(me)
+        bpy.data.meshes.remove(me)
+    pl = new_obj("plungers_x96", bm, "Syringes")
+    pl.data.materials.append(M["plunger"])
+    pl.data.materials.append(M["rubber"])
+    members += [pc, rt, pl]
+
+
+def dshaft_clamps(members):
+    """Under the drive plate (build frame), each side: a printed trough bolted up to the plate,
+    cradling an 8 mm D-shaft along y with a lever at the front. Flat up, the plunger carrier slides
+    in over the shafts; a quarter turn puts the round side up and presses it against the plate,
+    so the coupling has no play in either direction. Modeled clamped."""
+    zu = PLG_MID - T / 2
+    r = L.DSHAFT_D / 2
+    zc = zu - 2 * T - r                               # shaft axis: its top meets the carrier's underside
+    y0, y1 = -100.0, L.CART_SLOT_BACK
+    for sx in (-1, 1):
+        tag = "LR"[sx > 0]
+        xa, xb = sorted((sx * 51.2, sx * 67.0))
+        zb = zc - r - 3.0                                                     # 2.9 mm floor under the cradle
+        tr = box(f"dshaft_trough_{tag}", (xb - xa, y1 - y0, zc - zb), ((xa + xb) / 2, (y0 + y1) / 2, (zb + zc) / 2),
+                 "Head", M["pla"])
+        bm = bmesh.new()
+        wa, wb = sorted((sx * 60.5, sx * 67.0))
+        _block(bm, wa, wb, y0, y1, zc - 0.01, zu)                            # outer wall up to the plate
+        boolean(tr, bm, 'UNION', self_intersect=True)
+        bm = bmesh.new()
+        _bar(bm, (sx * L.DSHAFT_X, y0 - 1, zc), (sx * L.DSHAFT_X, y1 + 1, zc), r + 0.1, seg=32)   # the cradle
+        for x, y in L.PS_XY:                                                  # T8 screw passes by
+            if x * sx > 0 and y0 < y < y1:
+                _cone(bm, 5.0, 5.0, zu - 20, zu + 1, xy=(x, y))
+        for x, y in L.TROUGH_BOLTS:
+            _cone(bm, L.M3 / 2, L.M3 / 2, zu - 20, zu + 1, xy=(sx * x, y))
+        boolean(tr, bm)
+        bm = bmesh.new()
+        _bar(bm, (sx * L.DSHAFT_X, y0 - 4, zc), (sx * L.DSHAFT_X, y1, zc), r, seg=24)
+        sh = new_obj(f"dshaft_{tag}", bm, "Head", M["chrome"])
+        lv = box(f"dshaft_lever_{tag}", (6, 5, 22), (sx * L.DSHAFT_X, y0 - 7.5, zc - 9), "Head", M["pla"])
+        members += [tr, sh, lv]
+
+
+def drawer_channels():
+    """Under the pipette plate's arms, each side: a steel ledge (cart_ledge.dxf) on a printed spacer,
+    CART_GAP below the arm; the cartridge plate's edge runs between them. The spacer turns in at the
+    back as the stop, and a spring plunger in the ledge clicks into the plate's detent hole."""
+    zt = SEAT                                         # pipette plate underside
+    for sx in (-1, 1):
+        tag = "LR"[sx > 0]
+        ld = fab_plate("cart_ledge.dxf", f"cart_ledge_{tag}", "Head", (0, 0, zt - L.CART_GAP - T / 2))
+        if sx < 0:
+            ld.scale.x = -1
+        xa, xb = sorted((sx * 63.3, sx * L.LEDGE_X[1]))
+        sp = box(f"cart_spacer_{tag}", (xb - xa, L.CART_SLOT_BACK + 100, L.CART_GAP),
+                 ((xa + xb) / 2, (L.CART_SLOT_BACK - 100) / 2, zt - L.CART_GAP / 2), "Head", M["pla"])
+        bm = bmesh.new()
+        ta, tb = sorted((sx * 56.5, sx * 63.31))
+        _block(bm, ta, tb, L.CART_SLOT_BACK + 0.3, L.CART_SLOT_BACK + 6, zt - L.CART_GAP, zt)   # back stop
+        boolean(sp, bm, 'UNION', self_intersect=True)
+        bm = bmesh.new()
+        for x, y in L.LEDGE_BOLTS:
+            _cone(bm, L.M3 / 2, L.M3 / 2, zt - 5, zt + 1, xy=(sx * x, y))
+        boolean(sp, bm)
+        for x, y in L.CART_DETENTS:
+            if x * sx > 0:
+                cyl(f"cart_detent_{tag}", 3.0, 10.0, (x, y, zt - L.CART_GAP - 5.0), "Head", M["chrome"])
+
+
+def cartridge_handle(coll):
+    """Printed handle under the front of the cartridge plate (2 M3 self-tappers down through the
+    plate); a finger slot to pull the drawer out."""
+    zt = SEAT - T
+    y1 = -L.CART_PLATE[1] + 6.0
+    h = box("cartridge_handle", (50, 21, CART_HANDLE_H), (0, y1 - 10.5, zt - CART_HANDLE_H / 2), coll, M["pla"])
+    bm = bmesh.new()
+    _block(bm, -18, 18, y1 - 21 - 1, y1 - 12, zt - CART_HANDLE_H - 1, zt - 4)          # finger slot
+    for x, y in L.CART_HANDLE_SCREWS:
+        _cone(bm, 1.25, 1.25, zt - 9, zt + 1, xy=(x, y))
+    boolean(h, bm)
 
 
 def well_plate_nest(name, z0, coll):
@@ -801,15 +940,17 @@ def modify():
     # (the grip stays as a slip-fit guide for the barrels' lower ends)
     for n in ("syringe_barrels_x96", "S-P_plate"):
         obj.remove(obj[n])
+    fab_plate("cartridge_plate.dxf", "cartridge_plate", "Head", (0, 0, SEAT - T / 2))
+    cartridge_handle("Head")
+    drawer_channels()
     syringe_barrels("syringe_barrels_x96", "Syringes")
     syringe_lock_frame("syringe_lock_frame", "Head")
-    drill(obj["syringe_grip_static"], g["GRID"], GRIP_SLIP_D / 2)
+    cartridge_grip(obj["syringe_grip_static"])
     obj["pipette_tips_x96"].location.z -= TIP_DROP
     tip_ejector("Head")
-    obj["syringe_grip_static"].name = "syringe_grip_slipfit"
     # plunger home sensors: the repo corner blocks stood on their sides unbolted; printed posts
-    # bolted to the pipette plate carry three slotted optical endstops (the firmware homes on the
-    # first and checks the other two). Optical, because the plunger goes on past home to eject tips.
+    # bolted to the pipette plate's arms carry three slotted optical endstops (the firmware homes on
+    # the first and checks the other two). Optical, because the plunger goes on past home to eject tips.
     for o in [o for o in obj if o.name.startswith(("LimitSwitch_holder_B", "limit_switch_"))]:
         obj.remove(o)
     for x, y in L.SWITCH_POSTS:
@@ -857,42 +998,33 @@ def modify():
     members += [tray, wp]
     rig_empty("lift_platform", "Bed", members)
 
-    # ---------------- PLUNGER drive on the fixed pipette plate
-    pip, plg, hold = obj["pipette_plate"], obj["plunger_plate"], obj["plunger_holder_plate"]
+    # ---------------- PLUNGER drive on the top plate: the pipette plate is a U open at the front for
+    # the cartridge drawer, so the screws hang from KFL08s on a plate across the top ring, with their
+    # pulleys, the belt and the idler under it (inside the ring) and the motor standing on it.
+    pip, plg = obj["pipette_plate"], obj["plunger_plate"]
     replace_mesh(pip, "pipette_plate_motorlift.dxf")
-    replace_mesh(plg, "plunger_plate_motorlift.dxf")
-    q = L.T8_NUT_PCD / 2 / math.sqrt(2)               # holder plate: screw clearance + nut flange screws
-    bm = bmesh.new()
-    for x, y in PS_XY:
-        _cone(bm, L.SCREW_CLEAR_D / 2, L.SCREW_CLEAR_D / 2, 0, 600, xy=(x, y))
-        for a in (-1, 1):
-            for b in (-1, 1):
-                _cone(bm, L.M3 / 2, L.M3 / 2, 0, 600, xy=(x + a * q, y + b * q))
-    for x, y in L.PLG_BRACKET_HOLES:                  # room for the carriage-bracket bolt heads
-        _cone(bm, 4.5, 4.5, 0, 600, xy=(x, y))
-    for x, y in L.STIFF_SHORT_HOLES:                  # stiffener short-bar bolts
-        _cone(bm, L.M5 / 2, L.M5 / 2, 0, 600, xy=(x, y))
-    boolean(hold, bm)
-    bm = bmesh.new()                                  # fill the repo's 33 mm motor holes (unused here)
-    hz = [(hold.matrix_world @ v.co).z for v in hold.data.vertices]
-    for x, y in g["MOTOR_XY"]:
-        _cone(bm, 16.6, 16.6, min(hz), max(hz), seg=48, xy=(x, y))
-    boolean(hold, bm, 'UNION', self_intersect=True)
+    replace_mesh(plg, "plunger_plate_motorlift.dxf")   # the drive plate: the thumb pads are the cartridge's
+    obj.remove(obj["plunger_holder_plate"])
+    fab_plate("top_plate.dxf", "top_plate", "Frame", (0, 0, FH + T / 2))
+    z_top = FH + T
+    s_lo, s_hi = 286.0, z_top + 14.0                  # screw: below the nut at full eject, up through the KFL08
     for i, (x, y) in enumerate(PS_XY, 1):
-        kfl08(f"KFL08_plunger_{i}", x, y, P - T, True, "Motors", rot=D(90))   # flange along y: clears interface plates
-        cyl(f"plunger_screw_{i}", 4, FH - 30 - (P - 16), (x, y, (FH - 30 + P - 16) / 2), "Motors", M["chrome"], seg=16)
-        pulley(f"plunger_pulley_{i}", x, y, P + 1, "Motors")
-    nema17("plunger_motor", *PLG_MOTOR_XY, P - T, True, "Motors", length=48.0)
-    obj["plunger_motor_shaft"].location.z = P + 6
-    pulley("plunger_pulley_motor", *PLG_MOTOR_XY, P + 1, "Motors")
-    # tensioner: idler pushes the back run (behind the array) inward (-y)
+        kfl08(f"KFL08_plunger_{i}", x, y, z_top, False, "Motors", rot=D(90))
+        cyl(f"plunger_screw_{i}", 4, s_hi - s_lo, (x, y, (s_lo + s_hi) / 2), "Motors", M["chrome"], seg=16)
+        pulley(f"plunger_pulley_{i}", x, y, TOP_PZ0, "Motors")
+    nema17("plunger_motor", *PLG_MOTOR_XY, z_top, False, "Motors", length=48.0)
+    pulley("plunger_pulley_motor", *PLG_MOTOR_XY, TOP_PZ0, "Motors")
+    # tensioner: idler pushes the back run inward (-y); its bolt goes up through the plate's slot
     pi_y = L.PLG_IDLER_Y
-    idler("plunger_idler", 0, pi_y, P + 1, "Motors")
-    tensioner("plunger_tensioner", 0, pi_y, P, 5.5, "Motors")
+    idler("plunger_idler", 0, pi_y, TOP_PZ0, "Motors")
+    obj.remove(obj["plunger_idler_bolt"])
+    cyl("plunger_idler_bolt", 2.5, z_top + 5.5 - (TOP_PZ0 + 4), (0, pi_y, (z_top + 5.5 + TOP_PZ0 + 4) / 2), "Motors", M["motor"])
+    cyl("plunger_idler_bolt_head", 4.0, 3.0, (0, pi_y, z_top + 5.5 + 1.5), "Motors", M["motor"])
+    tensioner("plunger_tensioner", 0, pi_y, z_top, 5.5, "Motors")
     lf, rf, lb, rb = PS_XY          # PS_XY order: LF, RF, LB, RB
     plg_seq = [(*lf, PULLEY_R), (*PLG_MOTOR_XY, PULLEY_R), (*rf, PULLEY_R), (*rb, PULLEY_R),
                (0, pi_y, -IDLER_R), (*lb, PULLEY_R)]
-    plg_belt = belt("plunger_belt", plg_seq, P + 11, "Motors")
+    plg_belt = belt("plunger_belt", plg_seq, TOP_PZ0 + 10, "Motors")
 
     # moving plunger carriage: plate, holder, plungers, carriage brackets, rail plates, carriages,
     # nuts, stiffener. The repo's LimitSwitch_holder_A blocks carry no switch here and joined
@@ -904,25 +1036,26 @@ def modify():
     for o in rails:
         o.data = tmp.data
     bpy.data.objects.remove(tmp)
-    members = [plg, hold, obj["plungers_x96"]] + rails
+    obj.remove(obj["plungers_x96"])
+    members = [plg] + rails
+    plunger_carrier(members)
+    dshaft_clamps(members)
     members += [plunger_flag(f"plunger_flag_{'LR'[x > 0]}{'FB'[y > 0]}", x, y, "Head") for x, y in L.SWITCH_POSTS]
     members += [o for o in obj if o.name.startswith("MGN9H_carriage_high")]
     for sx in (-1, 1):
         for sy in (-1, 1):
             members.append(plunger_carriage_bracket(f"plunger_carriage_bracket_{'LR'[sx > 0]}{'FB'[sy > 0]}", sx, sy, "Head"))
-    zh = g["HOLD_TOP"]
+    zh = PLG_TOP
     for i, (x, y) in enumerate(PS_XY, 1):
-        # anti-backlash T8 nut, flange down on the holder plate (4 M3 through holder + steel plate),
-        # body up; preload spring and second nut above it
+        # anti-backlash T8 nut, flange down on the drive plate (4 M3 through it), body up; preload
+        # spring and second nut above it
         members.append(cyl(f"plunger_nut_flange_{i}", 11, 3.5, (x, y, zh + 1.75), "Motors", M["brass"]))
         members.append(cyl(f"plunger_nut_body_{i}", 5.1, 12, (x, y, zh + 9.5), "Motors", M["brass"]))
         members.append(spring(f"plunger_nut_spring_{i}", x, y, zh + 15.5, zh + 23.5, 6.0, 0.6, 4, "Motors", M["chrome"]))
         members.append(cyl(f"plunger_nut_upper_{i}", 7.0, 10, (x, y, zh + 28.5), "Motors", M["brass"], seg=6))
-    # 2020 stiffening frame on the holder plate, around the syringe array and inside the nuts:
-    # two bars along x carry the load toward the screw rows, two short bars close the frame
-    # (inside corner brackets). Each long bar is clamped at both ends by the carriage-bracket
-    # bolts at (+/-70, +/-32) into M4 T-nuts; each short bar by one M5 up through both plates at
-    # mid-span, just outside the syringe array.
+    # 2020 stiffening frame on the drive plate, over the syringe array and inside the nuts: two
+    # bars along x carry the load toward the screw rows (the carriage-bracket bolts at (+/-72, +/-33)
+    # come up into M4 T-nuts in them), two short bars close the frame (inside corner brackets).
     zf = zh + 10
     ly, sxx = L.STIFF_LONG_Y, L.STIFF_SHORT_X
     for sy in (-1, 1):
@@ -977,7 +1110,7 @@ def pose(lift_mm, plg_mm):
     obj["plunger_carriage"].location.z = PLG_REST + plg_mm
     e = max(0.0, -plg_mm)
     df, db = max(0.0, e - EJ_GAP_F), max(0.0, e - EJ_GAP_B)
-    z0, z1 = P + FRAME_T, P + FRAME_T + 20             # springs: frame top to the spring nut
+    z0, z1 = EJ_SPRING_Z                                 # springs: carrier plate to the spring nut
     for o in obj:
         d = db if o.name.endswith("B") else df
         if o.name.startswith("eject_rod_"):
@@ -986,7 +1119,7 @@ def pose(lift_mm, plg_mm):
             k = (z1 - d - z0) / (z1 - z0)
             o.scale.z, o.location.z = k, z0 * (1 - k)
     ep = obj["eject_plate"]
-    ep.location.z = P - 58 - T / 2 - (df + db) / 2
+    ep.location.z = SEAT - 58 - T / 2 - (df + db) / 2
     ep.rotation_euler.x = math.atan2(df - db, 2 * L.EJ_ROD_Y)
     lift, plg = spinners()
     for o in lift:
@@ -1038,7 +1171,8 @@ def collision_report():
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
-                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket", "eject_", "plunger_optical"))}
+                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket", "eject_", "plunger_optical", "cartridge_plate", "syringe_grip", "top_plate",
+                  "cart_ledge", "cart_spacer", "cart_detent", "cartridge_handle"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -1059,7 +1193,15 @@ def collision_report():
                ("control_box_base", "ScreenHousing"),
                ("eject_rod", "plunger_carriage_bracket"), ("eject_rod", "eject_plate"), ("eject_rod", "eject_spring"),
                ("eject_spring", "syringe_lock_frame"), ("eject_plate", "pipette_tips"), ("eject_plate", "syringe_barrels"),
-               ("plunger_optical", "pipette_plate"), ("plunger_optical", "plunger_optical"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
+               ("plunger_optical", "pipette_plate"), ("plunger_optical", "plunger_optical"),
+               ("cartridge_plate", "pipette_plate"), ("cartridge_plate", "syringe_barrels"),
+               ("cartridge_plate", "syringe_lock_frame"), ("cartridge_plate", "syringe_grip"),
+               ("cartridge_plate", "eject_spring"),
+               ("eject_rod", "plunger_carrier"),
+               ("top_plate", "ext_top"), ("top_plate", "post_"), ("top_plate", "angle_bracket"), ("KFL08_plunger", "top_plate"), ("plunger_motor", "top_plate"),
+               ("plunger_tensioner", "top_plate"), ("plunger_idler", "top_plate"), ("plunger_idler", "plunger_tensioner"),
+               ("plunger_screw", "top_plate"), ("cart_spacer", "pipette_plate"), ("cart_ledge", "cart_spacer"),
+               ("cart_detent", "cart_ledge"), ("cartridge_handle", "cartridge_plate"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
                ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder")]   # bolts in slots
     ok = lambda a, b: any((a.startswith(p) and b.startswith(q)) or (a.startswith(q) and b.startswith(p)) for p, q in allowed)
     hits = {}

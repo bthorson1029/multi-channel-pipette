@@ -19,11 +19,11 @@ OUT = os.path.join(HERE, "ToLaserCut-DXF")
 # ---------------------------------------------------------------- layout (machine frame, mm)
 PLATE_T = 3.0                                    # all laser-cut parts
 PS_XY = [(-65.0, -58.9), (65.0, -58.9), (-65.0, 58.9), (65.0, 58.9)]   # plunger screws: LF RF LB RB
-PLG_MOTOR_XY = (0.0, -79.0)                      # plunger motor, hangs under the pipette plate
+PLG_MOTOR_XY = (0.0, -76.0)                      # plunger motor, on the top plate
 LIFT_X = 70.0                                    # lift screws at (+/-LIFT_X, 0)
 LIFT_MOTOR_XY = (0.0, 36.0)                      # lift motor, hangs under the base plate
 HOME_SW_XY = (-40.0, -35.0)                      # lift home switch on the base plate
-HEAD_MOUNT_XY = [(sx * 68.0, sy * 20.0) for sx in (-1, 1) for sy in (-1, 1)]   # pipette plate -> side brackets
+HEAD_MOUNT_XY = [(sx * 75.0, sy * 20.0) for sx in (-1, 1) for sy in (-1, 1)]   # pipette plate -> side brackets
 
 PULLEY_R = 6.37                                  # GT2 20T pitch radius
 IDLER_R = 8.8                                    # belt pitch line on a 16 mm smooth idler
@@ -46,45 +46,66 @@ BASE_MOUNT_XY = [(sx * 104.6, sy * 45.0) for sx in (-1, 1) for sy in (-1, 1)]  #
 LIFT_BRACKET_X = 71.0                            # lift carriage brackets: 2 M4 down through the plate each,
 LIFT_BRACKET_Y = (38.0, 80.0)                    # either side of the rail plate's M4 holes (y 49, 69)
 LIFT_BRACKET_HOLES = [(sx * LIFT_BRACKET_X, sy * y) for sx in (-1, 1) for sy in (-1, 1) for y in LIFT_BRACKET_Y]
-# Plunger carriage brackets hang under the plunger plate's side edges, between the syringe array and
-# the nut screws. The plunger rail plates are a taller version of interface_plate_high whose M4 row
-# lands in the brackets; their frame: DXF (-10, 0) sits on the carriage center (y = CARRIAGE_Y),
+# Plunger carriage brackets hang under the drive (plunger) plate's side edges, outside its cartridge
+# channels (x > 67.5). The plunger rail plates are a taller version of interface_plate_high whose M4
+# row lands in the brackets; their frame: DXF (-10, 0) sits on the carriage center (y = CARRIAGE_Y),
 # DXF x runs toward the machine's middle, DXF y is up, and DXF y = 0 is RAIL_ZC_BELOW_MID below the
 # plunger plate's mid-plane (ZC_HIGH in build_pipette.py).
 CARRIAGE_Y = 99.0                                # PY in build_pipette.py
 RAIL_ZC_BELOW_MID = 10.0
-PLG_BRACKET_PLATE_XY = [(61.0, 14.0), (70.0, 32.0)]    # per corner (mirrored): M4 down through the plate
-PLG_BRACKET_RAIL_Y = (24.0, 40.0)                # rail-plate M4 bolts into the bracket
+PLG_BRACKET_PLATE_XY = [(72.0, 10.0), (72.0, 33.0)]    # per corner (mirrored): M4 through the plate
+PLG_BRACKET_RAIL_Y = (22.0, 44.0)                # rail-plate M4 bolts into the bracket
 PLG_BRACKET_ROW_BELOW_MID = 7.5                  # rail-plate bolt row, below the plunger plate's mid-plane
 PLG_BRACKET_HOLES = [(sx * x, sy * y) for sx in (-1, 1) for sy in (-1, 1) for x, y in PLG_BRACKET_PLATE_XY]
-# 2020 stiffening frame on the plunger holder plate: long bars along x at y = +/-STIFF_LONG_Y (bolted
-# through the bracket bolt at (+/-70, +/-32) into an M4 T-nut), short bars along y at x = +/-STIFF_SHORT_X
-# (one M5 each, up from under the plunger plate at mid-span).
+DRIVE_PLATE = (160.0, 200.0)                     # the drive (plunger) plate, widened to reach the brackets
+# 2020 stiffening frame on the drive plate: long bars along x at y = +/-STIFF_LONG_Y (the bracket
+# bolts at (+/-72, +/-33) come up into M4 T-nuts in them), short bars along y at x = +/-STIFF_SHORT_X
+# (inside corner brackets to the long bars only).
 STIFF_LONG_Y = 32.0
-STIFF_SHORT_X = 60.0
-STIFF_SHORT_HOLES = [(sx * STIFF_SHORT_X, 0.0) for sx in (-1, 1)]
-# Plunger limit-switch posts on the pipette plate (any one homes the plunger; three for redundancy),
-# 2 M3 each, STRIDE apart along x. Well-plate nest on the lift plate: 4 M4.
-SWITCH_POSTS = [(-55.0, -92.0), (55.0, -92.0), (-55.0, 92.0)]
-SWITCH_POST_HOLE_DX = 14.0
-SWITCH_POST_HOLES = [(x + s * SWITCH_POST_HOLE_DX, y) for x, y in SWITCH_POSTS for s in (-1, 1)]
-# Plunger home sensors: slotted optical endstops on the switch posts, each with a flag hanging from
-# the plunger plate (2 M3 into the plate, FLAG_HOLE_DX either side of the post along x).
-FLAG_HOLE_DX = 6.0
-FLAG_HOLES = [(x + s * FLAG_HOLE_DX, y) for x, y in SWITCH_POSTS for s in (-1, 1)]
-# Tip ejector: one plate under the barrel ends with a hole around each nozzle, hung on 4 M4 rods
-# that pass up through the pipette plate; the plunger carriage brackets push them down when the
-# plunger goes below home.
+STIFF_SHORT_X = 58.0
+# Plunger home sensors: slotted optical endstops on printed posts on the pipette plate's arms (2 M3
+# each, along y), each with a flag hanging from the drive plate (2 M3, along y). Any one homes the
+# plunger; three for the level check. Well-plate nest on the lift plate: 4 M4.
+SWITCH_POSTS = [(-73.0, -80.0), (73.0, -80.0), (-73.0, 80.0)]
+SWITCH_POST_HOLE_DY = 14.0
+SWITCH_POST_HOLES = [(x, y + s * SWITCH_POST_HOLE_DY) for x, y in SWITCH_POSTS for s in (-1, 1)]
+FLAG_HOLE_DY = 6.0
+FLAG_HOLES = [(x, y + s * FLAG_HOLE_DY) for x, y in SWITCH_POSTS for s in (-1, 1)]
+# Plunger drive on the top plate (top_plate.dxf), which sits on the frame's top ring: the 4 screws
+# hang from KFL08s on it, their pulleys and the belt run under it inside the ring, and the motor
+# stands on it with its shaft down. That leaves the head clear for the cartridge drawer.
+TOP_PLATE = (229.2, 218.0)
+TOP_MOUNT_XY = [(sx * x, sy * 99.0) for sx in (-1, 1) for sy in (-1, 1) for x in (30.0, 75.0)] + \
+               [(sx * 104.6, sy * 30.0) for sx in (-1, 1) for sy in (-1, 1)]     # M5 into the top ring
+# Syringe cartridge: a drawer that slides in from the front (see "Syringe cartridge" in README.md).
+# - The pipette plate is a U, open at the front: its slot is +/-CART_SLOT_X wide and runs back to
+#   CART_SLOT_BACK. The cartridge plate slides in under its arms, riding on a steel ledge each side
+#   (cart_ledge.dxf) held CART_GAP below the arm on a printed spacer, until it stops at the back;
+#   a spring plunger in each ledge clicks into it (CART_DETENTS).
+# - The plunger carrier slides in under the drive plate on two 8 mm D-shafts in printed troughs;
+#   a quarter turn of each shaft's lever clamps it up against the drive plate with no play.
+# Nothing else is in the way at the front: the plunger drive is on the top plate.
 ARRAY_GRID = [(-49.5 + 9 * i, -31.5 + 9 * j) for j in range(8) for i in range(12)]
-EJ_ROD_X, EJ_ROD_Y = 57.5, 27.0
+CART_SLOT_X, CART_SLOT_BACK = 57.0, 50.0
+CART_PLATE = (62.0, 50.0)                        # cartridge plate half sizes
+CART_GAP = 3.3                                   # its channel: 3 mm plate + 0.3 mm
+LEDGE_X = (54.3, 69.0)                           # ledge under the arm
+LEDGE_BOLTS = [(64.2, y) for y in (-95.0, -70.0, -45.0, -20.0, 5.0, 30.0, 46.0)]   # right side; mirrored
+CART_DETENTS = [(sx * 60.0, 40.0) for sx in (-1, 1)]
+CART_HANDLE_SCREWS = [(sx * 15.0, -46.0) for sx in (-1, 1)]
+PC_PLATE = (60.0, 50.0)                          # plunger carrier half sizes (clears the T8 screws)
+DSHAFT_X, DSHAFT_D, DSHAFT_FLAT = 55.5, 8.0, 0.8  # D-shaft clamps: axis, diameter, depth of the flat
+TROUGH_BOLTS = [(64.0, y) for y in (-95.0, -80.0, -32.0, 32.0)]   # right side; mirrored. +/-32: T-nuts
+FRAME_SCREWS = [(sx * 27.0, sy * 38.8) for sx in (-1, 1) for sy in (-1, 1)]   # frame + carrier + grip
+# Tip ejector: a plate under the barrel ends with a hole around each nozzle, hung on 4 M4 rods
+# that run up through the cartridge plate; the plunger carrier pushes them down when the plunger
+# goes below home. All of it belongs to the cartridge.
+EJ_ROD_X, EJ_ROD_Y = 44.0, 45.0
 EJ_ROD_HOLES = [(sx * EJ_ROD_X, sy * EJ_ROD_Y) for sx in (-1, 1) for sy in (-1, 1)]
-EJ_PLATE = (123.0, 76.0)
+EJ_PLATE = (112.0, 98.0)
 EJ_HOLE_D = 5.8                                  # passes the heat-shrunk nozzle, not the tip rim
 EJ_ROD_HOLE_D = 6.0                              # loose: the plate tilts a few degrees on the rods
 NEST_HOLES = [(sx * 55.0, sy * 15.0) for sx in (-1, 1) for sy in (-1, 1)]
-# Holes the repo plates carry for parts this layout no longer has (corner blocks, old mounts).
-PIPETTE_UNUSED_M4 = [(sx * 32.5, sy * 90.0) for sx in (-1, 1) for sy in (-1, 1)] +                     [(sx * 65.0, sy * 32.5) for sx in (-1, 1) for sy in (-1, 1)]
-PLUNGER_UNUSED_M4 = [(sx * 47.5, sy * 90.0) for sx in (-1, 1) for sy in (-1, 1)] +                     [(sx * 65.0, sy * 47.5) for sx in (-1, 1) for sy in (-1, 1)]
 
 # Hole diameters
 M3, M4, M5 = 3.4, 4.5, 5.5
@@ -193,6 +214,19 @@ def tensioner_holes(x, y):
     return slot_y(x, y, SLOT_TRAVEL + M5, M5) + [circle(x + s * TENSIONER_HOLE_DX, y, M3) for s in (-1, 1)]
 
 
+def polygon(pts):
+    return [("LINE", *pts[i], *pts[(i + 1) % len(pts)]) for i in range(len(pts))]
+
+
+def mirror4(quadrant):
+    """A closed outline (point list) from its +x/+y quarter, listed from the +x axis to the +y axis."""
+    q = list(quadrant)
+    q2 = [(-x, y) for x, y in reversed(q)]
+    q3 = [(-x, -y) for x, y in q]
+    q4 = [(x, -y) for x, y in reversed(q)]
+    return q + q2[1:] + q3[1:] + q4[1:-1]
+
+
 def near_r(e, r):
     return e[0] == "CIRCLE" and abs(e[3] - r) < 0.02
 
@@ -210,36 +244,55 @@ PLUNGER_OFFSET = (-49.5, -31.5)    # array center in plunger_plate.DXF
 
 
 def pipette_plate():
-    src = read_entities(os.path.join(REPO_DXF, "pipette_plate.DXF"))
-    # drop the old per-motor T8 nut bores (d 11) and their flange screws (d 3.5)
-    # and the unused repo M4 holes
-    keep = [e for e in src if not (near_r(e, 5.5) or near_r(e, 1.75) or at_any(e, PIPETTE_UNUSED_M4, PIPETTE_OFFSET))]
+    """The pipette plate, now a U open at the front for the cartridge drawer (drawn from scratch; the
+    repo plate's features all moved or went: plunger drive to the top plate, syringes to the
+    cartridge). Held by the head brackets; carries the channel ledges and the sensor posts."""
     ox, oy = PIPETTE_OFFSET
-    new = []
-    for x, y in PS_XY:                                       # screw clearance + KFL08 (flange along y)
-        new += [circle(x, y, SCREW_CLEAR_D)]
-        new += [circle(x, y + s * KFL08_BOLTS / 2, M4) for s in (-1, 1)]
-    new += motor_holes(*PLG_MOTOR_XY)
-    new += tensioner_holes(0.0, PLG_IDLER_Y)
+    w, h = DRIVE_PLATE
+    hw, hh, sx_, sb = w / 2, h / 2, CART_SLOT_X, CART_SLOT_BACK
+    new = polygon([(hw, -hh), (hw, hh), (-hw, hh), (-hw, -hh), (-sx_, -hh), (-sx_, sb), (sx_, sb), (sx_, -hh)])
     new += [circle(x, y, M4) for x, y in HEAD_MOUNT_XY]
     new += [circle(x, y, M3) for x, y in SWITCH_POST_HOLES]
-    new += [circle(x, y, M4) for x, y in EJ_ROD_HOLES]      # tip-ejector rods
-    return keep + [shift(e, ox, oy) for e in new]
+    new += [circle(sx * x, y, M3) for x, y in LEDGE_BOLTS for sx in (-1, 1)]
+    return [shift(e, ox, oy) for e in new]
 
 
 def plunger_plate():
-    src = read_entities(os.path.join(REPO_DXF, "plunger_plate.DXF"))
-    # drop the old motor cutouts (d 33) and motor screws (d 3.4)
-    # and the unused repo M4 holes
-    keep = [e for e in src if not (near_r(e, 16.5) or near_r(e, 1.7) or at_any(e, PLUNGER_UNUSED_M4, PLUNGER_OFFSET))]
+    """The drive plate (drawn from scratch, widened to +/-80 to reach the carriage brackets): T8 nut
+    cutouts, bracket and flag holes, and the D-shaft troughs' bolts. The plunger rods and pads are
+    the cartridge's."""
     ox, oy = PLUNGER_OFFSET
-    new = []
-    for x, y in PS_XY:                                       # nuts sit on the holder plate, body up
+    new = rounded_rect(*DRIVE_PLATE)
+    for x, y in PS_XY:                                       # nuts sit on it, body up
         new += nut_holes(x, y, SCREW_CLEAR_D)
     new += [circle(x, y, M4) for x, y in PLG_BRACKET_HOLES]  # carriage brackets underneath
-    new += [circle(x, y, M5) for x, y in STIFF_SHORT_HOLES]  # stiffening frame, short bars
     new += [circle(x, y, M3) for x, y in FLAG_HOLES]         # optical-endstop flags underneath
-    return keep + [shift(e, ox, oy) for e in new]
+    new += [circle(sx * x, y, M3) for x, y in TROUGH_BOLTS for sx in (-1, 1)]
+    return [shift(e, ox, oy) for e in new]
+
+
+def top_plate():
+    """Top plate on the frame's top ring: KFL08s for the 4 plunger screws (flange along y), the
+    plunger motor (shaft down), the belt tensioner slot, and M5s into the ring."""
+    ents = rounded_rect(*TOP_PLATE)
+    for x, y in PS_XY:
+        ents += [circle(x, y, SCREW_CLEAR_D)]
+        ents += [circle(x, y + s * KFL08_BOLTS / 2, M4) for s in (-1, 1)]
+    ents += motor_holes(*PLG_MOTOR_XY)
+    ents += tensioner_holes(0.0, PLG_IDLER_Y)
+    ents += [circle(x, y, M5) for x, y in TOP_MOUNT_XY]
+    return ents
+
+
+def cart_ledge():
+    """Channel ledge for the right-hand side (flip it over for the left): 3 mm steel under the
+    pipette plate's arm, the cartridge plate rides on it; M3 through the arm and the printed spacer,
+    and a tapped M6 hole for the spring plunger."""
+    (x0, x1), y0, y1 = LEDGE_X, -100.0, CART_SLOT_BACK
+    ents = rounded_rect(x1 - x0, y1 - y0, 1.0, (x0 + x1) / 2, (y0 + y1) / 2)
+    ents += [circle(x, y, M3) for x, y in LEDGE_BOLTS]
+    ents += [circle(abs(x), y, 5.0) for x, y in CART_DETENTS[1:]]        # M6 tap drill
+    return ents
 
 
 def plunger_rail_plate():
@@ -251,6 +304,25 @@ def plunger_rail_plate():
     ents += rounded_rect(x1 - x0, y1 - y0, 2.0, (x0 + x1) / 2, (y0 + y1) / 2)
     row = RAIL_ZC_BELOW_MID - PLG_BRACKET_ROW_BELOW_MID
     ents += [circle(CARRIAGE_Y - 10.0 - y, row, M4) for y in PLG_BRACKET_RAIL_Y]
+    return ents
+
+
+def cartridge_plate():
+    """Carrier plate: 3 mm steel, the cartridge's drawer. Its edges run in the channels under the
+    pipette plate's arms; the barrels, frame, grip and ejector hang from it."""
+    ents = rounded_rect(2 * CART_PLATE[0], 2 * CART_PLATE[1], 2.0)
+    ents += [circle(x, y, 6.5) for x, y in ARRAY_GRID]                 # barrels
+    ents += [circle(x, y, M4) for x, y in EJ_ROD_HOLES]                # ejector rods slide here
+    ents += [circle(x, y, M3) for x, y in FRAME_SCREWS + CART_HANDLE_SCREWS]
+    ents += [circle(x, y, 3.0) for x, y in CART_DETENTS]               # the spring plungers click in
+    return ents
+
+
+def plunger_carrier():
+    """Plunger carrier: 3 mm steel under the thumb pads. Its edges run over the D-shaft clamps
+    under the drive plate; it pushes the ejector rods."""
+    ents = rounded_rect(2 * PC_PLATE[0], 2 * PC_PLATE[1], 2.0)
+    ents += [circle(x, y, 3.2) for x, y in ARRAY_GRID]                 # plunger rods
     return ents
 
 
@@ -298,6 +370,10 @@ PARTS = {
     "plunger_plate_motorlift": plunger_plate,
     "plunger_rail_plate": plunger_rail_plate,
     "tip_ejector_plate": tip_ejector_plate,
+    "cartridge_plate": cartridge_plate,
+    "top_plate": top_plate,
+    "cart_ledge": cart_ledge,
+    "plunger_carrier": plunger_carrier,
     "lift_plate": lift_plate,
     "lift_base_plate": lift_base_plate,
 }

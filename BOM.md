@@ -19,13 +19,14 @@ would be lighter but about 3x more flexible, which costs plunger accuracy.
 
 | Part | Qty | File | Status | Notes |
 |---|---|---|---|---|
-| Pipette plate | 1 | `MotorLift/ToLaserCut-DXF/pipette_plate_motorlift.dxf` | Generated | Plunger screws + KFL08s, plunger motor, tensioner slot, side-bracket holes, 3 switch posts, 4 tip-ejector rods; the repo's unused M4 holes removed. |
-| Plunger plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 4 T8 nut cutouts, 8 carriage-bracket holes, 2 stiffening-frame bolts, 3 sensor flags; old motor cutouts and unused M4 holes removed. |
+| Pipette plate | 1 | `MotorLift/ToLaserCut-DXF/pipette_plate_motorlift.dxf` | Generated | A U open at the front for the cartridge drawer; head-bracket, sensor-post and channel holes. |
+| Plunger (drive) plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 160 x 200 mm: 4 T8 nut cutouts, 8 carriage-bracket holes, 3 sensor flags, 8 trough bolts; no plunger-rod holes. |
+| Top plate | 1 | `MotorLift/ToLaserCut-DXF/top_plate.dxf` | Generated | On the top ring: the plunger screws' KFL08s, the plunger motor, the belt tensioner. |
+| Drawer channel ledge | 2 | `MotorLift/ToLaserCut-DXF/cart_ledge.dxf` | Generated | Flip one over for the left side. Tap the M6 hole. |
 | Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 160 x 200 mm, 2 T8 nut cutouts, 8 carriage-bracket holes, 4 well-plate-nest holes. |
 | Lift base plate | 1 | `MotorLift/ToLaserCut-DXF/lift_base_plate.dxf` | Generated | 229.2 x 120 mm. |
 | Interface plate, high | 4 | `ToLaserCut-DXF/interface_plate_high.DXF` | Repo | Lift platform rail plates. |
 | Plunger rail plate | 4 | `MotorLift/ToLaserCut-DXF/plunger_rail_plate.dxf` | Generated | A taller, rectangular `interface_plate_high` that reaches down to the plunger carriage brackets. |
-| Tip ejector plate | 1 | `MotorLift/ToLaserCut-DXF/tip_ejector_plate.dxf` | Generated | Under the barrel ends; a 5.8 mm hole around each nozzle. |
 | Frame corner bracket | 16 | `ToLaserCut-DXF/angle_bracket-(optionally can be purchased).DXF` | Repo | Or buy 2020 flat L corner plates. |
 
 Not needed in this layout: `interface_plate_low` (the pipette plate now bolts to side bars),
@@ -39,9 +40,6 @@ least 220 mm.
 
 | Part | Qty | File | Status | Notes |
 |---|---|---|---|---|
-| Syringe barrel grip (slip fit) | 1 | `MotorLift/ToPrint-STL/syringe_grip_slipfit.stl` | Generated | The repo grip with its holes opened to 6.9 mm: it only guides the barrels' lower ends now, nothing is pressed in. |
-| Syringe locking frame | 1 | `MotorLift/ToPrint-STL/syringe_lock_frame.stl` | Generated | Clamps the trimmed syringe flanges to the pipette plate; a slot per row keys the tab stubs. Held by the head-bracket M4s. Replaces the repo `S-P_plate`. |
-| Plunger holder plate | 1 | `MotorLift/ToPrint-STL/plunger_holder_plate_motorlift.stl` | Generated | The plunger nuts and the stiffening frame sit on it; clearance holes over the carriage-bracket bolt heads; the repo's four 33 mm motor holes filled. |
 | Plunger sensor post | 3 | `MotorLift/ToPrint-STL/optical_switch_post.stl` | Generated | Holds a slotted optical endstop laid flat under the plunger plate; 2 M3 to the pipette plate. |
 | Plunger sensor flag | 3 | `MotorLift/ToPrint-STL/plunger_flag.stl` | Generated | Hangs from the plunger plate through the sensor's slot; 2 M3. |
 | Electronics housing (sloped) | 1 | `MotorLift/ToPrint-STL/control_box_housing_sloped.stl` | Generated | Repo housing with the screen panel tilted 10 deg toward the user, a skirt that runs its walls down to the bench, the lid bosses extended to the base, and a back pad with 2 M5 into T-nuts in the bottom front bar. |
@@ -49,7 +47,10 @@ least 220 mm.
 | Well-plate nest | 1 | `MotorLift/ToPrint-STL/well_plate_nest.stl` | Generated | Locates an SBS plate on the lift platform at the height the firmware expects (replaces the flat repo tray). 4 M4 to the platform. |
 | Head bracket | 2 | `MotorLift/ToPrint-STL/head_bracket.stl` | Generated | Bolts the pipette plate to the side bars. |
 | Belt tensioner bracket (lift) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_lift.stl` | Generated | |
-| Belt tensioner bracket (plunger) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_plunger.stl` | Generated | |
+| Belt tensioner bracket (plunger) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_plunger.stl` | Generated | On the top plate. |
+| Drawer channel spacer | 1 + 1 mirrored | `MotorLift/ToPrint-STL/cart_spacer_R.stl` | Generated | Mirror for the left. |
+| D-shaft trough | 1 + 1 mirrored | `MotorLift/ToPrint-STL/dshaft_trough_R.stl` | Generated | Mirror for the left. |
+| D-shaft lever | 2 | `MotorLift/ToPrint-STL/dshaft_lever.stl` | Generated | |
 | Plunger carriage bracket | 2 + 2 | `MotorLift/ToPrint-STL/plunger_carriage_bracket_RF_LB.stl`, `..._RB_LF.stl` | Generated | Hang under the plunger plate's side edges and join it to its 4 rail plates. Two mirror-image hands, 2 of each. 4 captive M4 nuts each. |
 | Lift carriage bracket | 4 | `MotorLift/ToPrint-STL/lift_carriage_bracket.stl` | Generated | Joins the lift platform to its 4 rail plates; same part at every corner. 2 captive M4 nuts each. |
 | Lift home-switch holder | 1 | `MotorLift/ToPrint-STL/lift_home_switch_holder.stl` | Generated | For a KW12-type switch. |
@@ -71,20 +72,20 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 | MGN9 linear rail, 330 mm *est.* | 4 | One per post. |
 | MGN9H carriage | 8 | Lift platform (4) + plunger plate (4). |
 | NEMA17 stepper, 40 mm body (~0.4 N m) | 1 | Lift. 5 mm shaft. |
-| NEMA17 stepper, 48 mm body (~0.5 N m) | 1 | Plunger (drives all four screws). |
-| T8x2 lead screw (8 mm, 2 mm lead) | 6 | Buy 150 mm and cut: 4 plunger at ~127 mm, 2 lift at ~118 mm. |
+| NEMA17 stepper, 48 mm body (~0.5 N m) | 1 | Plunger (drives all four screws). Stands on the top plate, shaft down. |
+| T8x2 lead screw (8 mm, 2 mm lead) | 6 | Buy 150 mm and cut: 4 plunger at ~131 mm (hung from the top plate), 2 lift at ~118 mm. |
 | T8x2 anti-backlash nut | 4 | Plunger. |
 | T8x2 brass flange nut | 2 | Lift (gravity keeps these loaded one way). |
-| KFL08 flange bearing (8 mm bore) | 6 | 4 plunger, 2 lift. The plates assume 37 mm bolt spacing; check yours. |
+| KFL08 flange bearing (8 mm bore) | 6 | 4 plunger (on the top plate), 2 lift. The plates assume 37 mm bolt spacing; check yours. |
 | GT2 20T pulley, 8 mm bore, 6 mm belt | 6 | On the screws. |
 | GT2 20T pulley, 5 mm bore, 6 mm belt | 2 | On the motors. |
 | Smooth idler, 16 mm OD, 6 mm belt | 2 | Tensioners, each on a shoulder bolt. |
 | GT2 closed-loop belt, 6 mm, 339-344 mm | 1 | Lift. Any loop in this range fits the tensioner's adjustment. |
-| GT2 closed-loop belt, 6 mm, 544-549 mm | 1 | Plunger. |
+| GT2 closed-loop belt, 6 mm, 542-547 mm | 1 | Plunger, under the top plate. Any loop in this range fits the tensioner's adjustment. |
+| Steel rod, 8 mm, ~155 mm | 2 | Drawer D-shafts: grind or file a 0.8 mm deep flat along the length. |
+| Ball spring plunger, M6 | 2 | Drawer detents, in the ledges. |
 | Micro limit switch (lever type, KW12-style) | 1 | Lift home. |
 | Slotted optical endstop board (TCST2103-type, 3D-printer style) | 3 | Plunger home, one per sensor post. Check the body (24.5 x 10.8 x 6.3 mm, 3.1 mm slot, M3 ears 19 mm apart) and the output level when blocked (`PLUNGER_SW_ACTIVE`). |
-| M4 threaded rod, ~100 mm | 4 | Tip-ejector rods. |
-| Compression spring, ~6.4 mm OD x 20-25 mm, light | 4 | Hold the ejector plate up; one over each rod. |
 
 ## 4. Electronics
 
@@ -104,10 +105,30 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 
 | Part | Qty | Notes |
 |---|---|---|
-| 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. Instead of cutting the flanged end off, trim the finger tabs to stubs: flange 8.2 mm across the stubs and at most 7.2 mm wide, face left flat (the model assumes a 6.4 mm barrel and a 1.2 mm flange; measure yours). |
-| 200 uL pipette tips, racked | as needed | The firmware caps volumes at 200 uL. |
-| Heat-shrink tubing | 96 pieces | Over each syringe tip so the pipette tips seal (per the video); size it by test fitting. |
+| Pipette tips, racked | as needed | For the cartridge fitted; the firmware caps volumes at the cartridge's tip capacity. |
 | 96-well plates (SBS format) | as needed | |
+
+## 5b. Syringe cartridge (per cartridge)
+
+Everything that depends on the syringes and tips (see "Syringe cartridge" in
+`01_Hardware/MotorLift/README.md`). Build one per tip family, or a spare.
+
+| Part | Qty | File / notes |
+|---|---|---|
+| Cartridge plate, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/cartridge_plate.dxf` |
+| Plunger carrier, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/plunger_carrier.dxf` |
+| Tip ejector plate, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/tip_ejector_plate.dxf` |
+| Syringe locking frame (printed) | 1 | `MotorLift/ToPrint-STL/syringe_lock_frame.stl`; a slot per row keys the tab stubs |
+| Syringe barrel grip, slip fit (printed) | 1 | `MotorLift/ToPrint-STL/syringe_grip_slipfit.stl`; hangs from the cartridge plate by 4 ears |
+| Pad retainer (printed) | 1 | `MotorLift/ToPrint-STL/pad_retainer.stl` |
+| 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. Instead of cutting the flanged end off, trim the finger tabs to stubs: flange 8.2 mm across the stubs and at most 7.2 mm wide, face left flat (the model assumes a 6.4 mm barrel and a 1.2 mm flange; measure yours). |
+| Heat-shrink tubing | 96 pieces | Over each syringe tip so this cartridge's tips seal; size it by test fitting. |
+| M4 threaded rod, ~110 mm | 4 | Tip-ejector rods |
+| Compression spring, ~6.4 mm OD x 20-25 mm, light | 4 | Hold the ejector plate up; one over each rod |
+| M4 nut + washer | 12 | Ejector rods: under and over the plate, and the spring stop |
+| Cartridge handle (printed) | 1 | `MotorLift/ToPrint-STL/cartridge_handle.stl` |
+| M3 x 10 self-tapping | 2 | Handle to the cartridge plate |
+| M3 x 14 self-tapping | 4 | Frame and cartridge plate into the grip's ears |
 
 ## 6. Fasteners (approximate; buy about 20 % extra)
 
@@ -116,23 +137,24 @@ T-nuts.
 
 | Fastener | Approx. qty | Where |
 |---|---|---|
-| M5 x 10 + M5 T-nut (2020) | 96 | Corner brackets (64), inside corner brackets (24), base plate (4), head brackets (4) |
-| M5 x 12 + M5 T-nut (2020) | 4 | Control box pad to the bottom front bar (2); stiffening-frame short bars, up through the plunger and holder plates (2) |
+| M5 x 10 + M5 T-nut (2020) | 108 | Corner brackets (64), inside corner brackets (24), top plate (12), base plate (4), head brackets (4) |
+| M5 x 12 + M5 T-nut (2020) | 2 | Control box pad to the bottom front bar |
 | M3 x 8 + M3 T-nut (2020) | 70 | MGN9 rails (20 mm hole pitch) |
 | M3 x 6-8 | 40 | Carriages to interface plates, electronics housing |
-| M3 x 10 + nut | 30 | Motors (8), lift nuts (8), tensioner brackets (4), lift switch holder (2), sensor flags (6), spares |
+| M3 x 10 + nut | 46 | Motors (8), lift nuts (8), plunger nuts through the drive plate (16), tensioner brackets (4), lift switch holder (2), sensor flags (6), spares |
 | M3 x 12 + nut | 8 | Plunger switch posts to the pipette plate (6), USB panel socket (2) |
 | M3 x 10 countersunk, self-tapping | 4 | Control box base into the housing bosses |
-| M3 x 16 + nut | 16 | Plunger nuts (through nut flange, holder plate, 1.5 mm washers and plunger plate) |
 | M3 flat washer (7 mm OD) | 24 | Under the M3 nuts at the T8 nut cutouts, to span the slots (lift 8, plunger 16) |
 | M4 x 10 + nut | 12 | KFL08 bearings |
-| M4 x 35 + nut | 4 | Head brackets up through the pipette plate and the syringe locking frame |
+| M4 x 30 + nut | 4 | Head brackets up through the pipette plate |
 | M4 x 12 + nut | 16 | Lift and plunger rail plates into the carriage brackets' captive nuts (8 + 8) |
-| M4 x 16 + nut | 16 | Lift brackets down through the platform (8); plunger plate down into its brackets' captive nuts (4); well-plate nest (4) |
-| M4 x 20 + M4 T-nut (2020) | 4 | Plunger brackets up through both plates into the stiffening frame's long bars |
+| M4 x 16 + nut | 12 | Lift brackets down through the platform (8); well-plate nest (4) |
+| M4 x 20 + M4 T-nut (2020) | 8 | Plunger carriage brackets up through the drive plate into the stiffening frame's bars |
+| M3 x 14 + nut | 14 | Drawer ledges and spacers to the pipette plate |
+| M3 x 25 + nut | 4 | D-shaft troughs to the drive plate (front bolts) |
+| M3 x 25 + M3 T-nut (2020) | 4 | D-shaft troughs up into the stiffener's long bars |
 | M2 x 16 + nut | 2 | Lift home switch in its holder |
 | M3 x 8 self-tapping | 6 | Optical endstops to their posts |
-| M4 nut + washer | 12 | Tip-ejector rods: under and over the plate, and the spring stop |
 | Shoulder bolt + nut for idlers | 2 | Tensioners |
 
 ## 7. Tools and supplies

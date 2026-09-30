@@ -16,7 +16,6 @@ ns["pose"](0, 0)
 
 OUT = os.path.normpath(os.path.join(here, "..", "01_Hardware", "MotorLift", "ToPrint-STL"))
 PARTS = {   # object -> (file, rotation for printing)
-    "plunger_holder_plate": ("plunger_holder_plate_motorlift.stl", Matrix.Identity(3)),
     "lift_tensioner_bracket": ("tensioner_bracket_lift.stl", Matrix.Identity(3)),
     "plunger_tensioner_bracket": ("tensioner_bracket_plunger.stl", Matrix.Identity(3)),
     "lift_home_switch_holder": ("lift_home_switch_holder.stl", Matrix.Identity(3)),
@@ -25,6 +24,12 @@ PARTS = {   # object -> (file, rotation for printing)
     "well_plate_nest": ("well_plate_nest.stl", Matrix.Identity(3)),
     "syringe_lock_frame": ("syringe_lock_frame.stl", Matrix.Rotation(math.pi, 3, "X")),   # slots up
     "syringe_grip_slipfit": ("syringe_grip_slipfit.stl", Matrix.Identity(3)),
+    "pad_retainer": ("pad_retainer.stl", Matrix.Rotation(math.pi, 3, "X")),   # pad pockets up
+    "cartridge_handle": ("cartridge_handle.stl", Matrix.Rotation(math.pi, 3, "X")),   # plate face down
+    # drawer hardware on the machine (right-hand side; mirror each for the left)
+    "cart_spacer_R": ("cart_spacer_R.stl", Matrix.Identity(3)),
+    "dshaft_trough_R": ("dshaft_trough_R.stl", Matrix.Identity(3)),
+    "dshaft_lever_R": ("dshaft_lever.stl", Matrix.Identity(3)),
     "control_box_base": ("control_box_base.stl", Matrix.Rotation(math.pi, 3, "X")),   # countersinks down
     "lift_carriage_bracket_RF": ("lift_carriage_bracket.stl", Matrix.Identity(3)),   # all 4 corners alike
     # hang under the plunger plate: print plate-face down, nut pockets and slots open upward.
