@@ -111,7 +111,8 @@ TOP_PZ0 = FH - 1 - 16             # plunger pulleys hang under the top plate, in
 CART_HANDLE_H = 12.0              # cartridge handle, under the front of the cartridge plate
 LEVER_HUB = (8.0, 8.0)            # D-shaft lever hub: radius, length along the shaft
 LEVER_ARM = (24.0, 5.6)           # lever arm: reach from the axis, thickness in the turning plane
-LEVER_PIN = 2.0                   # spring pin across hub and shaft
+LEVER_OPEN_DEG = 30.0             # open lever: arm this far outward of straight down (clear of the rail plate)
+KEEP_X = 52.5                     # the outer plunger rods pass at |x| <= 51 as the drawer slides: drawer hardware stays outside
 EJ_SPRING_Z = (SEAT, SEAT + 20)   # ejector springs: carrier plate top to the spring nut
 # Parts that come out with the syringe cartridge (see check_cartridge_removal)
 CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_lock_frame", "syringe_grip",
@@ -624,14 +625,15 @@ def dshaft_clamps(members):
     cradling an 8 mm D-shaft along y with a lever at the front. Flat up, the plunger carrier slides
     in over the shafts; a quarter turn puts the round side up and presses it against the plate,
     so the coupling has no play in either direction. Modeled clamped: flats facing outward, levers
-    hanging down (the quarter turn swings them out level and brings the flats up)."""
+    pointing inward-down (the quarter turn swings them to hang just outward of down and brings the
+    flats up). Everything stays outside KEEP_X, where the outer plunger rods pass."""
     zu = PLG_MID - T / 2
     r = L.DSHAFT_D / 2
     zc = dshaft_axis_z()                              # shaft axis: its top meets the carrier's underside
     y0, y1 = -100.0, L.CART_SLOT_BACK
     for sx in (-1, 1):
         tag = "LR"[sx > 0]
-        xa, xb = sorted((sx * 51.2, sx * 67.0))
+        xa, xb = sorted((sx * KEEP_X, sx * 67.0))
         zb = zc - r - 3.0                                                     # 2.9 mm floor under the cradle
         tr = box(f"dshaft_trough_{tag}", (xb - xa, y1 - y0, zc - zb), ((xa + xb) / 2, (y0 + y1) / 2, (zb + zc) / 2),
                  "Head", M["pla"])
@@ -648,30 +650,36 @@ def dshaft_clamps(members):
             _cone(bm, L.M3 / 2, L.M3 / 2, zu - 20, zu + 1, xy=(sx * x, y))
         boolean(tr, bm)
         xc, yh0, yh1 = sx * L.DSHAFT_X, y0 - LEVER_HUB[1] - 6.0, y0 - 6.0      # lever hub, clear of the trough
+        ym = (yh0 + yh1) / 2
         bm = bmesh.new()
         _bar(bm, (xc, yh0, zc), (xc, y1, zc), r, seg=48)
         sh = new_obj(f"dshaft_{tag}", bm, "Head", M["chrome"])
         bm = bmesh.new()                                                      # the flat, facing outward
         _block(bm, *sorted((xc + sx * (r - L.DSHAFT_FLAT), xc + sx * (r + 1))), yh0 - 1, y1 + 1, zc - r - 1, zc + r + 1)
+        _bar(bm, (xc, ym, zc - r - 0.5), (xc, ym, zc - r + 1.5), 1.25, seg=16)   # set-screw dimple, underneath
         boolean(sh, bm)
-        bm = bmesh.new()
-        _bar(bm, (xc, yh0 + LEVER_HUB[1] / 2, zc - r - 0.5), (xc, yh0 + LEVER_HUB[1] / 2, zc + r + 0.5), LEVER_PIN / 2, seg=16)
-        boolean(sh, bm)                                                       # cross hole for the spring pin
-        # lever: a hub trimmed flush with the flat (so, open, it stays under the carrier's path),
-        # pinned across the shaft, and an arm LEVER_ARM[1] thick in the turning plane (same reason)
+        # lever. Open, the carrier slides out over the shaft's front end and the outer plunger rods pass
+        # just inside it, so the hub only wraps the shaft where neither goes (~190 deg: trimmed flush
+        # with the flat and at KEEP_X); an M3 set screw into the dimple drives it. The arm hangs
+        # LEVER_OPEN_DEG outward of straight down when open, a quarter turn inward of that when clamped.
         bm = bmesh.new()
         _bar(bm, (xc, yh0, zc), (xc, yh1, zc), LEVER_HUB[0], seg=48)
         lv = new_obj(f"dshaft_lever_{tag}", bm, "Head", M["pla"])
+        a = D(180 + LEVER_OPEN_DEG)                                           # arm direction, clamped
+        u, n = Vector((sx * math.cos(a), 0, math.sin(a))), Vector((-sx * math.sin(a), 0, math.cos(a)))
         bm = bmesh.new()
-        aw = LEVER_ARM[1] / 2
-        _block(bm, xc - aw, xc + aw, yh0, yh1, zc - LEVER_ARM[0], zc - 1)
+        bmesh.ops.create_cube(bm, size=1)
+        c = Vector((xc, ym, zc)) + u * (LEVER_ARM[0] / 2)
+        bmesh.ops.transform(bm, verts=bm.verts, matrix=Matrix(((u.x * LEVER_ARM[0], 0, n.x * LEVER_ARM[1], c.x),
+                            (0, yh1 - yh0, 0, c.y), (u.z * LEVER_ARM[0], 0, n.z * LEVER_ARM[1], c.z), (0, 0, 0, 1))))
         boolean(lv, bm, 'UNION', self_intersect=True)
+        e = LEVER_HUB[0] + 2
+        keep = L.DSHAFT_X - KEEP_X                                            # open, this side faces the rods
         bm = bmesh.new()
-        _block(bm, *sorted((xc + sx * (r - L.DSHAFT_FLAT - 0.2), xc + sx * (LEVER_HUB[0] + 1))), yh0 - 1, yh1 + 1,
-               zc - LEVER_HUB[0] - 1, zc + LEVER_HUB[0] + 1)                  # trim flush with the flat (0.2 under)
+        _block(bm, *sorted((xc + sx * (r - L.DSHAFT_FLAT - 0.2), xc + sx * e)), yh0 - 1, yh1 + 1, zc - e, zc + e)   # flat side
+        _block(bm, xc - e, xc + e, yh0 - 1, yh1 + 1, zc + keep, zc + e)       # rod side
         _bar(bm, (xc, yh0 - 1, zc), (xc, yh1 + 1, zc), r + 0.15, seg=48)      # bore
-        _bar(bm, (xc, yh0 + LEVER_HUB[1] / 2, zc - LEVER_HUB[0] - 1), (xc, yh0 + LEVER_HUB[1] / 2, zc + LEVER_HUB[0] + 1),
-             LEVER_PIN / 2, seg=16)                                           # pin hole
+        _bar(bm, (xc, ym, zc - e), (xc, ym, zc - r + 0.5), 1.25, seg=16)      # M3 set screw, tapped
         boolean(lv, bm, self_intersect=True)
         for o in (sh, lv):                                                    # origin on the axis: the lever turns in place
             d = Vector((xc, 0.0, zc)) - o.location
