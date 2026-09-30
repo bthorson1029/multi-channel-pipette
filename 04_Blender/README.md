@@ -45,6 +45,9 @@ Both variants include `collision_report()`, which sweeps every moving part throu
 travel and tests it against the rest of the model, allowing only intended contacts (screws in
 nuts, carriages on rails, and so on). Both report no collisions. `variant_motor_lift.py` also
 reports the belt loop lengths across the tensioner's adjustment range: 338.9-344.4 mm (lift) and
-543.2-549.1 mm (plunger).
+541.6-547.5 mm (plunger).
 
-Each variant keyframes a full cycle as it builds; scrub the timeline to watch it.
+Each variant keyframes a full cycle as it builds; scrub the timeline to watch it. The motor-lift
+variant follows its cycle with a cartridge swap (frames 270-498, `DRAWER_KEYS`): the D-shaft
+levers turn a quarter turn open (the flats come up and the plunger carrier sinks 0.8 mm onto them), the drawer slides 210 mm out the front and back in, and the levers
+close.

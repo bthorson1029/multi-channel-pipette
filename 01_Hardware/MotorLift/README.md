@@ -48,7 +48,7 @@ plate). The pipette plate's 96 syringe holes keep the repo plate's 2.5 mm webs.
 | `cartridge_handle.stl` | 1 per cartridge | Under the front of the cartridge plate (2 M3 self-tappers): pull the drawer out by it. |
 | `cart_spacer_R.stl` | 2 | Drawer channel spacer under the pipette plate's arm, between it and the ledge; its tab at the back is the drawer's stop. Drawn for the right; mirror it for the left. |
 | `dshaft_trough_R.stl` | 2 | Under the drive plate, cradling an 8 mm D-shaft along its length (so the shaft can't bend); 4 M3 up into the plate (2 into T-nuts in the stiffener's long bar). Mirror for the left. |
-| `dshaft_lever.stl` | 2 | On the front end of each D-shaft (M3 grub screw on the flat): a quarter turn clamps the plunger carrier. |
+| `dshaft_lever.stl` | 2 | On the front end of each D-shaft, pinned across it (2 x 16 mm spring pin). Hanging down, the flat faces outward and the carrier is clamped; a quarter turn outward brings the flat up and the carrier sinks 0.8 mm onto it. The hub is trimmed flush with the flat and the arm is 5.6 mm thick, so with the lever open the carrier slides out over it. |
 | `lift_home_switch_holder.stl` | 1 | For a KW12-type lever micro switch (20 x 10 x 6.4 mm, mounting holes 9.5 mm apart), clamped by 2 M2 through the walls; 2 M3 to the base plate. Check the hole positions against your switch. |
 
 All nineteen are closed solids (every edge shared by exactly two triangles).

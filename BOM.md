@@ -82,7 +82,8 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 | Smooth idler, 16 mm OD, 6 mm belt | 2 | Tensioners, each on a shoulder bolt. |
 | GT2 closed-loop belt, 6 mm, 339-344 mm | 1 | Lift. Any loop in this range fits the tensioner's adjustment. |
 | GT2 closed-loop belt, 6 mm, 542-547 mm | 1 | Plunger, under the top plate. Any loop in this range fits the tensioner's adjustment. |
-| Steel rod, 8 mm, ~155 mm | 2 | Drawer D-shafts: grind or file a 0.8 mm deep flat along the length. |
+| Steel rod, 8 mm, ~165 mm | 2 | Drawer D-shafts: grind or file a 0.8 mm deep flat along the length, and drill a 2 mm cross hole 4 mm from the front end, square to the flat. |
+| Spring pin, 2 x 16 mm | 2 | Pins each lever to its D-shaft. |
 | Ball spring plunger, M6 | 2 | Drawer detents, in the ledges. |
 | Micro limit switch (lever type, KW12-style) | 1 | Lift home. |
 | Slotted optical endstop board (TCST2103-type, 3D-printer style) | 3 | Plunger home, one per sensor post. Check the body (24.5 x 10.8 x 6.3 mm, 3.1 mm slot, M3 ears 19 mm apart) and the output level when blocked (`PLUNGER_SW_ACTIVE`). |

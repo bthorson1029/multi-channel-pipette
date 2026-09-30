@@ -19,7 +19,7 @@ OUT = os.path.join(HERE, "ToLaserCut-DXF")
 # ---------------------------------------------------------------- layout (machine frame, mm)
 PLATE_T = 3.0                                    # all laser-cut parts
 PS_XY = [(-65.0, -58.9), (65.0, -58.9), (-65.0, 58.9), (65.0, 58.9)]   # plunger screws: LF RF LB RB
-PLG_MOTOR_XY = (0.0, -76.0)                      # plunger motor, on the top plate
+PLG_MOTOR_XY = (0.0, 76.0)                       # plunger motor, on the top plate at the back
 LIFT_X = 70.0                                    # lift screws at (+/-LIFT_X, 0)
 LIFT_MOTOR_XY = (0.0, 36.0)                      # lift motor, hangs under the base plate
 HOME_SW_XY = (-40.0, -35.0)                      # lift home switch on the base plate
@@ -29,7 +29,7 @@ PULLEY_R = 6.37                                  # GT2 20T pitch radius
 IDLER_R = 8.8                                    # belt pitch line on a 16 mm smooth idler
 TENSION_TAKEUP = 16.0                            # nominal idler deflection
 SLOT_TRAVEL = 12.0                               # tensioner adjustment (+/-6)
-PLG_IDLER_Y = PS_XY[3][1] + PULLEY_R + IDLER_R - TENSION_TAKEUP   # plunger idler, back run
+PLG_IDLER_Y = PS_XY[0][1] - PULLEY_R - IDLER_R + TENSION_TAKEUP   # plunger idler, front run
 LIFT_IDLER_Y = -(PULLEY_R + IDLER_R) + TENSION_TAKEUP             # lift idler, run between screws
 TENSIONER_HOLE_DX = 11.0                         # bracket screws either side of the slot
 

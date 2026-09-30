@@ -109,6 +109,9 @@ FRAME_HALF = (55.5, 41.0)         # locking frame, inside the pipette plate's dr
 PC_BELOW = 6.0                    # plunger carrier (3 mm steel) + pad retainer (3 mm) under the drive plate
 TOP_PZ0 = FH - 1 - 16             # plunger pulleys hang under the top plate, inside the top ring
 CART_HANDLE_H = 12.0              # cartridge handle, under the front of the cartridge plate
+LEVER_HUB = (8.0, 8.0)            # D-shaft lever hub: radius, length along the shaft
+LEVER_ARM = (24.0, 5.6)           # lever arm: reach from the axis, thickness in the turning plane
+LEVER_PIN = 2.0                   # spring pin across hub and shaft
 EJ_SPRING_Z = (SEAT, SEAT + 20)   # ejector springs: carrier plate top to the spring nut
 # Parts that come out with the syringe cartridge (see check_cartridge_removal)
 CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_lock_frame", "syringe_grip",
@@ -620,10 +623,11 @@ def dshaft_clamps(members):
     """Under the drive plate (build frame), each side: a printed trough bolted up to the plate,
     cradling an 8 mm D-shaft along y with a lever at the front. Flat up, the plunger carrier slides
     in over the shafts; a quarter turn puts the round side up and presses it against the plate,
-    so the coupling has no play in either direction. Modeled clamped."""
+    so the coupling has no play in either direction. Modeled clamped: flats facing outward, levers
+    hanging down (the quarter turn swings them out level and brings the flats up)."""
     zu = PLG_MID - T / 2
     r = L.DSHAFT_D / 2
-    zc = zu - 2 * T - r                               # shaft axis: its top meets the carrier's underside
+    zc = dshaft_axis_z()                              # shaft axis: its top meets the carrier's underside
     y0, y1 = -100.0, L.CART_SLOT_BACK
     for sx in (-1, 1):
         tag = "LR"[sx > 0]
@@ -643,11 +647,49 @@ def dshaft_clamps(members):
         for x, y in L.TROUGH_BOLTS:
             _cone(bm, L.M3 / 2, L.M3 / 2, zu - 20, zu + 1, xy=(sx * x, y))
         boolean(tr, bm)
+        xc, yh0, yh1 = sx * L.DSHAFT_X, y0 - LEVER_HUB[1] - 6.0, y0 - 6.0      # lever hub, clear of the trough
         bm = bmesh.new()
-        _bar(bm, (sx * L.DSHAFT_X, y0 - 4, zc), (sx * L.DSHAFT_X, y1, zc), r, seg=24)
+        _bar(bm, (xc, yh0, zc), (xc, y1, zc), r, seg=48)
         sh = new_obj(f"dshaft_{tag}", bm, "Head", M["chrome"])
-        lv = box(f"dshaft_lever_{tag}", (6, 5, 22), (sx * L.DSHAFT_X, y0 - 7.5, zc - 9), "Head", M["pla"])
+        bm = bmesh.new()                                                      # the flat, facing outward
+        _block(bm, *sorted((xc + sx * (r - L.DSHAFT_FLAT), xc + sx * (r + 1))), yh0 - 1, y1 + 1, zc - r - 1, zc + r + 1)
+        boolean(sh, bm)
+        bm = bmesh.new()
+        _bar(bm, (xc, yh0 + LEVER_HUB[1] / 2, zc - r - 0.5), (xc, yh0 + LEVER_HUB[1] / 2, zc + r + 0.5), LEVER_PIN / 2, seg=16)
+        boolean(sh, bm)                                                       # cross hole for the spring pin
+        # lever: a hub trimmed flush with the flat (so, open, it stays under the carrier's path),
+        # pinned across the shaft, and an arm LEVER_ARM[1] thick in the turning plane (same reason)
+        bm = bmesh.new()
+        _bar(bm, (xc, yh0, zc), (xc, yh1, zc), LEVER_HUB[0], seg=48)
+        lv = new_obj(f"dshaft_lever_{tag}", bm, "Head", M["pla"])
+        bm = bmesh.new()
+        aw = LEVER_ARM[1] / 2
+        _block(bm, xc - aw, xc + aw, yh0, yh1, zc - LEVER_ARM[0], zc - 1)
+        boolean(lv, bm, 'UNION', self_intersect=True)
+        bm = bmesh.new()
+        _block(bm, *sorted((xc + sx * (r - L.DSHAFT_FLAT - 0.2), xc + sx * (LEVER_HUB[0] + 1))), yh0 - 1, yh1 + 1,
+               zc - LEVER_HUB[0] - 1, zc + LEVER_HUB[0] + 1)                  # trim flush with the flat (0.2 under)
+        _bar(bm, (xc, yh0 - 1, zc), (xc, yh1 + 1, zc), r + 0.15, seg=48)      # bore
+        _bar(bm, (xc, yh0 + LEVER_HUB[1] / 2, zc - LEVER_HUB[0] - 1), (xc, yh0 + LEVER_HUB[1] / 2, zc + LEVER_HUB[0] + 1),
+             LEVER_PIN / 2, seg=16)                                           # pin hole
+        boolean(lv, bm, self_intersect=True)
+        for o in (sh, lv):                                                    # origin on the axis: the lever turns in place
+            d = Vector((xc, 0.0, zc)) - o.location
+            o.data.transform(Matrix.Translation(-d))
+            o.location += d
         members += [tr, sh, lv]
+
+
+def dshaft_axis_z():
+    return PLG_MID - T / 2 - 2 * T - L.DSHAFT_D / 2
+
+
+def dshaft_drop(turn):
+    """How far the carrier sinks with the levers `turn` of the way open: it rests on the shaft tops,
+    and the flat (normal from facing outward to facing up) only reaches the top in the last ~37 deg."""
+    r, fd = L.DSHAFT_D / 2, L.DSHAFT_FLAT
+    a, b = D(90) * (1 - turn), math.acos((r - fd) / r)
+    return 0.0 if a >= b else r - r * math.cos(b - a)
 
 
 def drawer_channels():
@@ -1014,7 +1056,7 @@ def modify():
         pulley(f"plunger_pulley_{i}", x, y, TOP_PZ0, "Motors")
     nema17("plunger_motor", *PLG_MOTOR_XY, z_top, False, "Motors", length=48.0)
     pulley("plunger_pulley_motor", *PLG_MOTOR_XY, TOP_PZ0, "Motors")
-    # tensioner: idler pushes the back run inward (-y); its bolt goes up through the plate's slot
+    # tensioner: idler pushes the front run inward (+y); its bolt goes up through the plate's slot
     pi_y = L.PLG_IDLER_Y
     idler("plunger_idler", 0, pi_y, TOP_PZ0, "Motors")
     obj.remove(obj["plunger_idler_bolt"])
@@ -1022,8 +1064,8 @@ def modify():
     cyl("plunger_idler_bolt_head", 4.0, 3.0, (0, pi_y, z_top + 5.5 + 1.5), "Motors", M["motor"])
     tensioner("plunger_tensioner", 0, pi_y, z_top, 5.5, "Motors")
     lf, rf, lb, rb = PS_XY          # PS_XY order: LF, RF, LB, RB
-    plg_seq = [(*lf, PULLEY_R), (*PLG_MOTOR_XY, PULLEY_R), (*rf, PULLEY_R), (*rb, PULLEY_R),
-               (0, pi_y, -IDLER_R), (*lb, PULLEY_R)]
+    plg_seq = [(*lf, PULLEY_R), (0, pi_y, -IDLER_R), (*rf, PULLEY_R), (*rb, PULLEY_R),
+               (*PLG_MOTOR_XY, PULLEY_R), (*lb, PULLEY_R)]   # motor on the back run, idler on the front
     plg_belt = belt("plunger_belt", plg_seq, TOP_PZ0 + 10, "Motors")
 
     # moving plunger carriage: plate, holder, plungers, carriage brackets, rail plates, carriages,
@@ -1092,7 +1134,7 @@ def modify():
             out.append(round(belt_route(q)[1], 1))
         return out
     return {"lift_belt_mm": round(lift_belt, 1), "plunger_belt_mm": round(plg_belt, 1),
-            "lift_belt_range": span(lift_seq, 1, +1), "plunger_belt_range": span(plg_seq, 4, -1)}
+            "lift_belt_range": span(lift_seq, 1, +1), "plunger_belt_range": span(plg_seq, 1, +1)}
 
 
 # ================================================================ motion
@@ -1149,6 +1191,67 @@ def animate():
             o.keyframe_insert("rotation_euler", frame=f)
     sc.frame_start, sc.frame_end, sc.render.fps = 1, KEYS[-1][0], 24
     sc.frame_set(1)
+
+
+# Cartridge swap, after the cycle (plunger home, bed down): levers a quarter turn open, drawer out
+# DRAWER_OUT (its back edge well clear of the front posts), back in, levers closed.
+# (frame, lever turn 0..1, drawer out 0..1)
+DRAWER_OUT = 210.0
+DRAWER_KEYS = [(270, 0, 0), (294, 1, 0), (306, 1, 0), (366, 1, 1), (390, 1, 1), (450, 1, 0), (462, 1, 0),
+               (486, 0, 0), (498, 0, 0)]
+
+
+def drawer_parts():
+    obj = bpy.data.objects
+    cart = [o for o in obj if o.type == 'MESH' and o.name.startswith(CARTRIDGE + ("pipette_tips",))]
+    levers = [obj[f"dshaft_{p}{t}"] for t in "LR" for p in ("", "lever_")]
+    return cart, levers
+
+
+CARRIER = ("plunger_carrier", "pad_retainer", "plungers_x96")   # ride on the D-shafts: sink when they open
+
+
+def pose_drawer(turn, out):
+    """turn 1 = D-shafts a quarter turn open, levers swung out level, carrier sunk onto the flats;
+    out 1 = drawer DRAWER_OUT forward. Uses delta transforms, so it stacks on pose()."""
+    cart, levers = drawer_parts()
+    for o in cart:
+        o.delta_location.y = -out * DRAWER_OUT
+        o.delta_location.z = -dshaft_drop(turn) if o.name.startswith(CARRIER) else 0.0
+    for o in levers:
+        o.delta_rotation_euler.y = (1 if o.name.endswith("L") else -1) * turn * D(90)
+
+
+def animate_drawer():
+    """Key the levers and the drawer at DRAWER_KEYS; the carrier's sink follows the shaft profile,
+    so it's keyed every frame of the lever turns."""
+    cart, levers = drawer_parts()
+    for f, turn, out in DRAWER_KEYS:
+        pose_drawer(turn, out)
+        for o in cart:
+            o.keyframe_insert("delta_location", index=1, frame=f)
+        for o in levers:
+            o.keyframe_insert("delta_rotation_euler", index=1, frame=f)
+    lv = bpy.data.objects["dshaft_lever_R"]
+    fc = next(c for c in _fcurves(lv) if c.data_path == "delta_rotation_euler" and c.array_index == 1)
+    carrier = [o for o in cart if o.name.startswith(CARRIER)]
+    for f in range(DRAWER_KEYS[0][0], DRAWER_KEYS[-1][0] + 1):
+        turn = -fc.evaluate(f) / D(90)
+        for o in carrier:
+            o.delta_location.z = -dshaft_drop(turn)
+            o.keyframe_insert("delta_location", index=2, frame=f)
+    pose_drawer(0, 0)
+    bpy.context.scene.frame_end = DRAWER_KEYS[-1][0]
+
+
+def _fcurves(o):
+    """F-curves of an object's action (Blender 5 keeps them in layered channelbags)."""
+    act = o.animation_data.action
+    for layer in act.layers:
+        for strip in layer.strips:
+            bag = strip.channelbag(o.animation_data.action_slot)
+            if bag:
+                yield from bag.fcurves
 
 
 def world_bvh(o):
@@ -1230,6 +1333,7 @@ if __name__ != "motor_lib":        # exec with this name to load functions only
     belts = modify()
     pose(0, 0)
     animate()                        # keyframe a full cycle for timeline playback
+    animate_drawer()                 # then a cartridge swap
 summary = {
     "lift_travel_mm": round(LIFT_TRAVEL, 2),
     "lift_revs": round(LIFT_TRAVEL / LIFT_LEAD, 1),

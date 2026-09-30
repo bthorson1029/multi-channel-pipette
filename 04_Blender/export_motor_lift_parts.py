@@ -29,7 +29,7 @@ PARTS = {   # object -> (file, rotation for printing)
     # drawer hardware on the machine (right-hand side; mirror each for the left)
     "cart_spacer_R": ("cart_spacer_R.stl", Matrix.Identity(3)),
     "dshaft_trough_R": ("dshaft_trough_R.stl", Matrix.Identity(3)),
-    "dshaft_lever_R": ("dshaft_lever.stl", Matrix.Identity(3)),
+    "dshaft_lever_R": ("dshaft_lever.stl", Matrix.Rotation(math.radians(90), 3, "X")),   # hub end face down
     "control_box_base": ("control_box_base.stl", Matrix.Rotation(math.pi, 3, "X")),   # countersinks down
     "lift_carriage_bracket_RF": ("lift_carriage_bracket.stl", Matrix.Identity(3)),   # all 4 corners alike
     # hang under the plunger plate: print plate-face down, nut pockets and slots open upward.
