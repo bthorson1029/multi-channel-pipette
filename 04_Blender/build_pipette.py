@@ -140,6 +140,44 @@ def box(name, size, loc, c, m, bevel=0.0):
     return new_obj(name, bm, c, m, loc)
 
 
+def _tslot_profile():
+    """2020 B-type (6 mm slot) outline, CCW: a slot in each face (6.2 opening, 1.8 lip, cavity
+    widening to 11 then tapering to the core 6.1 deep), 0.5 chamfered corners. No center bore."""
+    side = [(9.5, 10), (3.1, 10), (3.1, 8.2), (5.5, 8.2), (5.5, 6.5), (2.9, 3.9), (-2.9, 3.9),
+            (-5.5, 6.5), (-5.5, 8.2), (-3.1, 8.2), (-3.1, 10), (-9.5, 10)]
+    pts = []
+    for k in range(4):                                # +y face, then rotated a quarter turn at a time
+        c, s = math.cos(k * math.pi / 2), math.sin(k * math.pi / 2)
+        pts += [(round(x * c - y * s, 6), round(x * s + y * c, 6)) for x, y in side]
+    return pts
+
+
+def tslot_bar(name, L, loc, axis, c, m):
+    """A length of 2020 T-slot along X, Y or Z, centered on loc (geometry baked, no rotation)."""
+    to_world = {'X': lambda u, v, w: (w, u, v), 'Y': lambda u, v, w: (u, w, v), 'Z': lambda u, v, w: (u, v, w)}[axis]
+    bm = bmesh.new()
+    prof = _tslot_profile()
+    lo = [bm.verts.new(to_world(u, v, -L / 2)) for u, v in prof]
+    hi = [bm.verts.new(to_world(u, v, L / 2)) for u, v in prof]
+    n = len(prof)
+    for i in range(n):
+        bm.faces.new((lo[i], lo[(i + 1) % n], hi[(i + 1) % n], hi[i]))
+    caps = [bm.faces.new(lo[::-1]), bm.faces.new(hi)]
+    bmesh.ops.triangulate(bm, faces=caps)             # the outline is concave
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return new_obj(name, bm, c, m, loc)
+
+
+def bolt_mesh(bm, p, d, head_d, head_h, length, r):
+    """Button-head bolt: head on p's outer side (direction d), shank `length` into -d."""
+    d = Vector(d).normalized()
+    rot = d.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=head_d / 2, radius2=head_d / 2 - 1.0,
+                          depth=head_h, matrix=Matrix.Translation(Vector(p) + d * head_h / 2) @ rot)
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=12, radius1=r, radius2=r, depth=length,
+                          matrix=Matrix.Translation(Vector(p) - d * length / 2) @ rot)
+
+
 def cyl(name, r, h, loc, c, m, axis='Z', seg=32, r2=None):
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=r,
@@ -293,8 +331,7 @@ def build():
 
     # ---------------- frame: 4 posts + 3 rings of 2020, L brackets at the corners
     def ext(name, L, loc, axis):
-        s = {'X': (L, 20, 20), 'Y': (20, L, 20), 'Z': (20, 20, L)}[axis]
-        return box(name, s, loc, "Frame", M["ext"], bevel=1.0)
+        return tslot_bar(name, L, loc, axis, "Frame", M["ext"])
     for sx in (-1, 1):
         for sy in (-1, 1):
             ext(f"post_{'LR'[sx > 0]}{'FB'[sy > 0]}", FH, (sx * PX, sy * PY, FH / 2), 'Z')
@@ -303,6 +340,12 @@ def build():
             ext(f"ext_{lvl}_{'FB'[s > 0]}", FX - 40, (0, s * PY, z), 'X')
             ext(f"ext_{lvl}_{'LR'[s > 0]}", FY - 40, (s * PX, 0, z), 'Y')
     br_src = dxf_part("angle_bracket-(optionally can be purchased).DXF", "angle_bracket", T, "Frame", M["steel"])
+    # Each bracket's 4 M5 holes (DXF coordinates; the corner is at (-18, -18)) are 9 mm in from its
+    # edges, so it sits 1 mm in from the frame's corner to put them on the slot centerlines (10 mm).
+    # Button-head M5 x 8 through the 3 mm plate into a T-nut in the slot (x 10 would bottom out on
+    # the extrusion's core).
+    holes = [(-9.0, 17.0), (-9.0, 37.0), (17.0, -9.0), (37.0, -9.0)]
+    bolts, nuts = bmesh.new(), bmesh.new()
     n = 0
     for normal, h, half_h, half_n in ((-Y, X, FX / 2, FY / 2), (Y, X, FX / 2, FY / 2),
                                       (-X, Y, FY / 2, FX / 2), (X, Y, FY / 2, FX / 2)):
@@ -310,8 +353,20 @@ def build():
             for top in (False, True):
                 o = br_src if n == 0 else dup(br_src, f"angle_bracket.{n:03d}")
                 corner = h * sh * half_h + normal * (half_n + T / 2) + Z * (FH if top else 0)
-                frame_to(o, -h * sh, -Z if top else Z, (-18, -18), corner)
+                frame_to(o, -h * sh, -Z if top else Z, (-19, -19), corner)
+                bpy.context.view_layer.update()
+                for hx, hy in holes:
+                    face = o.matrix_world @ Vector((hx, hy, 0)) - normal * T / 2      # extrusion face
+                    bolt_mesh(bolts, face + normal * T, normal, 9.5, 2.75, 8.0, 2.5)
+                    along = Z if hx < 0 else h                                    # post leg / ring-bar leg
+                    across = normal.cross(along)
+                    c = face - normal * (1.9 + 1.15)                                # behind the 1.8 mm lip
+                    g_ = bmesh.ops.create_cube(nuts, size=1)
+                    bmesh.ops.transform(nuts, verts=g_["verts"], matrix=Matrix(
+                        [[along[i] * 10.0, across[i] * 9.5, normal[i] * 2.3, c[i]] for i in range(3)] + [[0, 0, 0, 1]]))
                 n += 1
+    new_obj("frame_bolts", bolts, "Frame", M["motor"])
+    new_obj("frame_tnuts", nuts, "Frame", M["chrome"])
 
     # ---------------- vertical MGN9H rails on the posts' inner side faces
     rail_z0, rail_z1 = BED_RECT_Z + 15, FH - 25

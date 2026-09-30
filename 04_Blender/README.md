@@ -28,7 +28,8 @@ The variants build on `build_pipette.py`, so it has to stay in the same folder.
 
 - **Imported directly:** the printed parts from `ToPrint-STL` and the laser-cut parts from
   `ToLaserCut-DXF` (lines, arcs and holes, extruded to 3 mm steel).
-- **Modeled:** 2020 extrusion, MGN9H rails and carriages, NEMA17 motors, T8 screws and nuts,
+- **Modeled:** 2020 T-slot extrusion (B-type 6 mm slot profile), the corner brackets' M5 bolts
+  and T-nuts, MGN9H rails and carriages, NEMA17 motors, T8 screws and nuts,
   syringes, tips, the well plate, bearings, pulleys and belts.
 - **Layout:** there is no assembly file in the repo, so placement was reconstructed from the
   creator's build video (youtu.be/2TTu-Lkz2Eo). Part shapes are exact; frame height (400 mm),

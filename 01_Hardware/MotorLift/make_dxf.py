@@ -94,6 +94,11 @@ LEDGE_BOLTS = [(64.2, y) for y in (-95.0, -70.0, -45.0, -20.0, 5.0, 30.0, 46.0)]
 CART_DETENTS = [(sx * 60.0, 40.0) for sx in (-1, 1)]
 CART_HANDLE_SCREWS = [(sx * 15.0, -46.0) for sx in (-1, 1)]
 PC_PLATE = (60.0, 50.0)                          # plunger carrier half sizes (clears the T8 screws)
+# Pad retainer to carrier: 4 M3 x 6 countersunk down through the retainer (heads flush with its top,
+# which bears on the drive plate) into tapped holes in the carrier (tips flush underneath, where it
+# rides on the D-shafts); between the pad pockets and the retainer's edge, clear of the ejector rods
+RETAINER_SCREWS = [(sx * 20.0, sy * 41.5) for sx in (-1, 1) for sy in (-1, 1)]
+M3_TAP_D = 2.5
 DSHAFT_X, DSHAFT_D, DSHAFT_FLAT = 55.5, 8.0, 0.8  # D-shaft clamps: axis, diameter, depth of the flat
 TROUGH_BOLTS = [(64.0, y) for y in (-95.0, -80.0, -32.0, 32.0)]   # right side; mirrored. +/-32: T-nuts
 FRAME_SCREWS = [(sx * 27.0, sy * 38.8) for sx in (-1, 1) for sy in (-1, 1)]   # frame + carrier + grip
@@ -320,9 +325,10 @@ def cartridge_plate():
 
 def plunger_carrier():
     """Plunger carrier: 3 mm steel under the thumb pads. Its edges run over the D-shaft clamps
-    under the drive plate; it pushes the ejector rods."""
+    under the drive plate; it pushes the ejector rods. The pad retainer screws into it (tap M3)."""
     ents = rounded_rect(2 * PC_PLATE[0], 2 * PC_PLATE[1], 2.0)
     ents += [circle(x, y, 3.2) for x, y in ARRAY_GRID]                 # plunger rods
+    ents += [circle(x, y, M3_TAP_D) for x, y in RETAINER_SCREWS]
     return ents
 
 

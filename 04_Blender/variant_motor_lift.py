@@ -120,7 +120,11 @@ CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_
 # USB: a panel-mount USB-B socket on the control box's left end, forward of the DC jack, joined
 # to the Arduino by a short USB-B extension. Typical socket: 12.5 x 11.5 mm body, 2 M3 ears 30 mm
 # apart (check yours).
-USB_PANEL_YZ = (-185.0, 36.0)     # socket center on the left end wall
+# The control box stands CBOX_BACK_GAP off the frame: clear of the corner brackets' bolt heads
+# (2.75 mm) by 0.75. Positions measured on the housing below were taken at a 0.5 mm gap: CBOX_DY.
+CBOX_BACK_GAP = 2.75 + 0.75
+CBOX_DY = -(CBOX_BACK_GAP - 0.5)
+USB_PANEL_YZ = (-185.0 + CBOX_DY, 36.0)   # socket center on the left end wall
 USB_PANEL_CUT = (12.5, 11.5)      # body cutout (y x z)
 USB_PANEL_EARS = 30.0             # M3 hole spacing, along y
 # Tip ejector (see tip_ejector()): the carriage brackets reach the front rods EJ_GAP_F below home
@@ -137,7 +141,7 @@ OPT_BODY = (24.5, 10.8, 6.3)
 OPT_SLOT = 3.1
 OPT_EARS = 19.0
 OPT_BELOW = EJECT_MM + 3.0 + 1.5
-CBOX_BOSSES = [(sx * 79.0, y) for sx in (-1, 1) for y in (-207.5, -117.5)]   # repo lid screw bosses (measured)
+CBOX_BOSSES = [(sx * 79.0, y + CBOX_DY) for sx in (-1, 1) for y in (-207.5, -117.5)]   # repo lid screw bosses (measured)
 CONTROL_SLOPE_DEG = 10.0          # control-box screen panel tilted toward the user (front edge lowered)
 
 
@@ -596,7 +600,10 @@ def plunger_carrier(members):
     bm = bmesh.new()
     for x, y in g["GRID"]:                            # pad pockets from below
         _cone(bm, 4.1, 4.1, zu - 4.0, zu - 1.5, seg=24, xy=(x, y))
-    boolean(rt, bm)
+    for x, y in L.RETAINER_SCREWS:                    # M3 countersunk, heads flush with the top
+        _cone(bm, L.M3 / 2, L.M3 / 2, zu - 4.0, zu + 1.0, seg=24, xy=(x, y))
+        _cone(bm, 1.6, 3.2, zu - 1.6, zu + 0.1, seg=24, xy=(x, y))   # starts inside the hole: no shared edge
+    boolean(rt, bm, self_intersect=True)
     # plungers: stoppers where they were relative to the barrels
     bm = bmesh.new()
     for x, y in g["GRID"]:
@@ -792,8 +799,8 @@ def close_control_box(h):
     _block(bm, -40, 40, y1 - 0.5, -g["FY"] / 2 - 0.2, 2, 18)
     boolean(h, bm, 'UNION', self_intersect=True)
     bm = bmesh.new()
-    for x, y in CBOX_BOSSES:                          # pilot holes for M3 self-tappers
-        _cone(bm, 1.25, 1.25, -1, 30, xy=(x, y))
+    for x, y in CBOX_BOSSES:                          # pilot holes for M3 self-tappers (2.4: just
+        _cone(bm, 1.2, 1.2, -1, 30, xy=(x, y))       # inside the repo boss's 2.5 hole, no shared wall)
     for x in (-25.0, 25.0):                           # M5 into the bar's front slot (z 10)
         _bar(bm, (x, y1 - 12, 10), (x, -g["FY"] / 2 + 1, 10), L.M5 / 2)
     boolean(h, bm)
@@ -984,7 +991,7 @@ def modify():
     for o in [o for o in obj if o.name.startswith(("MGN9H_carriage_low", "interface_plate_low"))]:
         obj.remove(o)
     for sx in (-1, 1):
-        box(f"ext_head_{'LR'[sx > 0]}", (20, g["FY"] - 40, 20), (sx * g["PX"], 0, P - T - 10), "Frame", M["ext"], bevel=1.0)
+        g["tslot_bar"](f"ext_head_{'LR'[sx > 0]}", g["FY"] - 40, (sx * g["PX"], 0, P - T - 10), 'Y', "Frame", M["ext"])
         head_bracket(f"head_bracket_{'LR'[sx > 0]}", sx, "Head")
     # syringes: tab stubs keyed under a locking frame instead of cut-off ends hammered into the grip
     # (the grip stays as a slip-fit guide for the barrels' lower ends)
@@ -1109,9 +1116,9 @@ def modify():
     zf = zh + 10
     ly, sxx = L.STIFF_LONG_Y, L.STIFF_SHORT_X
     for sy in (-1, 1):
-        members.append(box(f"plunger_stiffener_{'FB'[sy > 0]}", (150, 20, 20), (0, sy * ly, zf), "Head", M["ext"], bevel=1.0))
+        members.append(g["tslot_bar"](f"plunger_stiffener_{'FB'[sy > 0]}", 150, (0, sy * ly, zf), 'X', "Head", M["ext"]))
     for sx in (-1, 1):
-        members.append(box(f"plunger_stiffener_{'LR'[sx > 0]}", (20, 2 * (ly - 10), 20), (sx * sxx, 0, zf), "Head", M["ext"], bevel=1.0))
+        members.append(g["tslot_bar"](f"plunger_stiffener_{'LR'[sx > 0]}", 2 * (ly - 10), (sx * sxx, 0, zf), 'Y', "Head", M["ext"]))
     rig_empty("plunger_carriage", "Head", members)
 
     # ---------------- control box: laid down in front of the base, screen and knob facing up,
@@ -1124,7 +1131,7 @@ def modify():
         o.matrix_world = R @ o.matrix_world
     bpy.context.view_layer.update()
     pts = [o.matrix_world @ Vector(c) for o in parts for c in o.bound_box]
-    back = -(g["FY"] / 2 + T + 0.5)                   # just clear of the corner brackets
+    back = -(g["FY"] / 2 + T + CBOX_BACK_GAP)         # just clear of the corner brackets' bolt heads
     shift = Vector((-(min(p.x for p in pts) + max(p.x for p in pts)) / 2,
                     back - max(p.y for p in pts), -min(p.z for p in pts)))
     for o in parts:

@@ -11,6 +11,69 @@ and confirm against your own frame. The creator's original build came to roughly
 - **Generated**: new or modified for this layout, in `01_Hardware/MotorLift/` (see its README for
   what changed, what was checked, and how to regenerate).
 
+## Order summary
+
+Totals for one machine with one syringe cartridge, checked against the Blender model.
+Fastener quantities include about 20 % extra; the sections below say where each part
+goes.
+
+**To have made**
+- Laser-cut, 3 mm steel: 34 parts from 12 DXF files (sections 1 and 5b). The 16 frame corner
+  brackets can be bought instead.
+- 3D-printed: 32 parts from 19 STL files (sections 2 and 5b). Mirror `cart_spacer_R` and
+  `dshaft_trough_R` for the left side.
+
+**Frame and motion**
+- 2020 extrusion, 12 bars to cut: 4 x 400 mm *est.*, 4 x 189.2 mm, 8 x 178 mm, 2 x 150 mm,
+  2 x 44 mm (about 4.2 m in total)
+- 2020 inside corner brackets: 12
+- MGN9 rail, 330 mm *est.*: 4; MGN9H carriages: 8
+- NEMA17 steppers: 1 x 40 mm body (lift), 1 x 48 mm body (plunger)
+- T8x2 lead screw: 6 pieces (4 x ~131 mm, 2 x ~118 mm); anti-backlash nuts: 4; flange nuts: 2
+- KFL08 flange bearings: 6
+- GT2 20T pulleys: 6 x 8 mm bore, 2 x 5 mm bore; 16 mm smooth idlers: 2
+- GT2 6 mm closed loops: 1 x 339-344 mm, 1 x 542-547 mm
+- 8 mm steel rod: 2 x ~165 mm (D-shafts)
+- M6 ball spring plungers: 2
+- KW12-type micro switch: 1; slotted optical endstop boards: 3
+
+**Electronics:** Arduino Uno, CNC Shield V3, 2 stepper drivers, 20x4 I2C LCD, rotary encoder,
+panel-mount USB-B extension, 12 V 5 A supply with a DC socket (optional LM2596), wire and
+Dupont leads.
+
+**Cartridge supplies:** 96 1 mL Luer-slip syringes plus spares, heat-shrink tubing, 4 x ~110 mm
+M4 threaded rod, 4 light springs (~6.4 mm OD x 20-25 mm).
+
+**Fasteners** (with ~20 % extra)
+
+| Size | Buy |
+|---|---|
+| M5 x 8 button head | 96 |
+| M5 x 10 | 34 |
+| M5 x 12 | 3 |
+| M5 T-nut (2020) | 132 |
+| M4 x 10 | 15 |
+| M4 x 12 | 20 |
+| M4 x 16 | 15 |
+| M4 x 20 | 10 |
+| M4 x 30 | 5 |
+| M4 hex nut | 68 |
+| M4 washer | 15 |
+| M4 T-nut (2020) | 10 |
+| M3 x 8 | 132 |
+| M3 x 10 | 56 |
+| M3 x 12 | 10 |
+| M3 x 14 | 17 |
+| M3 x 25 | 10 |
+| M3 hex nut | 87 |
+| M3 flat washer (7 mm OD) | 29 |
+| M3 T-nut (2020) | 89 |
+| M3 x 6 cone-point set screw | 3 |
+| M3 x 6 countersunk | 5 |
+| M3 self-tapping: x 8 / x 10 / x 14 / x 10 countersunk | 8 / 3 / 5 / 5 |
+| M2 x 16 + nut | 3 |
+| Shoulder bolt + nut (idlers) | 2 |
+
 ## 1. Laser-cut metal
 
 The repo doesn't state a material or thickness; the model assumes **3 mm steel**. The machine
@@ -34,8 +97,8 @@ Not needed in this layout: `interface_plate_low` (the pipette plate now bolts to
 
 ## 2. 3D-printed parts
 
-PETG is a good default for the load-bearing parts (the syringe grip is a press fit). Suggested:
-4 perimeters, 40 % infill. The largest part (`ScreenHousing`, 218 x 100 x 72 mm) needs a bed of at
+PETG is a good default for the load-bearing parts. Suggested:
+4 perimeters, 40 % infill. The largest part (the sloped housing, 218 x 111 x 75 mm) needs a bed of at
 least 220 mm.
 
 | Part | Qty | File | Status | Notes |
@@ -51,7 +114,7 @@ least 220 mm.
 | Drawer channel spacer | 1 + 1 mirrored | `MotorLift/ToPrint-STL/cart_spacer_R.stl` | Generated | Mirror for the left. |
 | D-shaft trough | 1 + 1 mirrored | `MotorLift/ToPrint-STL/dshaft_trough_R.stl` | Generated | Mirror for the left. |
 | D-shaft lever | 2 | `MotorLift/ToPrint-STL/dshaft_lever.stl` | Generated | |
-| Plunger carriage bracket | 2 + 2 | `MotorLift/ToPrint-STL/plunger_carriage_bracket_RF_LB.stl`, `..._RB_LF.stl` | Generated | Hang under the plunger plate's side edges and join it to its 4 rail plates. Two mirror-image hands, 2 of each. 4 captive M4 nuts each. |
+| Plunger carriage bracket | 2 + 2 | `MotorLift/ToPrint-STL/plunger_carriage_bracket_RF_LB.stl`, `MotorLift/ToPrint-STL/plunger_carriage_bracket_RB_LF.stl` | Generated | Hang under the plunger plate's side edges and join it to its 4 rail plates. Two mirror-image hands, 2 of each. 4 captive M4 nuts each. |
 | Lift carriage bracket | 4 | `MotorLift/ToPrint-STL/lift_carriage_bracket.stl` | Generated | Joins the lift platform to its 4 rail plates; same part at every corner. 2 captive M4 nuts each. |
 | Lift home-switch holder | 1 | `MotorLift/ToPrint-STL/lift_home_switch_holder.stl` | Generated | For a KW12-type switch. |
 
@@ -117,11 +180,11 @@ Everything that depends on the syringes and tips (see "Syringe cartridge" in
 | Part | Qty | File / notes |
 |---|---|---|
 | Cartridge plate, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/cartridge_plate.dxf` |
-| Plunger carrier, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/plunger_carrier.dxf` |
+| Plunger carrier, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/plunger_carrier.dxf`; tap the 4 small (2.5 mm) holes M3 |
 | Tip ejector plate, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/tip_ejector_plate.dxf` |
 | Syringe locking frame (printed) | 1 | `MotorLift/ToPrint-STL/syringe_lock_frame.stl`; a slot per row keys the tab stubs |
 | Syringe barrel grip, slip fit (printed) | 1 | `MotorLift/ToPrint-STL/syringe_grip_slipfit.stl`; hangs from the cartridge plate by 4 ears |
-| Pad retainer (printed) | 1 | `MotorLift/ToPrint-STL/pad_retainer.stl` |
+| Pad retainer (printed) | 1 | `MotorLift/ToPrint-STL/pad_retainer.stl`; countersunk for 4 M3 |
 | 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. Instead of cutting the flanged end off, trim the finger tabs to stubs: flange 8.2 mm across the stubs and at most 7.2 mm wide, face left flat (the model assumes a 6.4 mm barrel and a 1.2 mm flange; measure yours). |
 | Heat-shrink tubing | 96 pieces | Over each syringe tip so this cartridge's tips seal; size it by test fitting. |
 | M4 threaded rod, ~110 mm | 4 | Tip-ejector rods |
@@ -130,6 +193,7 @@ Everything that depends on the syringes and tips (see "Syringe cartridge" in
 | Cartridge handle (printed) | 1 | `MotorLift/ToPrint-STL/cartridge_handle.stl` |
 | M3 x 10 self-tapping | 2 | Handle to the cartridge plate |
 | M3 x 14 self-tapping | 4 | Frame and cartridge plate into the grip's ears |
+| M3 x 6 countersunk (ISO 10642) | 4 | Pad retainer down into the carrier's tapped holes; heads flush on top, tips flush underneath |
 
 ## 6. Fasteners (approximate; buy about 20 % extra)
 
@@ -138,7 +202,8 @@ T-nuts.
 
 | Fastener | Approx. qty | Where |
 |---|---|---|
-| M5 x 10 + M5 T-nut (2020) | 108 | Corner brackets (64), inside corner brackets (24), top plate (12), base plate (4), head brackets (4) |
+| M5 x 8 button head + M5 T-nut (2020) | 80 | Corner brackets (64), top plate (12), base plate (4): 3 mm plates, so 5 mm into the slot. An M5 x 10 would go 7 mm in and bottom out on the extrusion's core (6.1 mm deep) before it clamps. |
+| M5 x 10 + M5 T-nut (2020) | 28 | Inside corner brackets (24), head brackets (4) |
 | M5 x 12 + M5 T-nut (2020) | 2 | Control box pad to the bottom front bar |
 | M3 x 8 + M3 T-nut (2020) | 70 | MGN9 rails (20 mm hole pitch) |
 | M3 x 6-8 | 40 | Carriages to interface plates, electronics housing |
