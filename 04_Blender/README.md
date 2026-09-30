@@ -32,7 +32,7 @@ The variants build on `build_pipette.py`, so it has to stay in the same folder.
   and T-nuts, MGN9H rails and carriages, NEMA17 motors, T8 screws and nuts,
   syringes, tips, the well plate, bearings, pulleys and belts.
 - **Layout:** there is no assembly file in the repo, so placement was reconstructed from the
-  creator's build video (youtu.be/2TTu-Lkz2Eo). Part shapes are exact; frame height (400 mm),
+  creator's build video (youtu.be/2TTu-Lkz2Eo). Part shapes are exact; frame height (400 mm; 430 mm in the motor-lift variant, HEAD_RAISE),
   syringe and tip dimensions, and some mounting positions are estimates.
 - **Lever variant:** the shorter gear-arm and longer handle are derived from the stock
   `lever_cutout*.DXF` outlines by shifting only their straight sections.
@@ -49,6 +49,19 @@ reports the belt loop lengths across the tensioner's adjustment range: 338.9-344
 541.6-547.5 mm (plunger).
 
 Each variant keyframes a full cycle as it builds; scrub the timeline to watch it. The motor-lift
-variant follows its cycle with a cartridge swap (frames 270-498, `DRAWER_KEYS`): the D-shaft
-levers turn a quarter turn open (the flats come up and the plunger carrier sinks 0.8 mm onto them), the drawer slides 210 mm out the front and back in, and the levers
-close.
+variant plays a complete run (`CYCLE`, 680 frames):
+1. It starts with no tips. A tip rack goes into the nest, the bed rises 64 mm to press the nozzles
+   into the tips, and the tips stay on the nozzles when the bed goes down. The empty rack then
+   slides out under them.
+2. A reservoir replaces the rack, and the plunger draws 100 uL per channel with the tips in the
+   liquid.
+3. A 96-well plate replaces the reservoir, and the plunger dispenses into its wells.
+4. A waste tray replaces the plate. The plunger runs 11.5 mm past home, and the tilted ejector
+   plate strips the tips a row at a time, front row first; they drop into the tray.
+5. The D-shaft levers open (the flats come up and the plunger carrier sinks 0.8 mm onto them),
+   and the syringe cartridge slides 210 mm out the front.
+
+The labware (`tip_rack`, `reservoir`, `well_plate_96`, `waste_tray`) is demo-only and is loaded
+from the front over the nest's lip. Anything that goes in or out while tips are on has to pass under
+them with the bed down (73 mm): the 61 mm rack clears by 12 mm. The tips are ejected into a
+30 mm tray.

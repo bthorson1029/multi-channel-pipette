@@ -533,10 +533,11 @@ def build():
     lid.location = (0, -FY / 2 - lid.dimensions.y / 2, FH - hs.dimensions.z / 2 - lid.dimensions.z / 2)
     fy = hs.location.y - hs.dimensions.y / 2
     hz = hs.location.z + hs.dimensions.z / 2
-    # window (98x38) and encoder hole positions found by ray-casting the housing face
-    box("LCD_2004_bezel", (98, 1.5, 60), (36, fy + 3.5, 365), "Electronics", M["lcd_frame"])
-    box("LCD_2004_screen", (76, 1, 26), (36, fy + 2.5, 365), "Electronics", M["lcd"])
-    cyl("encoder_knob", 7, 12, (37, fy - 6, 324), "Electronics", M["motor"], axis='Y')
+    # window (98x38) and encoder hole positions found by ray-casting the housing face; heights are
+    # from the housing's top (FH), so they follow it when a variant changes the frame height
+    box("LCD_2004_bezel", (98, 1.5, 60), (36, fy + 3.5, FH - 35), "Electronics", M["lcd_frame"])
+    box("LCD_2004_screen", (76, 1, 26), (36, fy + 2.5, FH - 35), "Electronics", M["lcd"])
+    cyl("encoder_knob", 7, 12, (37, fy - 6, FH - 76), "Electronics", M["motor"], axis='Y')
 
     return dict(P=P, TAB_Z=TAB_Z, TIP_Z=TIP_Z, ARM_ANG=math.degrees(ARM_ANG), PLG_TOP=PLG_TOP)
 

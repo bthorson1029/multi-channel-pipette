@@ -24,12 +24,12 @@ goes.
   `dshaft_trough_R` for the left side.
 
 **Frame and motion**
-- 2020 extrusion, 12 bars to cut: 4 x 400 mm *est.*, 4 x 189.2 mm, 8 x 178 mm, 2 x 150 mm,
-  2 x 44 mm (about 4.2 m in total)
+- 2020 extrusion, 12 bars to cut: 4 x 430 mm *est.*, 4 x 189.2 mm, 8 x 178 mm, 2 x 150 mm,
+  2 x 44 mm (about 4.3 m in total)
 - 2020 inside corner brackets: 12
-- MGN9 rail, 330 mm *est.*: 4; MGN9H carriages: 8
+- MGN9 rail, 360 mm *est.*: 4; MGN9H carriages: 8
 - NEMA17 steppers: 1 x 40 mm body (lift), 1 x 48 mm body (plunger)
-- T8x2 lead screw: 6 pieces (4 x ~131 mm, 2 x ~118 mm); anti-backlash nuts: 4; flange nuts: 2
+- T8x2 lead screw: 6 pieces (4 x ~131 mm, 2 x ~148 mm); anti-backlash nuts: 4; flange nuts: 2
 - KFL08 flange bearings: 6
 - GT2 20T pulleys: 6 x 8 mm bore, 2 x 5 mm bore; 16 mm smooth idlers: 2
 - GT2 6 mm closed loops: 1 x 339-344 mm, 1 x 542-547 mm
@@ -126,17 +126,17 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 
 | Part | Qty | Notes |
 |---|---|---|
-| 2020 aluminum extrusion, 400 mm *est.* | 4 | Posts. |
+| 2020 aluminum extrusion, 430 mm *est.* | 4 | Posts. 30 mm taller than the original build, so an empty tip rack slides out under freshly loaded tips. |
 | 2020 extrusion, 189.2 mm | 4 | Front/back of the bottom and top rings. |
 | 2020 extrusion, 178 mm | 8 | Sides of the bottom, bed-level and top rings, plus the two head side bars. |
 | 2020 inside corner bracket | 12 | Head side bars (4) and bed-level side bars (4) to the posts; stiffening-frame corners (4). |
 | 2020 extrusion, 150 mm | 2 | Plunger-plate stiffening frame. |
 | 2020 extrusion, 44 mm | 2 | Plunger-plate stiffening frame. |
-| MGN9 linear rail, 330 mm *est.* | 4 | One per post. |
+| MGN9 linear rail, 360 mm *est.* | 4 | One per post. |
 | MGN9H carriage | 8 | Lift platform (4) + plunger plate (4). |
 | NEMA17 stepper, 40 mm body (~0.4 N m) | 1 | Lift. 5 mm shaft. |
 | NEMA17 stepper, 48 mm body (~0.5 N m) | 1 | Plunger (drives all four screws). Stands on the top plate, shaft down. |
-| T8x2 lead screw (8 mm, 2 mm lead) | 6 | Buy 150 mm and cut: 4 plunger at ~131 mm (hung from the top plate), 2 lift at ~118 mm. |
+| T8x2 lead screw (8 mm, 2 mm lead) | 6 | Buy 150 mm: cut 4 plunger screws to ~131 mm (hung from the top plate); use 2 uncut for the lift (~148 mm needed for 68 mm of travel). |
 | T8x2 anti-backlash nut | 4 | Plunger. |
 | T8x2 brass flange nut | 2 | Lift (gravity keeps these loaded one way). |
 | KFL08 flange bearing (8 mm bore) | 6 | 4 plunger (on the top plate), 2 lift. The plates assume 37 mm bolt spacing; check yours. |

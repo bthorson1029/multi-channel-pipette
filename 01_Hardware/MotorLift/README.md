@@ -56,7 +56,7 @@ All nineteen are closed solids (every edge shared by exactly two triangles).
 ## Check against your hardware before cutting
 
 - **KFL08 bolt spacing** is set to 37 mm (`KFL08_BOLTS` in `make_dxf.py`). Measure your bearings.
-- **Frame height** (400 mm) and rail lengths were estimated from the build video.
+- **Frame height** and rail lengths: the original's (400 mm) was estimated from the build video; this layout adds 30 mm (430 mm posts, 360 mm rails) so an empty tip rack slides out under freshly loaded tips, and the lift travels 68 mm.
 - **Syringes**: the frame and grip assume a 6.4 mm barrel, a 1.2 mm flange, and tabs trimmed so
   the flange is 8.2 x 7.2 mm (typical 1 mL values, `SYR_*` in `04_Blender/variant_motor_lift.py`).
   Measure one of yours; if the flange is thicker, the slot depth follows `SYR_FLANGE_T`.

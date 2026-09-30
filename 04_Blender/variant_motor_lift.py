@@ -51,6 +51,12 @@ def _script_dir():
 HERE = _script_dir()
 g = {"__name__": "pipette_lib", "__file__": os.path.join(HERE, "build_pipette.py")}
 exec(open(os.path.join(HERE, "build_pipette.py"), encoding="utf-8").read(), g)   # functions only
+# The head (and the frame with it) sits HEAD_RAISE higher than the original design, so an empty
+# tip rack slides out under freshly loaded tips with the bed down; the lift travels that much
+# further to reach the wells. The original lever geometry (TAB_Z, TIP_Z) goes unused here.
+HEAD_RAISE = 30.0
+for _k in ("ZC_LOW", "PIP_MID", "P", "PLG_MID", "PLG_TOP", "HOLD_TOP", "ZC_HIGH", "FH"):
+    g[_k] += HEAD_RAISE
 
 FAB = os.path.normpath(os.path.join(HERE, "..", "01_Hardware", "MotorLift"))
 _spec = importlib.util.spec_from_file_location("motorlift_layout", os.path.join(FAB, "make_dxf.py"))
@@ -1020,7 +1026,8 @@ def modify():
     for sx in (-1, 1):
         tag = "LR"[sx > 0]
         kfl08(f"KFL08_lift_{tag}", sx * LIFT_X, 0, BASE_Z, True, "Bed")
-        cyl(f"lift_screw_{tag}", 4, 118, (sx * LIFT_X, 0, BASE_Z - 14 + 59), "Bed", M["chrome"], seg=16)
+        ls = 118 + HEAD_RAISE                          # past the nut at the top of travel
+        cyl(f"lift_screw_{tag}", 4, ls, (sx * LIFT_X, 0, BASE_Z - 14 + ls / 2), "Bed", M["chrome"], seg=16)
         pulley(f"lift_pulley_{tag}", sx * LIFT_X, 0, LIFT_PLUS, "Bed")
     pulley("lift_pulley_motor", *LIFT_MOTOR_XY, LIFT_PLUS, "Bed")
     # tensioner: idler pushes the long lower run (between the screws) inward (+y)
@@ -1064,7 +1071,7 @@ def modify():
     obj.remove(obj["plunger_holder_plate"])
     fab_plate("top_plate.dxf", "top_plate", "Frame", (0, 0, FH + T / 2))
     z_top = FH + T
-    s_lo, s_hi = 286.0, z_top + 14.0                  # screw: below the nut at full eject, up through the KFL08
+    s_lo, s_hi = P + 26.7, z_top + 14.0               # screw: below the nut at full eject, up through the KFL08
     for i, (x, y) in enumerate(PS_XY, 1):
         kfl08(f"KFL08_plunger_{i}", x, y, z_top, False, "Motors", rot=D(90))
         cyl(f"plunger_screw_{i}", 4, s_hi - s_lo, (x, y, (s_lo + s_hi) / 2), "Motors", M["chrome"], seg=16)
@@ -1185,40 +1192,275 @@ def pose(lift_mm, plg_mm):
         o.rotation_euler.z = D(360) * (PLG_REST + plg_mm) / PLG_LEAD
 
 
-# (frame, lift mm, plunger mm): raise -> aspirate -> lower -> raise -> dispense -> lower
+# (frame, lift fraction, plunger fraction): the poses collision_report() samples (raise, aspirate,
+# lower, raise, dispense, lower, eject)
 KEYS = [(1, 0, 0), (28, 1, 0), (34, 1, 0), (58, 1, 1), (64, 1, 1), (90, 0, 1), (100, 0, 1),
         (126, 1, 1), (132, 1, 1), (156, 1, 0), (162, 1, 0), (188, 0, 0), (196, 0, 0)]
 EJ_A = -EJECT_MM / ASPIRATE       # plunger fraction for the eject pose
 KEYS += [(220, 0, EJ_A), (228, 0, EJ_A), (252, 0, 0), (260, 0, 0)]
 
+DRAWER_OUT = 210.0                # cartridge pulled this far forward: its back edge well clear of the front posts
 
-def animate():
+
+# ================================================================ labware and the full cycle
+# Demo labware, all on the SBS footprint in the nest (parented to the platform) and loaded from the
+# front over its lip: a tip rack, a 1-well reservoir, the 96-well plate and a waste tray. Whatever
+# goes in while tips are on the head has to pass under them with the bed down (tip bottoms 139.3),
+# so tips are ejected into the shallow tray, not back into the rack.
+NEST_Z = LIFT0 + T + TRAY_H                   # nest base = labware bottom, bed down
+SBS = (127.76, 85.48)
+TIP_TOP = TIP_BOTTOM + 56.0
+TIP_LOAD_MM = LIFT_TRAVEL - 3.9              # bed height that presses the nozzles into the rack's tips
+RACK_DECK = (60.0, 39.0)                      # raised deck half sizes: inside the ejector rods (y >= 41.2)
+RACK_H = (TIP_TOP - 4.0) - (NEST_Z + TIP_LOAD_MM)   # a tip rests where its collar is 5.5 wide, 4 mm below its top
+TRAY_DEPTH = 30.0
+LW_FLOOR = 1.5
+TIP_FALL = TIP_BOTTOM - (NEST_Z + LW_FLOOR)   # ejected tips drop onto the tray floor (bed down)
+TIP_FALL_FRAMES = 6
+CYCLE_UL = 100.0                              # per channel
+SYR_AREA = math.pi * (4.78 / 2) ** 2          # 1 mL syringe bore
+CYCLE_STROKE = CYCLE_UL / SYR_AREA
+WELL_R, WELL_DEPTH = 3.4, 10.9
+RES_LIQ = 10.0                                # reservoir liquid depth
+HOP, LW_OUT = 5.0, 300.0                      # labware lifts this much over the nest's lip; out = this far forward
+LABWARE = {"tip_rack": "rack", "reservoir": "res", "well_plate_96": "plate", "waste_tray": "tray"}
+LIQUIDS = ("tip_liquid_x96", "reservoir_liquid", "well_liquid_x96")
+_LW_BASE = {}
+
+
+def _tip_liquid_r(z):
+    """Liquid radius z mm above the tip's bottom (inside the tip's taper)."""
+    return 0.3 + 1.8 * z / 48.0
+
+
+def _parent_keep(child, parent):
+    bpy.context.view_layer.update()
+    child.parent = parent
+    child.matrix_parent_inverse = parent.matrix_world.inverted()
+
+
+def labware():
+    """Build the demo labware, split the tips into 8 rows and add the liquids (bed down, drawer in)."""
+    obj = bpy.data.objects
+    M["liquid"] = g["mat"]("Liquid_Blue", (0.1, 0.35, 0.95, 1), 0, 0.05, 1.0, 0.55)
+    M["rack"] = g["mat"]("TipRack_Blue", (0.1, 0.18, 0.42, 1), 0, 0.45)
+    plat = obj["lift_platform"]
+    z0 = NEST_Z
+    hx, hy = SBS[0] / 2, SBS[1] / 2
+
+    def shell(name, h, m):                    # open-top SBS box: 1.5 mm walls and floor
+        o = box(name, (SBS[0], SBS[1], h), (0, 0, z0 + h / 2), "Bed", m)
+        bm = bmesh.new()
+        _block(bm, -hx + 1.5, hx - 1.5, -hy + 1.5, hy - 1.5, z0 + LW_FLOOR, z0 + h + 1)
+        boolean(o, bm)
+        return o
+
+    # tip rack: a skirt with a 2 mm top, a raised deck, a hole per tip through both
+    rk = box("tip_rack", (SBS[0], SBS[1], RACK_H - 4), (0, 0, z0 + (RACK_H - 4) / 2), "Bed", M["rack"])
+    bm = bmesh.new()
+    _block(bm, -hx + 1.5, hx - 1.5, -hy + 1.5, hy - 1.5, z0 - 1, z0 + RACK_H - 6)
+    boolean(rk, bm)
+    bm = bmesh.new()
+    _block(bm, -RACK_DECK[0], RACK_DECK[0], -RACK_DECK[1], RACK_DECK[1], z0 + RACK_H - 4.2, z0 + RACK_H)
+    boolean(rk, bm, 'UNION', self_intersect=True)
+    bm = bmesh.new()
+    for x, y in g["GRID"]:
+        _cone(bm, 2.75, 2.75, z0 + RACK_H - 8, z0 + RACK_H + 1, seg=20, xy=(x, y))
+    boolean(rk, bm)
+    res = shell("reservoir", PLATE_H, M["white"])
+    tray = shell("waste_tray", TRAY_DEPTH, M["pla_grey"])
+    wp = obj["well_plate_96"]
+    wtop = z0 + PLATE_H
+    bm = bmesh.new()
+    for x, y in g["GRID"]:
+        _cone(bm, WELL_R, WELL_R, wtop - WELL_DEPTH, wtop + 1, seg=24, xy=(x, y))
+    boolean(wp, bm)
+    for o in (rk, res, tray):
+        _parent_keep(o, plat)
+    for n in LABWARE:
+        _LW_BASE[n] = obj[n].location.copy()
+
+    # liquids: reservoir slab and well columns scale up from their floors; the tips' liquid is a
+    # shape key whose top ring slides up the taper (both ends on the same straight wall)
+    bm = bmesh.new()
+    _block(bm, -hx + 1.6, hx - 1.6, -hy + 1.6, hy - 1.6, 0, RES_LIQ)
+    rl = new_obj("reservoir_liquid", bm, "Bed", M["liquid"], (0, 0, z0 + LW_FLOOR))
+    _parent_keep(rl, res)
+    well_h = CYCLE_UL / (math.pi * (WELL_R - 0.2) ** 2)
+    bm = bmesh.new()
+    for x, y in g["GRID"]:
+        _cone(bm, WELL_R - 0.2, WELL_R - 0.2, 0, well_h, seg=20, xy=(x, y))
+    wl = new_obj("well_liquid_x96", bm, "Bed", M["liquid"], (0, 0, wtop - WELL_DEPTH + 0.02))
+    _parent_keep(wl, wp)
+    h, v = 0.0, 0.0                                   # height of CYCLE_UL in the tip
+    while v < CYCLE_UL:
+        h += 0.05
+        v += math.pi * _tip_liquid_r(h) ** 2 * 0.05
+    bm = bmesh.new()
+    tops, n = [], 16
+    zb = TIP_BOTTOM + 0.4
+    for x, y in g["GRID"]:
+        ring = lambda z, r: [bm.verts.new((x + r * math.cos(2 * math.pi * i / n), y + r * math.sin(2 * math.pi * i / n), z))
+                             for i in range(n)]
+        lo, hi = ring(zb, _tip_liquid_r(0)), ring(zb + 0.05, _tip_liquid_r(0.05))
+        for i in range(n):
+            bm.faces.new((lo[i], lo[(i + 1) % n], hi[(i + 1) % n], hi[i]))
+        bm.faces.new(lo[::-1])
+        bm.faces.new(hi)
+        tops += [(v_, x, y, i) for i, v_ in enumerate(hi)]
+    bm.verts.index_update()
+    top_idx = [(v_.index, x, y, i) for v_, x, y, i in tops]
+    tl = new_obj("tip_liquid_x96", bm, "Syringes", M["liquid"])
+    tl.shape_key_add(name="Basis")
+    key = tl.shape_key_add(name="fill")
+    r = _tip_liquid_r(h)
+    for vi, x, y, i in top_idx:
+        key.data[vi].co = (x + r * math.cos(2 * math.pi * i / n), y + r * math.sin(2 * math.pi * i / n), zb + h)
+
+    # tips: 8 rows (front to back), so the tilted ejector plate can strip them a row at a time
+    obj.remove(obj["pipette_tips_x96"])
+    for ri, ry in enumerate(sorted({y for _, y in g["GRID"]}), 1):
+        bm = bmesh.new()
+        for x, y in g["GRID"]:
+            if y == ry:
+                _cone(bm, 2.5, 3.0, TIP_TOP - 8, TIP_TOP, seg=24, xy=(x, y))
+                _cone(bm, 0.4, 2.5, TIP_BOTTOM, TIP_TOP - 8, seg=24, xy=(x, y))
+        o = new_obj(f"pipette_tips_row{ri}", bm, "Syringes", M["tip"])
+        o["row_y"] = ry
+        for p in o.data.polygons:
+            p.use_smooth = True
+
+
+def _lw_offset(s):
+    """Labware slide: s 0 = seated in the nest, 1 = LW_OUT forward; it rises HOP over the lip first."""
+    if s > 0.1:
+        return -LW_OUT * (s - 0.1) / 0.9, HOP
+    return 0.0, HOP * s / 0.1
+
+
+# One step per row: (frames, changes, caption); each change eases in over the step. tips: where
+# the tips are ("rack" on the bed, "head" on the nozzles, "eject" once the ejector takes them).
+CYCLE = [
+    (12, {}, "Empty head, empty bed"),
+    (30, {"rack": 0.0}, "Load a full tip rack"),
+    (30, {"lift": TIP_LOAD_MM}, "Bed up: the nozzles press into the tips"),
+    (6, {"tips": "head"}, "Bed up: the nozzles press into the tips"),
+    (30, {"lift": 0.0}, "Bed down: the tips stay on the nozzles"),
+    (24, {"rack": 1.0}, "Swap the empty rack for a reservoir"),
+    (24, {"res": 0.0}, "Swap the empty rack for a reservoir"),
+    (30, {"lift": LIFT_TRAVEL}, "Bed up: tips into the liquid"),
+    (36, {"plg": CYCLE_STROKE, "tipfill": 1.0, "res_level": RES_LIQ - 96 * CYCLE_UL / ((SBS[0] - 3.2) * (SBS[1] - 3.2))},
+     "Aspirate 100 uL per channel"),
+    (6, {}, "Aspirate 100 uL per channel"),
+    (30, {"lift": 0.0}, "Bed down"),
+    (24, {"res": 1.0}, "Swap the reservoir for a 96-well plate"),
+    (24, {"plate": 0.0}, "Swap the reservoir for a 96-well plate"),
+    (30, {"lift": LIFT_TRAVEL}, "Bed up: tips into the wells"),
+    (36, {"plg": 0.0, "tipfill": 0.0, "wells": 1.0}, "Dispense"),
+    (6, {}, "Dispense"),
+    (30, {"lift": 0.0}, "Bed down"),
+    (24, {"plate": 1.0}, "Swap the plate for a waste tray"),
+    (24, {"tray": 0.0}, "Swap the plate for a waste tray"),
+    (6, {"tips": "eject"}, "Eject: the plunger runs past home, the ejector strips the tips"),
+    (36, {"plg": -EJECT_MM}, "Eject: the plunger runs past home, the ejector strips the tips"),
+    (8, {}, "Eject: the plunger runs past home, the ejector strips the tips"),
+    (24, {"plg": 0.0}, "Plunger back to home"),
+    (24, {"tray": 1.0}, "Take the used tips away"),
+    (12, {}, "Open the D-shaft levers"),
+    (24, {"turn": 1.0}, "Open the D-shaft levers"),
+    (6, {}, "Open the D-shaft levers"),
+    (60, {"out": 1.0}, "Slide the syringe cartridge out"),
+    (24, {}, "Slide the syringe cartridge out"),
+]
+
+
+def cycle_frames():
+    """CYCLE expanded to one state per frame (smoothstep within each step), and (frame, caption)
+    at each caption change."""
+    st = dict(lift=0.0, plg=0.0, turn=0.0, out=0.0, rack=1.0, res=1.0, plate=1.0, tray=1.0,
+              tipfill=0.0, wells=0.0, res_level=RES_LIQ, tips="rack")
+    frames, caps = [], []
+    for n, ch, cap in CYCLE:
+        a, b = st, dict(st, **ch)
+        if not caps or caps[-1][1] != cap:
+            caps.append((len(frames) + 1, cap))
+        for i in range(1, n + 1):
+            s = i / n
+            s = s * s * (3 - 2 * s)
+            frames.append({k: (a[k] + (b[k] - a[k]) * s if isinstance(a[k], float) else b[k]) for k in a})
+        st = b
+    return frames, caps
+
+
+def animate_cycle():
+    """Key the whole demo, every frame: see CYCLE."""
     sc = bpy.context.scene
-    lift, plg = spinners()
-    movers = [bpy.data.objects["lift_platform"], bpy.data.objects["plunger_carriage"]] + lift + plg
-    movers += [o for o in bpy.data.objects if o.name.startswith(("eject_rod_", "eject_plate"))]
-    for o in movers:
+    obj = bpy.data.objects
+    frames, _ = cycle_frames()
+    lift_s, plg_s = spinners()
+    mech = [obj["lift_platform"], obj["plunger_carriage"]] + lift_s + plg_s
+    mech += [o for o in obj if o.name.startswith(("eject_rod_", "eject_plate", "eject_spring_"))]
+    cart, levers = drawer_parts()
+    lw = {n: obj[n] for n in LABWARE}
+    rows = [o for o in obj if o.name.startswith("pipette_tips_row")]
+    tl, rl, wl = (obj[n] for n in LIQUIDS)
+    key = tl.data.shape_keys.key_blocks["fill"]
+    for o in mech + cart + levers + list(lw.values()) + rows + [tl, rl, wl]:
         o.animation_data_clear()
-    for f, l, a in KEYS:
-        pose(l * LIFT_TRAVEL, a * ASPIRATE)
-        for o in movers:
+    tl.data.shape_keys.animation_data_clear()
+    released = {}
+    for f, s in enumerate(frames, 1):
+        pose(s["lift"], s["plg"])
+        pose_drawer(s["turn"], s["out"])
+        for n, o in lw.items():
+            y, z = _lw_offset(s[LABWARE[n]])
+            o.location = _LW_BASE[n] + Vector((0, y, z))
+            o.hide_render = s[LABWARE[n]] > 0.999        # render only: viewport-hidden objects stop updating
+        ry, rz = _lw_offset(s["rack"])
+        ty, tz = _lw_offset(s["tray"])
+        e = max(0.0, -s["plg"])
+        df, db = max(0.0, e - EJ_GAP_F), max(0.0, e - EJ_GAP_B)
+        for o in rows:
+            if s["tips"] == "rack":
+                o.location = (0, ry, s["lift"] - TIP_LOAD_MM + rz)
+            elif s["tips"] == "head":
+                o.location = (0, 0, 0)
+            else:                                     # pushed by the tilted plate, then dropped into the tray
+                push = df + (db - df) * (o["row_y"] + L.EJ_ROD_Y) / (2 * L.EJ_ROD_Y)
+                if o.name not in released and push >= EJ_STROKE:
+                    released[o.name] = f
+                if o.name in released:
+                    k = min(1.0, (f - released[o.name]) / TIP_FALL_FRAMES)
+                    o.location = (0, ty, -(EJ_STROKE + (TIP_FALL - EJ_STROKE) * k * k) + s["lift"] + tz)
+                else:
+                    o.location = (0, 0, -push)
+            o.hide_render = ((s["tips"] == "rack" and s["rack"] > 0.999) or
+                             (s["tips"] == "eject" and s["tray"] > 0.999))
+        key.value = s["tipfill"] ** (1 / 3)           # height goes as the cube root of the volume in a cone
+        tl.hide_render = s["tipfill"] < 0.002
+        rl.scale.z = s["res_level"] / RES_LIQ
+        rl.hide_render = s["res"] > 0.999
+        wl.scale.z = max(0.001, s["wells"])
+        wl.hide_render = s["wells"] < 0.002 or s["plate"] > 0.999
+        for o in mech:
+            for p in ("location", "rotation_euler", "scale"):
+                o.keyframe_insert(p, frame=f)
+        for o in cart:
+            o.keyframe_insert("delta_location", frame=f)
+        for o in levers:
+            o.keyframe_insert("delta_rotation_euler", frame=f)
+        for o in list(lw.values()) + rows + [tl, rl, wl]:
             o.keyframe_insert("location", frame=f)
-            o.keyframe_insert("rotation_euler", frame=f)
-    sc.frame_start, sc.frame_end, sc.render.fps = 1, KEYS[-1][0], 24
+            o.keyframe_insert("scale", frame=f)
+            o.keyframe_insert("hide_render", frame=f)
+        key.keyframe_insert("value", frame=f)
+    sc.frame_start, sc.frame_end, sc.render.fps = 1, len(frames), 24
     sc.frame_set(1)
-
-
-# Cartridge swap, after the cycle (plunger home, bed down): levers a quarter turn open, drawer out
-# DRAWER_OUT (its back edge well clear of the front posts), back in, levers closed.
-# (frame, lever turn 0..1, drawer out 0..1)
-DRAWER_OUT = 210.0
-DRAWER_KEYS = [(270, 0, 0), (294, 1, 0), (306, 1, 0), (366, 1, 1), (390, 1, 1), (450, 1, 0), (462, 1, 0),
-               (486, 0, 0), (498, 0, 0)]
 
 
 def drawer_parts():
     obj = bpy.data.objects
-    cart = [o for o in obj if o.type == 'MESH' and o.name.startswith(CARTRIDGE + ("pipette_tips",))]
+    cart = [o for o in obj if o.type == 'MESH' and o.name.startswith(CARTRIDGE)]
     levers = [obj[f"dshaft_{p}{t}"] for t in "LR" for p in ("", "lever_")]
     return cart, levers
 
@@ -1237,36 +1479,6 @@ def pose_drawer(turn, out):
         o.delta_rotation_euler.y = (1 if o.name.endswith("L") else -1) * turn * D(90)
 
 
-def animate_drawer():
-    """Key the levers and the drawer at DRAWER_KEYS; the carrier's sink follows the shaft profile,
-    so it's keyed every frame of the lever turns."""
-    cart, levers = drawer_parts()
-    for f, turn, out in DRAWER_KEYS:
-        pose_drawer(turn, out)
-        for o in cart:
-            o.keyframe_insert("delta_location", index=1, frame=f)
-        for o in levers:
-            o.keyframe_insert("delta_rotation_euler", index=1, frame=f)
-    lv = bpy.data.objects["dshaft_lever_R"]
-    fc = next(c for c in _fcurves(lv) if c.data_path == "delta_rotation_euler" and c.array_index == 1)
-    carrier = [o for o in cart if o.name.startswith(CARRIER)]
-    for f in range(DRAWER_KEYS[0][0], DRAWER_KEYS[-1][0] + 1):
-        turn = -fc.evaluate(f) / D(90)
-        for o in carrier:
-            o.delta_location.z = -dshaft_drop(turn)
-            o.keyframe_insert("delta_location", index=2, frame=f)
-    pose_drawer(0, 0)
-    bpy.context.scene.frame_end = DRAWER_KEYS[-1][0]
-
-
-def _fcurves(o):
-    """F-curves of an object's action (Blender 5 keeps them in layered channelbags)."""
-    act = o.animation_data.action
-    for layer in act.layers:
-        for strip in layer.strips:
-            bag = strip.channelbag(o.animation_data.action_slot)
-            if bag:
-                yield from bag.fcurves
 
 
 def world_bvh(o):
@@ -1281,9 +1493,17 @@ def world_bvh(o):
 
 def collision_report():
     """Check every mesh pair that can meet: moving groups vs everything at each keyframe, plus
-    the new static drive parts vs the rest at rest. Intended contacts are whitelisted."""
+    the new static drive parts vs the rest at rest. Intended contacts are whitelisted. Checked with
+    the tips on the nozzles and the well plate in the nest (the other labware is out)."""
     obj = bpy.data.objects
-    meshes = [o for o in obj if o.type == 'MESH' and o.name != "Ground" and not o.name.startswith(("LCD", "encoder"))]
+    for o in obj:
+        if o.name.startswith("pipette_tips_row"):
+            o.location = (0, 0, 0)
+    if _LW_BASE:
+        obj["well_plate_96"].location = _LW_BASE["well_plate_96"]
+    pose_drawer(0, 0)
+    skip = ("LCD", "encoder") + tuple(n for n in LABWARE if n != "well_plate_96") + LIQUIDS
+    meshes = [o for o in obj if o.type == 'MESH' and o.name != "Ground" and not o.name.startswith(skip)]
     lift_g = {o.name for o in meshes if o.parent and o.parent.name == "lift_platform"}
     plg_g = {o.name for o in meshes if o.parent and o.parent.name == "plunger_carriage"}
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
@@ -1347,8 +1567,8 @@ if __name__ != "motor_lib":        # exec with this name to load functions only
     g["stage"]()
     belts = modify()
     pose(0, 0)
-    animate()                        # keyframe a full cycle for timeline playback
-    animate_drawer()                 # then a cartridge swap
+    labware()
+    animate_cycle()                  # the full demo on the timeline: tips on, aspirate, dispense, eject, cartridge out
 summary = {
     "lift_travel_mm": round(LIFT_TRAVEL, 2),
     "lift_revs": round(LIFT_TRAVEL / LIFT_LEAD, 1),
