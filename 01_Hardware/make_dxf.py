@@ -1,9 +1,9 @@
-"""Layout dimensions for the motorized-lift build, and the laser-cut DXFs derived from them.
+"""Layout dimensions for the pipette, and the laser-cut DXFs derived from them.
 
-    python 01_Hardware/MotorLift/make_dxf.py
+    python 01_Hardware/make_dxf.py
 
 writes ToLaserCut-DXF/*.dxf next to this file (units: millimeters, DXF R12, LINE/ARC/CIRCLE only).
-The Blender model (04_Blender/variant_motor_lift.py) imports this module for the same numbers and
+The Blender model (04_Blender/build_pipette.py) imports this module for the same numbers and
 builds its plates from the generated DXFs, so the model and the cut files always agree.
 
 Coordinates in the layout constants are in the machine frame: origin on the syringe-array
@@ -13,7 +13,6 @@ import math
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO_DXF = os.path.join(HERE, "..", "ToLaserCut-DXF")
 OUT = os.path.join(HERE, "ToLaserCut-DXF")
 
 # ---------------------------------------------------------------- layout (machine frame, mm)
@@ -47,7 +46,7 @@ LIFT_BRACKET_X = 71.0                            # lift carriage brackets: 2 M4 
 LIFT_BRACKET_Y = (38.0, 80.0)                    # either side of the rail plate's M4 holes (y 49, 69)
 LIFT_BRACKET_HOLES = [(sx * LIFT_BRACKET_X, sy * y) for sx in (-1, 1) for sy in (-1, 1) for y in LIFT_BRACKET_Y]
 # Plunger carriage brackets hang under the drive (plunger) plate's side edges, outside its cartridge
-# channels (x > 67.5). The plunger rail plates are a taller version of interface_plate_high whose M4
+# channels (x > 67.5). The plunger rail plates are a taller version of the lift rail plate (lift_rail_plate.dxf) whose M4
 # row lands in the brackets; their frame: DXF (-10, 0) sits on the carriage center (y = CARRIAGE_Y),
 # DXF x runs toward the machine's middle, DXF y is up, and DXF y = 0 is RAIL_ZC_BELOW_MID below the
 # plunger plate's mid-plane (ZC_HIGH in build_pipette.py).
@@ -243,14 +242,15 @@ def at_any(e, pts, offset):
 
 
 # ---------------------------------------------------------------- parts
-# The repo plates are drawn in their own frames; these offsets map machine -> DXF coordinates.
-PIPETTE_OFFSET = (-49.5, 31.5)     # array center in pipette_plate.DXF
-PLUNGER_OFFSET = (-49.5, -31.5)    # array center in plunger_plate.DXF
+# The pipette and drive plates are drawn in the original design's plate frames (the model places them
+# there); these offsets map machine -> DXF coordinates.
+PIPETTE_OFFSET = (-49.5, 31.5)     # array center in the pipette plate's DXF
+PLUNGER_OFFSET = (-49.5, -31.5)    # array center in the drive plate's DXF
 
 
 def pipette_plate():
     """The pipette plate, now a U open at the front for the cartridge drawer (drawn from scratch; the
-    repo plate's features all moved or went: plunger drive to the top plate, syringes to the
+    original plate's features all moved or went: plunger drive to the top plate, syringes to the
     cartridge). Held by the head brackets; carries the channel ledges and the sensor posts."""
     ox, oy = PIPETTE_OFFSET
     w, h = DRIVE_PLATE
@@ -301,9 +301,9 @@ def cart_ledge():
 
 
 def plunger_rail_plate():
-    """interface_plate_high made rectangular and 24 mm longer, so it reaches down beside the
+    """The lift rail plate (lift_rail_plate.dxf) made rectangular and 24 mm longer, so it reaches down beside the
     plunger plate to its carriage bracket: same carriage holes, M4 row moved into the bracket."""
-    src = read_entities(os.path.join(REPO_DXF, "interface_plate_high.DXF"))
+    src = read_entities(os.path.join(OUT, "lift_rail_plate.dxf"))
     ents = [e for e in src if near_r(e, 1.7)]               # the 3 carriage screws
     x0, x1, y0, y1 = -20.0, CARRIAGE_Y - 10.0 - (PLG_BRACKET_RAIL_Y[0] - 9.0), -9.0, 20.0
     ents += rounded_rect(x1 - x0, y1 - y0, 2.0, (x0 + x1) / 2, (y0 + y1) / 2)
@@ -372,8 +372,8 @@ def shift(e, dx, dy):
 
 
 PARTS = {
-    "pipette_plate_motorlift": pipette_plate,
-    "plunger_plate_motorlift": plunger_plate,
+    "pipette_plate": pipette_plate,
+    "plunger_plate": plunger_plate,
     "plunger_rail_plate": plunger_rail_plate,
     "tip_ejector_plate": tip_ejector_plate,
     "cartridge_plate": cartridge_plate,

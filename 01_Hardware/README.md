@@ -1,32 +1,42 @@
-# Motorized-lift fabrication files
+# Fabrication files
 
-Cut and print files for the parts that are new or changed in the motorized-lift build (see
-`BOM.md` in the repo root for the full list, including the unchanged repo parts). Units are
-millimeters.
+Every part to cut or print for the pipette: 12 DXF files for 34 laser-cut parts and 19 STL files
+for 32 printed parts. Everything else is bought; see [`BOM.md`](../BOM.md) for the full list with
+quantities to order. Units are millimeters.
 
 ## Laser-cut (`ToLaserCut-DXF/`, 3 mm steel; 304 stainless or coated steel suggested)
 
-| File | Qty | What changed |
+Upload the files separately and set each quantity. The generated files don't declare units: choose
+millimeters if asked, and check a size (the top plate is 229.2 x 218 mm). Use 3 mm (or 11 gauge)
+stock, not 1/8" (3.18 mm): the cartridge plate slides in a 3.3 mm channel.
+
+| File | Qty | Notes |
 |---|---|---|
-| `pipette_plate_motorlift.dxf` | 1 | Redrawn (160 x 200 mm): a U open at the front for the cartridge drawer (slot 114 mm wide, to 50 mm behind center), with the head-bracket holes, 6 for the sensor posts and 14 for the drawer channels. The repo plate's features all moved: the plunger drive to the top plate, the syringes to the cartridge. |
-| `plunger_plate_motorlift.dxf` | 1 | The drive plate, redrawn at 160 x 200 mm so the carriage brackets sit outside the drawer's clamp troughs: 4 T8 nut cutouts (the nuts sit on it, body up), 8 M4 for the carriage brackets, 6 M3 for the sensor flags, 8 M3 for the troughs. No plunger-rod holes: the rods are the cartridge's. |
-| `plunger_rail_plate.dxf` | 4 | From `interface_plate_high.DXF`: rectangular and 24 mm longer so it reaches down beside the plunger plate; same carriage holes, M4 pair moved into the carriage bracket. |
-| `lift_plate.dxf` | 1 | New: 156 x 200 lift platform (its edges clear the rail plates' carriage-screw heads) with 2 T8 nut cutouts (body through), 8 holes for the carriage brackets and 4 for the well-plate nest. |
-| `top_plate.dxf` | 1 | New: across the frame's top ring (12 M5 into it). 4 KFL08s for the plunger screws, the plunger motor (standing on it, shaft down) and the belt-tensioner slot; the pulleys, belt and idler run under it inside the ring. |
-| `cart_ledge.dxf` | 2 | New: the drawer channels' ledges under the pipette plate's arms (drawn for the right; flip one over for the left): 7 M3 and a tapped M6 hole for the spring plunger. |
-| `cartridge_plate.dxf` | 1 per cartridge | New: the cartridge's drawer plate, 124 x 100 mm: 96 barrel holes, 4 ejector-rod holes, 4 frame screws, 2 handle screws, and 2 detent holes for the spring plungers. |
-| `plunger_carrier.dxf` | 1 per cartridge | New: under the thumb pads, 120 x 100 mm with 96 rod holes and 4 holes to tap M3 for the pad retainer; it rides on the D-shaft clamps and pushes the ejector rods. |
-| `tip_ejector_plate.dxf` | 1 per cartridge | New: tip ejector under the barrel ends, 112 x 98 mm with a 5.8 mm hole around each nozzle, 6 mm holes for its 4 M4 rods (loose, so it can tilt). |
-| `lift_base_plate.dxf` | 1 | New: 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
+| `pipette_plate.dxf` | 1 | 160 x 200 mm: a U open at the front for the cartridge drawer (slot 114 mm wide, to 50 mm behind center), with the head-bracket holes, 6 for the sensor posts and 14 for the drawer channels. |
+| `plunger_plate.dxf` | 1 | The drive plate, redrawn at 160 x 200 mm so the carriage brackets sit outside the drawer's clamp troughs: 4 T8 nut cutouts (the nuts sit on it, body up), 8 M4 for the carriage brackets, 6 M3 for the sensor flags, 8 M3 for the troughs. No plunger-rod holes: the rods are the cartridge's. |
+| `plunger_rail_plate.dxf` | 4 | Joins the drive plate's carriage brackets to the carriages: the lift rail plate made rectangular and 24 mm longer so it reaches down beside the drive plate; same carriage holes, M4 pair moved into the carriage bracket. |
+| `lift_rail_plate.dxf` | 4 | Joins the lift platform's carriage brackets to the carriages (the original design's `interface_plate_high`): 3 carriage screws, 2 M4 into the bracket. |
+| `corner_bracket.dxf` | 16 | Frame corners, 4 M5 each into the extrusion (the original design's). Or buy 2020 flat L corner plates. |
+| `lift_plate.dxf` | 1 | 156 x 200 lift platform (its edges clear the rail plates' carriage-screw heads) with 2 T8 nut cutouts (body through), 8 holes for the carriage brackets and 4 for the well-plate nest. |
+| `top_plate.dxf` | 1 | Across the frame's top ring (12 M5 into it). 4 KFL08s for the plunger screws, the plunger motor (standing on it, shaft down) and the belt-tensioner slot; the pulleys, belt and idler run under it inside the ring. |
+| `cart_ledge.dxf` | 2 | The drawer channels' ledges under the pipette plate's arms (drawn for the right; flip one over for the left): 7 M3 and a tapped M6 hole for the spring plunger. |
+| `cartridge_plate.dxf` | 1 per cartridge | The cartridge's drawer plate, 124 x 100 mm: 96 barrel holes, 4 ejector-rod holes, 4 frame screws, 2 handle screws, and 2 detent holes for the spring plungers. |
+| `plunger_carrier.dxf` | 1 per cartridge | Under the thumb pads, 120 x 100 mm with 96 rod holes and 4 holes to tap M3 for the pad retainer; it rides on the D-shaft clamps and pushes the ejector rods. |
+| `tip_ejector_plate.dxf` | 1 per cartridge | Tip ejector under the barrel ends, 112 x 98 mm with a 5.8 mm hole around each nozzle, 6 mm holes for its 4 M4 rods (loose, so it can tilt). |
+| `lift_base_plate.dxf` | 1 | 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
 
 Each T8 nut mounts through one cloverleaf cutout (the center bore with four 3.4 mm slots out to
-the flange screws) instead of a bore and four separate holes, which left only 1.2 mm (lift) and
-1.9 mm (plunger) of steel between them. The flange covers the slots and carries the load; put a
-washer under each M3 nut so it spans its slot.
+the flange screws) instead of a bore and four separate holes, which would leave only 1.2 mm
+(lift) and 1.9 mm (plunger) of steel between them. The flange covers the slots and carries the
+load; the M3 nuts (5.5 mm across flats) span the 3.4 mm slots on their own.
 
 Checked: all outlines closed, smallest hole or slot 3.4 mm (above the thickness), and at least
-2.7 mm of material to every plate edge. The thinnest web in the new features is 4.1 mm (plunger
-plate). The pipette plate's 96 syringe holes keep the repo plate's 2.5 mm webs.
+2.7 mm of material to every plate edge. The thinnest web is 4.1 mm (drive plate), apart from
+the cartridge plate's 96 barrel holes, which keep the original design's 2.5 mm webs.
+
+After cutting, tap the 4 small (2.5 mm) holes in `plunger_carrier.dxf` for M3 and the detent hole
+in each `cart_ledge.dxf` for M6. For a spare cartridge, order another cartridge plate, plunger
+carrier and tip ejector plate.
 
 ## 3D-printed (`ToPrint-STL/`, PETG suggested; oriented for printing)
 
@@ -35,15 +45,15 @@ plate). The pipette plate's 96 syringe holes keep the repo plate's 2.5 mm webs.
 | `head_bracket.stl` | 2 | Joins the pipette plate to the side bar: 2 M4 up through the plate, 2 M5 up into the bar's bottom slot. Starts at x 69.5, outside the drawer channel. Prints on its side; the same part works on both sides (turn it around). |
 | `tensioner_bracket_lift.stl` | 1 | 6.5 mm tall. Idler shoulder bolt in the 12 mm slot, 2 M3 x 12 to the plate, 25 mm apart so their heads clear the idler. |
 | `tensioner_bracket_plunger.stl` | 1 | 5.5 mm tall; on the top plate, the idler's bolt goes down through the slot. |
-| `control_box_housing_sloped.stl` | 1 | The repo `ScreenHousing` with its screen panel tilted 10 deg toward the user (front 17.5 mm lower), a 3 mm skirt that runs every wall down to the base, the lid bosses extended down to it, and a back pad with 2 M5 holes into the bottom front bar. The repo's USB opening in the front wall (which faces the user once the box lies down) is filled; a panel-mount USB-B socket goes in the left end instead, beside the DC jack, with a short USB-B extension to the Arduino. The panel moves as one piece with the LCD, encoder and Arduino standoffs under it. Prints panel-down. |
+| `control_box_housing_sloped.stl` | 1 | The original design's `ScreenHousing` (in `04_Blender/source/`) with its screen panel tilted 10 deg toward the user (front 17.5 mm lower), a 3 mm skirt that runs every wall down to the base, the lid bosses extended down to it, and a back pad with 2 M5 holes into the bottom front bar. Its USB opening in the front wall (which faces the user once the box lies down) is filled; a panel-mount USB-B socket goes in the left end instead, beside the DC jack, with a short USB-B extension to the Arduino. The panel moves as one piece with the LCD, encoder and Arduino standoffs under it. Prints panel-down. |
 | `plunger_carriage_bracket_RF_LB.stl`, `plunger_carriage_bracket_RB_LF.stl` | 2 + 2 | Join the drive plate to its rail plates, hanging under the plate's side edges outside the D-shaft troughs (x 67.5 on). One M4 x 20 down through the plate into a captive nut in a pocket, one M4 x 20 up from a pocket (pocket floors 11.5 mm under the plate, so it goes 5.5 mm into the T-nut) into a T-nut in the stiffener's long bar, and 2 M4 x 12 in from outside through the rail plate into captive nuts in slots from below. Mirror-image hands: RF and LB are one, RB and LF the other. Print plate-face down. |
 | `lift_carriage_bracket.stl` | 4 | Joins the lift platform to a rail plate (one per corner, all alike). Sits on the platform with its outer face on the rail plate: 2 M4 x 12 in from outside through the rail plate's holes into captive nuts (slots open at the top), 2 M4 x 16 down through counterbores and the platform. Prints as oriented; its inner face stays 2 mm outside the well plate's path. |
 | `optical_switch_post.stl` | 3 | Plunger home-sensor post on the pipette plate's arms: holds a slotted optical endstop laid flat (long side along y), 18.4 mm below the drive plate at home so the plate and flag tab clear it (and its screw heads) with 1.5 mm to spare at the full 11.5 mm eject; a pocket under the slot takes the flag. 2 M3 x 12 through counterbores into the plate. |
 | `plunger_flag.stl` | 3 | Hangs from the drive plate (2 M3 x 10 countersunk up from under the tab, flush, nuts on the plate) with a 4 x 2 mm vane that reaches the sensor's beam at home and passes on through the slot. Prints tab down. |
-| `well_plate_nest.stl` | 1 | Locates the well plate on the lift platform (replaces the flat repo tray): a 15 mm base (the height the firmware expects), walls 4 mm above it on the back and sides, a 2 mm lip at the front, 0.4 mm clearance around the SBS footprint. 4 M4 x 16 through counterbores into the platform. Cut back 11.5 mm around each lift nut for its flange screws' heads. |
-| `control_box_base.stl` | 1 | Closes the control box (replaces the repo lid). 4 countersunk M3 self-tappers into the housing bosses. |
+| `well_plate_nest.stl` | 1 | Locates the well plate on the lift platform (replaces the original's flat tray): a 15 mm base (the height the firmware expects), walls 4 mm above it on the back and sides, a 2 mm lip at the front, 0.4 mm clearance around the SBS footprint. 4 M4 x 16 through counterbores into the platform. Cut back 11.5 mm around each lift nut for its flange screws' heads. |
+| `control_box_base.stl` | 1 | Closes the control box (replaces the original's lid, which sat between the posts). 4 countersunk M3 self-tappers into the housing bosses. |
 | `syringe_lock_frame.stl` | 1 per cartridge | Holds the 96 syringes by their flanges, with the finger tabs trimmed to stubs instead of the flanged end cut off: each flange sits on the cartridge plate in a slot along its row (7.4 mm wide, 1.1 mm deep, so the frame presses 0.1 mm on every flange and the stubs can't turn), and 5.2 mm holes pass the plunger rods. 4 M3 x 14 self-tappers go down through it and the cartridge plate into the grip's ears. Prints slot side up. |
-| `syringe_grip_slipfit.stl` | 1 per cartridge | The repo grip with its 96 holes opened from 6.5 to 6.9 mm, so the barrels slide in; it keeps their lower ends in line. 4 ears take the frame screws, so it hangs from the cartridge plate instead of sliding down the barrels. |
+| `syringe_grip_slipfit.stl` | 1 per cartridge | The original design's grip (in `04_Blender/source/`) with its 96 holes opened from 6.5 to 6.9 mm, so the barrels slide in; it keeps their lower ends in line. 4 ears take the frame screws, so it hangs from the cartridge plate instead of sliding down the barrels. |
 | `pad_retainer.stl` | 1 per cartridge | Over the thumb pads, on the plunger carrier (3 mm): pockets keep the 96 pads captive when the cartridge is out, and it carries the drive plate's push down to them. 4 M3 x 6 countersunk screws hold it to the carrier: the heads sit flush with its top (which bears on the drive plate) and the tips come out flush under the carrier (which rides on the D-shafts). Prints pockets up. |
 | `cartridge_handle.stl` | 1 per cartridge | Under the front of the cartridge plate (2 M3 self-tappers): pull the drawer out by it. |
 | `cart_spacer_R.stl` | 2 | Drawer channel spacer under the pipette plate's arm, between it and the ledge; its tab at the back is the drawer's stop. Drawn for the right; mirror it for the left. |
@@ -56,9 +66,9 @@ All nineteen are closed solids (every edge shared by exactly two triangles).
 ## Check against your hardware before cutting
 
 - **KFL08 bolt spacing** is set to 37 mm (`KFL08_BOLTS` in `make_dxf.py`). Measure your bearings.
-- **Frame height** and rail lengths: the original's (400 mm) was estimated from the build video; this layout adds 30 mm (430 mm posts, 360 mm rails) so an empty tip rack slides out under freshly loaded tips, and the lift travels 66 mm (home 2 mm higher than first drawn, so the T8 nut flange's screws and nuts clear the pulley).
+- **Frame height** and rail lengths: 430 mm posts and 360 mm rails, 30 mm taller than the original design's (whose 400 mm was estimated from its build video), so an empty tip rack slides out under freshly loaded tips. The lift travels 66 mm.
 - **Syringes**: the frame and grip assume a 6.4 mm barrel, a 1.2 mm flange, and tabs trimmed so
-  the flange is 8.2 x 7.2 mm (typical 1 mL values, `SYR_*` in `04_Blender/variant_motor_lift.py`).
+  the flange is 8.2 x 7.2 mm (typical 1 mL values, `SYR_*` in `04_Blender/build_pipette.py`).
   Measure one of yours; if the flange is thicker, the slot depth follows `SYR_FLANGE_T`.
 
 ## Tip ejector
@@ -114,6 +124,9 @@ The layout numbers (screw, motor, switch and bracket positions) live in `make_dx
 Blender model reads them from there, so the files and the model stay in sync:
 
 ```
-python 01_Hardware/MotorLift/make_dxf.py                           # DXFs
-blender -b --python 04_Blender/export_motor_lift_parts.py           # STLs (builds the model first)
+python 01_Hardware/make_dxf.py                           # DXFs
+blender -b --python 04_Blender/export_parts.py           # STLs (builds the model first)
 ```
+
+`lift_rail_plate.dxf` and `corner_bracket.dxf` are the original design's drawings, cut as they are;
+`make_dxf.py` reads the rail plate to draw `plunger_rail_plate.dxf` from it.

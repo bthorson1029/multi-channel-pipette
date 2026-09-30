@@ -84,7 +84,7 @@ const CalPoint CAL_200_REVERSE[] = {{0, 0}, {200, 200}};
 const CalPoint CAL_10_FORWARD[]  = {{0, 0}, {10, 10}};
 const CalPoint CAL_10_REVERSE[]  = {{0, 0}, {10, 10}};
 
-// One entry per syringe cartridge (01_Hardware/MotorLift/README.md), picked on the device with
+// One entry per syringe cartridge (01_Hardware/README.md), picked on the device with
 // "Cartridge" and kept in EEPROM. capacityUl: most liquid its tips may hold. tipOffsetMm: how
 // much further the bed must rise for its tips than for the 200 uL tips the labware heights below
 // are set for (shorter tips: positive). Keep it 0 until measured: tips that fall short are safe,

@@ -1,15 +1,12 @@
-# Bill of materials: motorized-lift build
+# Bill of materials
 
-For the layout on the `motorized-lift` branch: fixed pipette head, lead-screw bed lift, one
-belt-synced plunger motor (model: `04_Blender/variant_motor_lift.py`, firmware:
-`02_Software/arduino/MotorLift`). Quantities are counted from the Blender model. The layout was
-reconstructed from the creator's build video, so treat lengths marked *est.* as starting points
-and confirm against your own frame. The creator's original build came to roughly $250 in parts.
+For the pipette: fixed head, lead-screw bed lift, one belt-synced plunger motor (model:
+`04_Blender/build_pipette.py`, firmware: `02_Software/arduino/MotorLift`). Quantities are counted
+from the Blender model. The frame layout was reconstructed from the original design's build video,
+so treat lengths marked *est.* as starting points and confirm against your own frame.
 
-**File status** for fabricated parts:
-- **Repo**: use the original file in `01_Hardware` as is.
-- **Generated**: new or modified for this layout, in `01_Hardware/MotorLift/` (see its README for
-  what changed, what was checked, and how to regenerate).
+Every file to cut or print is in `01_Hardware` (paths below are relative to it); its
+[README](01_Hardware/README.md) describes each part and how to regenerate the files.
 
 ## Order summary
 
@@ -79,24 +76,23 @@ M4 threaded rod, 4 light springs (~6.4 mm OD x 20-25 mm).
 
 ## 1. Laser-cut metal
 
-The repo doesn't state a material or thickness; the model assumes **3 mm steel**. The machine
+The model assumes **3 mm steel** (not 1/8", 3.18 mm: the cartridge plate runs in a 3.3 mm channel). The machine
 works around liquids, so consider 304 stainless or a coated steel over bare mild steel. Aluminum
 would be lighter but about 3x more flexible, which costs plunger accuracy.
 
-| Part | Qty | File | Status | Notes |
-|---|---|---|---|---|
-| Pipette plate | 1 | `MotorLift/ToLaserCut-DXF/pipette_plate_motorlift.dxf` | Generated | A U open at the front for the cartridge drawer; head-bracket, sensor-post and channel holes. |
-| Plunger (drive) plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 160 x 200 mm: 4 T8 nut cutouts, 8 carriage-bracket holes, 3 sensor flags, 8 trough bolts; no plunger-rod holes. |
-| Top plate | 1 | `MotorLift/ToLaserCut-DXF/top_plate.dxf` | Generated | On the top ring: the plunger screws' KFL08s, the plunger motor, the belt tensioner. |
-| Drawer channel ledge | 2 | `MotorLift/ToLaserCut-DXF/cart_ledge.dxf` | Generated | Flip one over for the left side. Tap the M6 hole. |
-| Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 156 x 200 mm (its edges clear the rail plates' carriage-screw heads), 2 T8 nut cutouts, 8 carriage-bracket holes, 4 well-plate-nest holes. |
-| Lift base plate | 1 | `MotorLift/ToLaserCut-DXF/lift_base_plate.dxf` | Generated | 229.2 x 120 mm. |
-| Interface plate, high | 4 | `ToLaserCut-DXF/interface_plate_high.DXF` | Repo | Lift platform rail plates. |
-| Plunger rail plate | 4 | `MotorLift/ToLaserCut-DXF/plunger_rail_plate.dxf` | Generated | A taller, rectangular `interface_plate_high` that reaches down to the plunger carriage brackets. |
-| Frame corner bracket | 16 | `ToLaserCut-DXF/angle_bracket-(optionally can be purchased).DXF` | Repo | Or buy 2020 flat L corner plates. |
+| Part | Qty | File | Notes |
+|---|---|---|---|
+| Pipette plate | 1 | `ToLaserCut-DXF/pipette_plate.dxf` | A U open at the front for the cartridge drawer; head-bracket, sensor-post and channel holes. |
+| Plunger (drive) plate | 1 | `ToLaserCut-DXF/plunger_plate.dxf` | 160 x 200 mm: 4 T8 nut cutouts, 8 carriage-bracket holes, 3 sensor flags, 8 trough bolts; no plunger-rod holes. |
+| Top plate | 1 | `ToLaserCut-DXF/top_plate.dxf` | On the top ring: the plunger screws' KFL08s, the plunger motor, the belt tensioner. |
+| Drawer channel ledge | 2 | `ToLaserCut-DXF/cart_ledge.dxf` | Flip one over for the left side. Tap the M6 hole. |
+| Lift platform | 1 | `ToLaserCut-DXF/lift_plate.dxf` | 156 x 200 mm (its edges clear the rail plates' carriage-screw heads), 2 T8 nut cutouts, 8 carriage-bracket holes, 4 well-plate-nest holes. |
+| Lift base plate | 1 | `ToLaserCut-DXF/lift_base_plate.dxf` | 229.2 x 120 mm. |
+| Lift rail plate | 4 | `ToLaserCut-DXF/lift_rail_plate.dxf` | Joins the lift platform's brackets to the carriages. |
+| Plunger rail plate | 4 | `ToLaserCut-DXF/plunger_rail_plate.dxf` | A taller, rectangular lift rail plate that reaches down to the plunger carriage brackets. |
+| Frame corner bracket | 16 | `ToLaserCut-DXF/corner_bracket.dxf` | Or buy 2020 flat L corner plates. |
 
-Not needed in this layout: `interface_plate_low` (the pipette plate now bolts to side bars),
-`bearing_plate`, `lever_cutout*`, `linkage1`, `square_stock`.
+The syringe cartridge's three plates are in section 5b.
 
 ## 2. 3D-printed parts
 
@@ -104,32 +100,28 @@ PETG is a good default for the load-bearing parts. Suggested:
 4 perimeters, 40 % infill. The largest part (the sloped housing, 218 x 111 x 75 mm) needs a bed of at
 least 220 mm.
 
-| Part | Qty | File | Status | Notes |
-|---|---|---|---|---|
-| Plunger sensor post | 3 | `MotorLift/ToPrint-STL/optical_switch_post.stl` | Generated | Holds a slotted optical endstop laid flat under the plunger plate; 2 M3 to the pipette plate. |
-| Plunger sensor flag | 3 | `MotorLift/ToPrint-STL/plunger_flag.stl` | Generated | Hangs from the plunger plate through the sensor's slot; 2 M3. |
-| Electronics housing (sloped) | 1 | `MotorLift/ToPrint-STL/control_box_housing_sloped.stl` | Generated | Repo housing with the screen panel tilted 10 deg toward the user, a skirt that runs its walls down to the bench, the lid bosses extended to the base, and a back pad with 2 M5 into T-nuts in the bottom front bar. |
-| Control box base | 1 | `MotorLift/ToPrint-STL/control_box_base.stl` | Generated | Closes the housing's underside (replaces the repo lid, which was sized to sit between the posts). 4 countersunk M3 into the bosses. |
-| Well-plate nest | 1 | `MotorLift/ToPrint-STL/well_plate_nest.stl` | Generated | Locates an SBS plate on the lift platform at the height the firmware expects (replaces the flat repo tray). 4 M4 to the platform. |
-| Head bracket | 2 | `MotorLift/ToPrint-STL/head_bracket.stl` | Generated | Bolts the pipette plate to the side bars. |
-| Belt tensioner bracket (lift) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_lift.stl` | Generated | |
-| Belt tensioner bracket (plunger) | 1 | `MotorLift/ToPrint-STL/tensioner_bracket_plunger.stl` | Generated | On the top plate. |
-| Drawer channel spacer | 1 + 1 mirrored | `MotorLift/ToPrint-STL/cart_spacer_R.stl` | Generated | Mirror for the left. |
-| D-shaft trough | 1 + 1 mirrored | `MotorLift/ToPrint-STL/dshaft_trough_R.stl` | Generated | Mirror for the left. |
-| D-shaft lever | 2 | `MotorLift/ToPrint-STL/dshaft_lever.stl` | Generated | |
-| Plunger carriage bracket | 2 + 2 | `MotorLift/ToPrint-STL/plunger_carriage_bracket_RF_LB.stl`, `MotorLift/ToPrint-STL/plunger_carriage_bracket_RB_LF.stl` | Generated | Hang under the plunger plate's side edges and join it to its 4 rail plates. Two mirror-image hands, 2 of each. 4 captive M4 nuts each. |
-| Lift carriage bracket | 4 | `MotorLift/ToPrint-STL/lift_carriage_bracket.stl` | Generated | Joins the lift platform to its 4 rail plates; same part at every corner. 2 captive M4 nuts each. |
-| Lift home-switch holder | 1 | `MotorLift/ToPrint-STL/lift_home_switch_holder.stl` | Generated | For a KW12-type switch. |
-
-Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_insert_lid`,
-`lever_handle`, `slide_block`, `slider_holder`, `LimitSwitch_holder_A/B`, `electronics_lid`,
-`vertical_tray`, `S-P_plate`, `syringe_grip_static`. Optional: the comb jigs and `horizontal_tray`.
+| Part | Qty | File | Notes |
+|---|---|---|---|
+| Plunger sensor post | 3 | `ToPrint-STL/optical_switch_post.stl` | Holds a slotted optical endstop laid flat under the plunger plate; 2 M3 to the pipette plate. |
+| Plunger sensor flag | 3 | `ToPrint-STL/plunger_flag.stl` | Hangs from the plunger plate through the sensor's slot; 2 M3. |
+| Electronics housing (sloped) | 1 | `ToPrint-STL/control_box_housing_sloped.stl` | The original design's housing with the screen panel tilted 10 deg toward the user, a skirt that runs its walls down to the bench, the lid bosses extended to the base, and a back pad with 2 M5 into T-nuts in the bottom front bar. |
+| Control box base | 1 | `ToPrint-STL/control_box_base.stl` | Closes the housing's underside (replaces the original's lid, which was sized to sit between the posts). 4 countersunk M3 into the bosses. |
+| Well-plate nest | 1 | `ToPrint-STL/well_plate_nest.stl` | Locates an SBS plate on the lift platform at the height the firmware expects (replaces the original's flat tray). 4 M4 to the platform. |
+| Head bracket | 2 | `ToPrint-STL/head_bracket.stl` | Bolts the pipette plate to the side bars. |
+| Belt tensioner bracket (lift) | 1 | `ToPrint-STL/tensioner_bracket_lift.stl` | |
+| Belt tensioner bracket (plunger) | 1 | `ToPrint-STL/tensioner_bracket_plunger.stl` | On the top plate. |
+| Drawer channel spacer | 1 + 1 mirrored | `ToPrint-STL/cart_spacer_R.stl` | Mirror for the left. |
+| D-shaft trough | 1 + 1 mirrored | `ToPrint-STL/dshaft_trough_R.stl` | Mirror for the left. |
+| D-shaft lever | 2 | `ToPrint-STL/dshaft_lever.stl` | |
+| Plunger carriage bracket | 2 + 2 | `ToPrint-STL/plunger_carriage_bracket_RF_LB.stl`, `ToPrint-STL/plunger_carriage_bracket_RB_LF.stl` | Hang under the plunger plate's side edges and join it to its 4 rail plates. Two mirror-image hands, 2 of each. 4 captive M4 nuts each. |
+| Lift carriage bracket | 4 | `ToPrint-STL/lift_carriage_bracket.stl` | Joins the lift platform to its 4 rail plates; same part at every corner. 2 captive M4 nuts each. |
+| Lift home-switch holder | 1 | `ToPrint-STL/lift_home_switch_holder.stl` | For a KW12-type switch. |
 
 ## 3. Frame and motion
 
 | Part | Qty | Notes |
 |---|---|---|
-| 2020 aluminum extrusion, 430 mm *est.* | 4 | Posts. 30 mm taller than the original build, so an empty tip rack slides out under freshly loaded tips. |
+| 2020 aluminum extrusion, 430 mm *est.* | 4 | Posts. 30 mm taller than the original design, so an empty tip rack slides out under freshly loaded tips. |
 | 2020 extrusion, 189.2 mm | 4 | Front/back of the bottom and top rings. |
 | 2020 extrusion, 178 mm | 8 | Sides of the bottom, bed-level and top rings, plus the two head side bars. |
 | 2020 inside corner bracket | 12 | Head side bars (4) and bed-level side bars (4) to the posts; stiffening-frame corners (4). |
@@ -165,7 +157,7 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 | Rotary encoder with push switch | 1 | |
 | Panel-mount USB-B extension, B female (panel) to B male, ~30 cm | 1 | Arduino USB out through the control box's left end, beside the DC jack. Typical socket: 12.5 x 11.5 mm cutout, M3 ears 30 mm apart; check yours against `USB_PANEL_*` in the model. |
 | 12 V power supply, 5 A suggested | 1 | Plus a DC socket for the housing. |
-| LM2596 buck converter | 1 | Optional; in the original electronics. |
+| LM2596 buck converter | 1 | Optional (the original design used one). |
 | Wire, Dupont leads, heat-shrink | | |
 
 ## 5. Pipetting consumables
@@ -178,22 +170,22 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 ## 5b. Syringe cartridge (per cartridge)
 
 Everything that depends on the syringes and tips (see "Syringe cartridge" in
-`01_Hardware/MotorLift/README.md`). Build one per tip family, or a spare.
+`01_Hardware/README.md`). Build one per tip family, or a spare.
 
 | Part | Qty | File / notes |
 |---|---|---|
-| Cartridge plate, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/cartridge_plate.dxf` |
-| Plunger carrier, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/plunger_carrier.dxf`; tap the 4 small (2.5 mm) holes M3 |
-| Tip ejector plate, 3 mm steel | 1 | `MotorLift/ToLaserCut-DXF/tip_ejector_plate.dxf` |
-| Syringe locking frame (printed) | 1 | `MotorLift/ToPrint-STL/syringe_lock_frame.stl`; a slot per row keys the tab stubs |
-| Syringe barrel grip, slip fit (printed) | 1 | `MotorLift/ToPrint-STL/syringe_grip_slipfit.stl`; hangs from the cartridge plate by 4 ears |
-| Pad retainer (printed) | 1 | `MotorLift/ToPrint-STL/pad_retainer.stl`; countersunk for 4 M3 |
+| Cartridge plate, 3 mm steel | 1 | `ToLaserCut-DXF/cartridge_plate.dxf` |
+| Plunger carrier, 3 mm steel | 1 | `ToLaserCut-DXF/plunger_carrier.dxf`; tap the 4 small (2.5 mm) holes M3 |
+| Tip ejector plate, 3 mm steel | 1 | `ToLaserCut-DXF/tip_ejector_plate.dxf` |
+| Syringe locking frame (printed) | 1 | `ToPrint-STL/syringe_lock_frame.stl`; a slot per row keys the tab stubs |
+| Syringe barrel grip, slip fit (printed) | 1 | `ToPrint-STL/syringe_grip_slipfit.stl`; hangs from the cartridge plate by 4 ears |
+| Pad retainer (printed) | 1 | `ToPrint-STL/pad_retainer.stl`; countersunk for 4 M3 |
 | 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. Instead of cutting the flanged end off, trim the finger tabs to stubs: flange 8.2 mm across the stubs and at most 7.2 mm wide, face left flat (the model assumes a 6.4 mm barrel and a 1.2 mm flange; measure yours). |
 | Heat-shrink tubing | 96 pieces | Over each syringe tip so this cartridge's tips seal; size it by test fitting. |
 | M4 threaded rod, ~110 mm | 4 | Tip-ejector rods |
 | Compression spring, ~6.4 mm OD x 20-25 mm, light | 4 | Hold the ejector plate up; one over each rod |
 | M4 nut + washer | 12 | Ejector rods: under and over the plate, and the spring stop |
-| Cartridge handle (printed) | 1 | `MotorLift/ToPrint-STL/cartridge_handle.stl` |
+| Cartridge handle (printed) | 1 | `ToPrint-STL/cartridge_handle.stl` |
 | M3 x 10 self-tapping | 2 | Handle to the cartridge plate |
 | M3 x 14 self-tapping | 4 | Frame and cartridge plate into the grip's ears |
 | M3 x 6 countersunk (ISO 10642) | 4 | Pad retainer down into the carrier's tapped holes; heads flush on top, tips flush underneath |
@@ -201,7 +193,7 @@ Everything that depends on the syringes and tips (see "Syringe cartridge" in
 ## 6. Fasteners
 
 Counted from the Blender model, which places every one of them (the `fast_*` objects; see
-`fasteners()` in `04_Blender/variant_motor_lift.py`). Lengths were checked against each stack:
+`fasteners()` in `04_Blender/build_pipette.py`). Lengths were checked against each stack:
 T-nut bolts end 4.2-6.0 mm into the slot (through the T-nut, short of the 2020 core), nut bolts
 pass through their nut, and screws into plastic, motors or carriages get enough thread. Buy about
 20 % extra. The cartridge's own screws are in section 5b.
@@ -238,7 +230,7 @@ pass through their nut, and screws into plastic, motors or carriages get enough 
 - Drill (sanding the syringe plungers to 8 mm)
 - Light lubricant for the lead screws
 - For calibration: a 0.1 mg analytical balance, or dye plus a plate reader (see
-  `02_Software/README.txt`)
+  `02_Software/README.md`)
 
 ## Where to get things made
 

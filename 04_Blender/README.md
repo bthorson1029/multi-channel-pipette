@@ -1,57 +1,58 @@
-# Blender models
+# Blender model
 
-Python scripts that build the pipette in Blender (tested with 5.2) from the parts in
-`01_Hardware`, plus two redesign variants explored in this fork. The scripts are the source of
-truth; the `.blend` files they produce are not committed.
+Python scripts that build the pipette in Blender (tested with 5.2), check it, and write its
+printed parts. The scripts are the source of truth; the `.blend` files they produce are not
+committed.
 
-```
-blender --python 04_Blender/build_pipette.py        # the original design
-blender --python 04_Blender/variant_raise_bed.py    # fixed head, lever lifts the bed
-blender --python 04_Blender/variant_motor_lift.py   # fixed head, motorized lead-screw lift (chosen)
-blender -b --python 04_Blender/export_motor_lift_parts.py   # write the motor-lift printed parts as STL
+```bash
+blender --python 04_Blender/build_pipette.py
 ```
 
-You can also open a script in Blender's Text Editor and use **Run Script**. Add `-b` to build
-without the UI. Units are millimeters (Z up, front = -Y).
+```bash
+blender -b --python 04_Blender/export_parts.py
+```
 
-## What each script builds
+The first builds the model and opens it; the second builds it without the UI and writes the
+printed parts to `01_Hardware/ToPrint-STL`. You can also open `build_pipette.py` in Blender's Text
+Editor and use **Run Script**. Units are millimeters (Z up, front = -Y).
 
-| Script | Design | Renders |
-|---|---|---|
-| `build_pipette.py` | The original: the lever lowers the whole head. | `original_*.jpg` |
-| `variant_raise_bed.py` | Head fixed; the geared lever raises the bed through short links arranged as a toggle that locks at the top. Handle on the right. | `lever_lift_*.jpg` |
-| `variant_motor_lift.py` | Head fixed; one NEMA17 lifts the bed on two T8x2 screws through a GT2 belt, and one motor (48 mm body) on a plate across the top ring drives all four T8x2 plunger screws through a second belt. Anti-backlash plunger nuts, a 2020 stiffening frame on the drive plate, idler tensioners, a lift home switch, optical plunger home sensors with a level check, a tip ejector, and a swappable syringe cartridge that slides in at the front like a drawer. The control box lies in front of the base with its screen panel sloped 10 deg toward the user (`CONTROL_SLOPE_DEG`). Its plates come from `01_Hardware/MotorLift/make_dxf.py`, which also holds the layout numbers. Firmware: `02_Software/arduino/MotorLift`. | `motor_lift_*.jpg` |
+## Files
 
-The variants build on `build_pipette.py`, so it has to stay in the same folder.
+| File | What it is |
+|---|---|
+| `build_pipette.py` | The build: lift, plunger drive, syringe cartridge, control box, fasteners, demo labware, the animated run, and the checks. Layout numbers come from `01_Hardware/make_dxf.py`. |
+| `pipette_lib.py` | Helpers (materials, mesh, DXF and STL import, T-slot extrusion) and the base parts: frame, corner brackets, well plate, pipette and drive plates, plunger rail plates, the grip and the control box as the original design had them. Not run on its own. |
+| `export_parts.py` | Builds the model and writes each printed part as an STL, oriented for printing. It refuses to write a part with holes in its surface. |
+| `source/` | Three STLs from the original design that printed parts are derived from: `ScreenHousing.STL` (the sloped control-box housing), `syringe_grip_static.STL` (the slip-fit grip) and `electronics_lid.STL` (used only to position the box). Not printed as they are. |
+| `renders/` | Images used in the READMEs. |
 
 ## Where the geometry comes from
 
-- **Imported directly:** the printed parts from `ToPrint-STL` and the laser-cut parts from
-  `ToLaserCut-DXF` (lines, arcs and holes, extruded to 3 mm steel).
+- **Imported:** the laser-cut parts from `01_Hardware/ToLaserCut-DXF` (lines, arcs and holes,
+  extruded to 3 mm steel), and the three `source/` STLs.
 - **Modeled:** 2020 T-slot extrusion (B-type 6 mm slot profile), every screw, bolt, nut and
-  T-nut in the BOM (motor-lift variant: `fasteners()`, one `fast_*` object per joint), MGN9H rails and carriages, NEMA17 motors, T8 screws and nuts,
-  syringes, tips, the well plate, bearings, pulleys and belts.
-- **Layout:** there is no assembly file in the repo, so placement was reconstructed from the
-  creator's build video (youtu.be/2TTu-Lkz2Eo). Part shapes are exact; frame height (400 mm; 430 mm in the motor-lift variant, `HEAD_RAISE`),
-  syringe and tip dimensions, and some mounting positions are estimates.
-- **Lever variant:** the shorter gear-arm and longer handle are derived from the stock
-  `lever_cutout*.DXF` outlines by shifting only their straight sections.
-- **Motor-lift variant:** its four laser-cut plates are imported from the generated DXFs in
-  `01_Hardware/MotorLift/ToLaserCut-DXF`, and its new printed parts are modeled as closed solids
-  so `export_motor_lift_parts.py` can write them straight to STL.
+  T-nut in the BOM (`fasteners()`, one `fast_*` object per joint), MGN9H rails and carriages,
+  NEMA17 motors, T8 screws and nuts, syringes, tips, labware, bearings, pulleys and belts. The
+  printed parts are modeled as closed solids so `export_parts.py` can write them straight to STL.
+- **Layout:** the frame layout was reconstructed from the original design's build video
+  (youtu.be/2TTu-Lkz2Eo), then raised 30 mm (430 mm posts). Part shapes are exact; syringe and
+  tip dimensions and some mounting positions are estimates.
 
 ## Checks
 
-Both variants include `collision_report()`, which sweeps every moving part through its full
-travel and tests it against the rest of the model, allowing only intended contacts (screws in
-nuts, carriages on rails, and so on). Both report no collisions. `variant_motor_lift.py` also
-reports the belt loop lengths across the tensioner's adjustment range: 338.9-344.4 mm (lift) and
-538.7-544.6 mm (plunger). It also checks every fastener as it places it: T-nut bolts must end
-4.2-6.0 mm into the slot, nut bolts must pass through their nut, and screws into a part must get
-enough thread; any that don't are printed.
+- `collision_report()` sweeps every moving part through its full travel (lift, plunger, tip
+  eject) and tests it against the rest of the model, allowing only intended contacts (screws in
+  nuts, carriages on rails, and so on). It reports no collisions.
+- `fasteners()` checks every fastener as it places it: T-nut bolts must end 4.2-6.0 mm into the
+  slot, nut bolts must pass through their nut, and screws into a part must get enough thread;
+  any that don't are printed.
+- The build reports the belt loop lengths across each tensioner's adjustment range: 338.9-344.4
+  mm (lift) and 538.7-544.6 mm (plunger).
 
-Each variant keyframes a full cycle as it builds; scrub the timeline to watch it. The motor-lift
-variant plays a complete run (`CYCLE`, 680 frames):
+## The animated run
+
+The timeline plays a complete run (`CYCLE`, 680 frames); scrub it to watch:
+
 1. It starts with no tips. A tip rack goes into the nest, the bed rises 62 mm to press the nozzles
    into the tips, and the tips stay on the nozzles when the bed goes down. The empty rack then
    slides out under them.
@@ -64,6 +65,6 @@ variant plays a complete run (`CYCLE`, 680 frames):
    and the syringe cartridge slides 210 mm out the front.
 
 The labware (`tip_rack`, `reservoir`, `well_plate_96`, `waste_tray`) is demo-only and is loaded
-from the front over the nest's lip. Anything that goes in or out while tips are on has to pass under
-them with the bed down (71 mm): the 61 mm rack clears by 10 mm. The tips are ejected into a
+from the front over the nest's lip. Anything that goes in or out while tips are on has to pass
+under them with the bed down (71 mm): the 61 mm rack clears by 10 mm. The tips are ejected into a
 30 mm tray.

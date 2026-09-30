@@ -1,8 +1,8 @@
-"""Export the motorized-lift build's new and modified printed parts as STL.
+"""Export the printed parts as STL.
 
-    blender -b --python 04_Blender/export_motor_lift_parts.py
+    blender -b --python 04_Blender/export_parts.py
 
-Builds variant_motor_lift.py, then writes each part to 01_Hardware/MotorLift/ToPrint-STL in
+Builds build_pipette.py, then writes each part to 01_Hardware/ToPrint-STL in
 millimeters, oriented for printing (flat face on the bed, resting at z = 0). Each part is checked
 for open edges first; the script fails rather than write a mesh with holes in its surface.
 """
@@ -10,11 +10,11 @@ import bpy, bmesh, math, os, struct, sys
 from mathutils import Matrix
 
 here = os.path.dirname(os.path.abspath(__file__))
-ns = {"__name__": "variant", "__file__": os.path.join(here, "variant_motor_lift.py")}
+ns = {"__name__": "build", "__file__": os.path.join(here, "build_pipette.py")}
 exec(compile(open(ns["__file__"], encoding="utf-8").read(), ns["__file__"], "exec"), ns)
 ns["pose"](0, 0)
 
-OUT = os.path.normpath(os.path.join(here, "..", "01_Hardware", "MotorLift", "ToPrint-STL"))
+OUT = os.path.normpath(os.path.join(here, "..", "01_Hardware", "ToPrint-STL"))
 PARTS = {   # object -> (file, rotation for printing)
     "lift_tensioner_bracket": ("tensioner_bracket_lift.stl", Matrix.Identity(3)),
     "plunger_tensioner_bracket": ("tensioner_bracket_plunger.stl", Matrix.Identity(3)),

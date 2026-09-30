@@ -73,29 +73,26 @@ The Blender model plays this whole run on its timeline (680 frames).
 
 | Path | What's there |
 |---|---|
-| [`BOM.md`](BOM.md) | Bill of materials for this build, with totals to order and where to get parts made |
-| [`01_Hardware/MotorLift`](01_Hardware/MotorLift) | Laser-cut (DXF) and printed (STL) files new or changed for this build, and `make_dxf.py`, which holds the layout numbers. Its README explains each part. |
-| [`01_Hardware`](01_Hardware) | The original's parts; the BOM says which ones this build still uses |
-| [`02_Software/arduino/MotorLift`](02_Software/arduino/MotorLift) | Firmware for this build. Settings are in `Config.h`; wiring and features are in [`02_Software/README.txt`](02_Software/README.txt). |
-| [`02_Software/arduino`](02_Software/arduino) | The original's firmware |
-| [`03_Electronics`](03_Electronics) | The original's wiring diagram |
-| [`04_Blender`](04_Blender) | Scripts that build the models (the original, a lever-lift variant and this build), with collision checks and renders |
+| [`BOM.md`](BOM.md) | Bill of materials, with totals to order and where to get parts made |
+| [`01_Hardware`](01_Hardware) | Every file to fabricate: `ToLaserCut-DXF/` (12 files, 34 parts) and `ToPrint-STL/` (19 files, 32 parts), plus `make_dxf.py`, which holds the layout numbers. Its README explains each part. |
+| [`02_Software`](02_Software) | Firmware (`arduino/MotorLift`; settings in `Config.h`). Its README has the wiring and what each feature does. |
+| [`04_Blender`](04_Blender) | Scripts that build the model, check it for collisions and clearances, animate a full run, and write the STLs |
 
 ## Regenerating the files
 
-The scripts are the source of truth. Change positions in `make_dxf.py` or the Blender variant,
+The scripts are the source of truth. Change positions in `make_dxf.py` or `04_Blender/build_pipette.py`,
 then regenerate:
 
 ```bash
-python 01_Hardware/MotorLift/make_dxf.py
+python 01_Hardware/make_dxf.py
 ```
 
 ```bash
-blender -b --python 04_Blender/export_motor_lift_parts.py
+blender -b --python 04_Blender/export_parts.py
 ```
 
 ```bash
-blender --python 04_Blender/variant_motor_lift.py
+blender --python 04_Blender/build_pipette.py
 ```
 
 The first writes the DXFs, the second builds the model and writes the STLs, and the third opens the
