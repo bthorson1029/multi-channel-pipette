@@ -53,10 +53,9 @@ const float PLUNGER_STEPS_PER_UL = 12.0 * (8.0 / PLUNGER_LEAD_MM);   // 48
 const float PLUNGER_STEPS_PER_MM = MOTOR_STEPS * (float)PLUNGER_MICROSTEPS / PLUNGER_LEAD_MM;   // 800
 const float LIFT_STEPS_PER_MM    = MOTOR_STEPS * (float)LIFT_MICROSTEPS / LIFT_LEAD_MM;
 
-const float LIFT_TRAVEL_MM = 41.0;         // soft limit above home (Blender model: 40.9 mm)
+const float LIFT_TRAVEL_MM = 38.0;         // soft limit above home (Blender model: 37.9 mm)
 
 // ---------------------------------------------------------------- tips and volumes
-const long  TIP_CAPACITY_UL = 200;         // yellow 200 uL tips: never draw liquid past this
 const long  VOLUME_MIN_UL   = 1;
 // Volume knob steps: 1 uL below 20, 5 uL below 100, 10 uL above.
 
@@ -74,13 +73,35 @@ const float REVERSE_PRELOAD_UL = 5.0;
 // this ~0; measure by reversing and watching the plate with a dial indicator.
 const float BACKLASH_UL = 0.0;
 
-// ---------------------------------------------------------------- calibration
+// ---------------------------------------------------------------- cartridges and calibration
 // Measured volume for a commanded volume, per mode (0 must map to 0; keep it increasing).
 // Weigh water dispensed at several volumes (1 uL = 1 mg at room temperature; ISO 8655
 // describes the method) and enter commanded -> measured pairs. Identity until measured.
+// Each syringe cartridge has its own syringes, so each gets its own tables.
 struct CalPoint { float commandedUl; float measuredUl; };
-const CalPoint CAL_FORWARD[] = {{0, 0}, {200, 200}};
-const CalPoint CAL_REVERSE[] = {{0, 0}, {200, 200}};
+const CalPoint CAL_200_FORWARD[] = {{0, 0}, {200, 200}};
+const CalPoint CAL_200_REVERSE[] = {{0, 0}, {200, 200}};
+const CalPoint CAL_10_FORWARD[]  = {{0, 0}, {10, 10}};
+const CalPoint CAL_10_REVERSE[]  = {{0, 0}, {10, 10}};
+
+// One entry per syringe cartridge (01_Hardware/MotorLift/README.md), picked on the device with
+// "Cartridge" and kept in EEPROM. capacityUl: most liquid its tips may hold. tipOffsetMm: how
+// much further the bed must rise for its tips than for the 200 uL tips the labware heights below
+// are set for (shorter tips: positive). Keep it 0 until measured: tips that fall short are safe,
+// tips driven into the bottom of a plate are not.
+struct Cartridge {
+  const char *name;     // <= 13 characters
+  long capacityUl;
+  float tipOffsetMm;
+  const CalPoint *calForward; uint8_t nForward;
+  const CalPoint *calReverse; uint8_t nReverse;
+};
+#define CAL_TABLE(t) t, (uint8_t)(sizeof(t) / sizeof(t[0]))
+const Cartridge CARTRIDGES[] = {
+  {"200 uL tips", 200, 0.0, CAL_TABLE(CAL_200_FORWARD), CAL_TABLE(CAL_200_REVERSE)},
+  {"10 uL tips",   10, 0.0, CAL_TABLE(CAL_10_FORWARD),  CAL_TABLE(CAL_10_REVERSE)},   // PLACEHOLDER offset
+};
+const uint8_t CARTRIDGE_COUNT = sizeof(CARTRIDGES) / sizeof(CARTRIDGES[0]);
 
 // ---------------------------------------------------------------- liquid handling
 const float ASPIRATE_UL_S  = 40.0;         // slower draws are more accurate
@@ -136,7 +157,7 @@ struct Labware {
   float approachMmS;
 };
 const Labware LABWARE[] = {
-  {"96-well plate", 40.9, 2.0},   // 15 mm nest + SBS plate: tips 9 mm into the wells
+  {"96-well plate", 37.9, 2.0},   // 15 mm nest + SBS plate: tips 9 mm into the wells (200 uL cartridge)
   {"Tip loading",   40.0, 0.8},   // PLACEHOLDER: set where the tips finish seating on your rack
   {"Reservoir",     40.0, 2.0},   // PLACEHOLDER: set for your reservoir
 };
@@ -165,3 +186,4 @@ extern float plungerTiltMm;          // switch spread at the last plunger homing
 extern int8_t plungerLateSw;         // index into PLUNGER_SW_PINS of the last (or missing) switch
 // MotorLift.ino
 void showStatus(const char *msg);
+long tipCapacityUl();

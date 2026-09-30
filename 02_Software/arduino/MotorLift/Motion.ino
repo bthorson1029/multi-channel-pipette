@@ -268,7 +268,7 @@ bool homePlunger() {
 bool plungerToHeld(float ul, float ulPerS) {
   if (!plungerHomed) return false;
   if (ul < 0) ul = 0;
-  if (ul > TIP_CAPACITY_UL) ul = TIP_CAPACITY_UL;
+  if (ul > tipCapacityUl()) ul = tipCapacityUl();
   bool ok = plungerMoveTo(plungerWorkZero() + lround(ul * PLUNGER_STEPS_PER_UL), ulPerS);
   if (!ok) plungerHomed = false;                 // reached the switches unexpectedly
   return ok;

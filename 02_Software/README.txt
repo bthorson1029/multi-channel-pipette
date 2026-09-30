@@ -14,6 +14,10 @@ one belt-synced plunger motor). Open MotorLift.ino; settings are in Config.h.
 - If an axis runs backwards, flip PLUNGER_DISPENSE_LEVEL or LIFT_UP_LEVEL.
 - On power-up it homes the lift (down), then the plunger. The lift re-zeroes on its switch every
   time it lowers, so lost steps do not accumulate.
+- Cartridge (menu): pick the syringe cartridge fitted. Each entry in CARTRIDGES (Config.h) has
+  its tip capacity, its own calibration tables and a tip height offset added to every labware
+  height (keep it 0 until measured; the 10 uL entry is a placeholder). Only with the tips empty
+  and the bed down; kept in EEPROM (the first boot after this update resets the height trims).
 - Eject tips (menu): with the bed down and the tips empty, the plunger goes EJECT_MM (11.5 mm)
   past home, pushing the ejector plate down so the tips drop onto whatever is on the bed (a
   waste tray, or the rack), then comes back up and re-homes.

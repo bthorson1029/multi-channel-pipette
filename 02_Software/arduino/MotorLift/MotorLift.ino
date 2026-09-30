@@ -15,6 +15,9 @@
 //   Eject tips  push the tips off onto whatever is on the bed (a waste tray, or the rack to return
 //               them): plunger past home drives the ejector plate. Only with the bed down and the
 //               tips empty; re-homes the plunger afterwards.
+//   Cartridge   press to cycle the syringe cartridge fitted (tip capacity, calibration and tip
+//               height come from its entry in CARTRIDGES); only with the tips empty and the bed
+//               down; kept in EEPROM
 //   Home all    re-home lift, then plunger. Shows "Homed, level 0.04" (spread of the plunger
 //               switches in mm), or "Level: pin 11 late" if one switch closed more than
 //               PLUNGER_TILT_MAX_MM after the first (plate tilted, e.g. a skipped belt tooth, or a
@@ -27,12 +30,13 @@
 LiquidCrystal_I2C lcd(LCD_ADDR, 20, 4);
 
 enum Item { ITEM_VOLUME, ITEM_ASPIRATE, ITEM_DISPENSE, ITEM_MODE, ITEM_LABWARE, ITEM_HEIGHT,
-            ITEM_RAISE, ITEM_EMPTY, ITEM_EJECT, ITEM_HOME, ITEM_COUNT };
+            ITEM_RAISE, ITEM_EMPTY, ITEM_EJECT, ITEM_CART, ITEM_HOME, ITEM_COUNT };
 
 long volumeUl = 50;
 bool reverseMode = false;
 uint8_t labwareIdx = 0;
 float heightTrim[LABWARE_COUNT];     // mm, per preset
+uint8_t cartIdx = 0;                 // CARTRIDGES entry fitted
 bool bedUp = false;
 
 int8_t menuIdx = 0, menuTop = 0;
@@ -40,7 +44,7 @@ int8_t editItem = -1;                // item being edited with the knob, -1 = no
 char statusMsg[19] = "";             // replaces the selected row's text until the next input
 bool dirty = true;
 
-const uint8_t EEPROM_MAGIC = 0xA7;   // bump if the stored layout changes
+const uint8_t EEPROM_MAGIC = 0xA8;   // bump if the stored layout changes
 
 // ---------------------------------------------------------------- setup / loop
 void setup() {
@@ -74,14 +78,16 @@ float calCommand(const CalPoint *t, uint8_t n, float wantUl) {
 }
 
 float commandFor(float wantUl) {
-  if (reverseMode)
-    return calCommand(CAL_REVERSE, sizeof(CAL_REVERSE) / sizeof(CAL_REVERSE[0]), wantUl);
-  return calCommand(CAL_FORWARD, sizeof(CAL_FORWARD) / sizeof(CAL_FORWARD[0]), wantUl);
+  const Cartridge &c = CARTRIDGES[cartIdx];
+  if (reverseMode) return calCommand(c.calReverse, c.nReverse, wantUl);
+  return calCommand(c.calForward, c.nForward, wantUl);
 }
+
+long tipCapacityUl() { return CARTRIDGES[cartIdx].capacityUl; }
 
 // ---------------------------------------------------------------- bed
 float engageMm() {
-  float h = LABWARE[labwareIdx].engageMm + heightTrim[labwareIdx];
+  float h = LABWARE[labwareIdx].engageMm + CARTRIDGES[cartIdx].tipOffsetMm + heightTrim[labwareIdx];
   return constrain(h, 0.0, LIFT_TRAVEL_MM);
 }
 
@@ -151,7 +157,7 @@ void runAspirate() {
   // back below), plus the excess if the tips are empty.
   float draw = reverseMode ? volumeUl + REVERSE_PRELOAD_UL + (held < 0.5 ? REVERSE_EXCESS_UL : 0)
                            : commandFor(volumeUl);
-  if (held + draw > TIP_CAPACITY_UL) { showStatus("Over tip capacity"); return; }
+  if (held + draw > tipCapacityUl()) { showStatus("Over tip capacity"); return; }
   bool stayUp = bedUp;
   if (!bedUp && !raiseBed()) return;
   for (uint8_t n = PREWET_CYCLES; n--;) {
@@ -249,6 +255,15 @@ void onClick() {
       break;
     case ITEM_EMPTY: runEmpty(); break;
     case ITEM_EJECT: runEject(); break;
+    case ITEM_CART:
+      if (heldUl() >= 0.5) showStatus("Empty tips first");
+      else if (bedUp) showStatus("Lower bed first");
+      else {
+        cartIdx = (cartIdx + 1) % CARTRIDGE_COUNT;
+        volumeUl = constrain(volumeUl, VOLUME_MIN_UL, tipCapacityUl());
+        saveTrims();
+      }
+      break;
     case ITEM_HOME: homeAll(); break;
   }
   dirty = true;
@@ -258,7 +273,7 @@ void onTurn(int8_t d) {
   statusMsg[0] = '\0';
   if (editItem == ITEM_VOLUME) {
     long v = volumeUl + (d > 0 ? volumeStep(volumeUl) : -volumeStep(volumeUl - 1));
-    volumeUl = constrain(v, VOLUME_MIN_UL, TIP_CAPACITY_UL);
+    volumeUl = constrain(v, VOLUME_MIN_UL, tipCapacityUl());
   } else if (editItem == ITEM_HEIGHT) {
     float base = LABWARE[labwareIdx].engageMm;
     float t = heightTrim[labwareIdx] + d * HEIGHT_STEP_MM;
@@ -299,6 +314,7 @@ void rowText(int8_t item, char *buf) {
     case ITEM_RAISE:    snprintf(buf, 21, "%c %s", sel, bedUp ? "Lower bed" : "Raise bed"); break;
     case ITEM_EMPTY:    snprintf(buf, 21, "%c Empty tips", sel); break;
     case ITEM_EJECT:    snprintf(buf, 21, "%c Eject tips", sel); break;
+    case ITEM_CART:     snprintf(buf, 21, "%c Cart %s", sel, CARTRIDGES[cartIdx].name); break;
     case ITEM_HOME:     snprintf(buf, 21, "%c Home all", sel); break;
     default:            buf[0] = '\0';
   }
@@ -318,21 +334,27 @@ void render() {
   dirty = false;
 }
 
-// ---------------------------------------------------------------- EEPROM (height trims)
+// ---------------------------------------------------------------- EEPROM (height trims, cartridge)
+const int EEPROM_CART_ADDR = 1 + LABWARE_COUNT * sizeof(float);
+
 void loadTrims() {
   if (EEPROM.read(0) != EEPROM_MAGIC) {
     for (uint8_t i = 0; i < LABWARE_COUNT; i++) heightTrim[i] = 0;
+    cartIdx = 0;
     return;
   }
   for (uint8_t i = 0; i < LABWARE_COUNT; i++) {
     EEPROM.get(1 + i * sizeof(float), heightTrim[i]);
     if (isnan(heightTrim[i]) || fabs(heightTrim[i]) > LIFT_TRAVEL_MM) heightTrim[i] = 0;
   }
+  cartIdx = EEPROM.read(EEPROM_CART_ADDR);
+  if (cartIdx >= CARTRIDGE_COUNT) cartIdx = 0;
 }
 
 void saveTrims() {
   EEPROM.update(0, EEPROM_MAGIC);
   for (uint8_t i = 0; i < LABWARE_COUNT; i++) EEPROM.put(1 + i * sizeof(float), heightTrim[i]);
+  EEPROM.update(EEPROM_CART_ADDR, cartIdx);
 }
 
 // ---------------------------------------------------------------- encoder (from the original)
