@@ -19,7 +19,7 @@ OUT = os.path.join(HERE, "ToLaserCut-DXF")
 # ---------------------------------------------------------------- layout (machine frame, mm)
 PLATE_T = 3.0                                    # all laser-cut parts
 PS_XY = [(-65.0, -58.9), (65.0, -58.9), (-65.0, 58.9), (65.0, 58.9)]   # plunger screws: LF RF LB RB
-PLG_MOTOR_XY = (0.0, 76.0)                       # plunger motor, on the top plate at the back
+PLG_MOTOR_XY = (0.0, 69.0)                       # plunger motor, on the top plate at the back (its rear screws clear the ring bar)
 LIFT_X = 70.0                                    # lift screws at (+/-LIFT_X, 0)
 LIFT_MOTOR_XY = (0.0, 36.0)                      # lift motor, hangs under the base plate
 HOME_SW_XY = (-40.0, -35.0)                      # lift home switch on the base plate
@@ -31,7 +31,7 @@ TENSION_TAKEUP = 16.0                            # nominal idler deflection
 SLOT_TRAVEL = 12.0                               # tensioner adjustment (+/-6)
 PLG_IDLER_Y = PS_XY[0][1] - PULLEY_R - IDLER_R + TENSION_TAKEUP   # plunger idler, front run
 LIFT_IDLER_Y = -(PULLEY_R + IDLER_R) + TENSION_TAKEUP             # lift idler, run between screws
-TENSIONER_HOLE_DX = 11.0                         # bracket screws either side of the slot
+TENSIONER_HOLE_DX = 12.5                         # bracket screws either side of the slot (heads clear of the idler)
 
 KFL08_BOLTS = 37.0                               # KFL08 bolt spacing (check your bearings)
 NEMA17_BOLTS = 31.0
@@ -40,7 +40,7 @@ T8_NUT_BODY_BORE_D = 10.4                        # nut body passes through the p
 T8_NUT_PCD = 16.0                                # flange screw circle
 T8_NUT_SCREW_D = 3.4                             # M3 clearance; slot width in the nut cutout
 
-LIFT_PLATE = (160.0, 200.0)
+LIFT_PLATE = (156.0, 200.0)                      # edges clear of the rail plates' carriage-screw heads
 BASE_PLATE = (229.2, 120.0)
 BASE_MOUNT_XY = [(sx * 104.6, sy * 45.0) for sx in (-1, 1) for sy in (-1, 1)]  # into side extrusions
 LIFT_BRACKET_X = 71.0                            # lift carriage brackets: 2 M4 down through the plate each,

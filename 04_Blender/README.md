@@ -28,11 +28,11 @@ The variants build on `build_pipette.py`, so it has to stay in the same folder.
 
 - **Imported directly:** the printed parts from `ToPrint-STL` and the laser-cut parts from
   `ToLaserCut-DXF` (lines, arcs and holes, extruded to 3 mm steel).
-- **Modeled:** 2020 T-slot extrusion (B-type 6 mm slot profile), the corner brackets' M5 bolts
-  and T-nuts, MGN9H rails and carriages, NEMA17 motors, T8 screws and nuts,
+- **Modeled:** 2020 T-slot extrusion (B-type 6 mm slot profile), every screw, bolt, nut and
+  T-nut in the BOM (motor-lift variant: `fasteners()`, one `fast_*` object per joint), MGN9H rails and carriages, NEMA17 motors, T8 screws and nuts,
   syringes, tips, the well plate, bearings, pulleys and belts.
 - **Layout:** there is no assembly file in the repo, so placement was reconstructed from the
-  creator's build video (youtu.be/2TTu-Lkz2Eo). Part shapes are exact; frame height (400 mm; 430 mm in the motor-lift variant, HEAD_RAISE),
+  creator's build video (youtu.be/2TTu-Lkz2Eo). Part shapes are exact; frame height (400 mm; 430 mm in the motor-lift variant, `HEAD_RAISE`),
   syringe and tip dimensions, and some mounting positions are estimates.
 - **Lever variant:** the shorter gear-arm and longer handle are derived from the stock
   `lever_cutout*.DXF` outlines by shifting only their straight sections.
@@ -46,11 +46,13 @@ Both variants include `collision_report()`, which sweeps every moving part throu
 travel and tests it against the rest of the model, allowing only intended contacts (screws in
 nuts, carriages on rails, and so on). Both report no collisions. `variant_motor_lift.py` also
 reports the belt loop lengths across the tensioner's adjustment range: 338.9-344.4 mm (lift) and
-541.6-547.5 mm (plunger).
+538.7-544.6 mm (plunger). It also checks every fastener as it places it: T-nut bolts must end
+4.2-6.0 mm into the slot, nut bolts must pass through their nut, and screws into a part must get
+enough thread; any that don't are printed.
 
 Each variant keyframes a full cycle as it builds; scrub the timeline to watch it. The motor-lift
 variant plays a complete run (`CYCLE`, 680 frames):
-1. It starts with no tips. A tip rack goes into the nest, the bed rises 64 mm to press the nozzles
+1. It starts with no tips. A tip rack goes into the nest, the bed rises 62 mm to press the nozzles
    into the tips, and the tips stay on the nozzles when the bed goes down. The empty rack then
    slides out under them.
 2. A reservoir replaces the rack, and the plunger draws 100 uL per channel with the tips in the
@@ -63,5 +65,5 @@ variant plays a complete run (`CYCLE`, 680 frames):
 
 The labware (`tip_rack`, `reservoir`, `well_plate_96`, `waste_tray`) is demo-only and is loaded
 from the front over the nest's lip. Anything that goes in or out while tips are on has to pass under
-them with the bed down (73 mm): the 61 mm rack clears by 12 mm. The tips are ejected into a
+them with the bed down (71 mm): the 61 mm rack clears by 10 mm. The tips are ejected into a
 30 mm tray.

@@ -53,7 +53,7 @@ const float PLUNGER_STEPS_PER_UL = 12.0 * (8.0 / PLUNGER_LEAD_MM);   // 48
 const float PLUNGER_STEPS_PER_MM = MOTOR_STEPS * (float)PLUNGER_MICROSTEPS / PLUNGER_LEAD_MM;   // 800
 const float LIFT_STEPS_PER_MM    = MOTOR_STEPS * (float)LIFT_MICROSTEPS / LIFT_LEAD_MM;
 
-const float LIFT_TRAVEL_MM = 68.0;         // soft limit above home (Blender model: 67.9 mm)
+const float LIFT_TRAVEL_MM = 66.0;         // soft limit above home (Blender model: 65.9 mm)
 
 // ---------------------------------------------------------------- tips and volumes
 const long  VOLUME_MIN_UL   = 1;
@@ -157,9 +157,9 @@ struct Labware {
   float approachMmS;
 };
 const Labware LABWARE[] = {
-  {"96-well plate", 67.9, 2.0},   // 15 mm nest + SBS plate: tips 9 mm into the wells (200 uL cartridge)
-  {"Tip loading",   64.0, 0.8},   // PLACEHOLDER (model rack: 64.0): set where the tips finish seating on your rack
-  {"Reservoir",     67.9, 2.0},   // PLACEHOLDER (model: 14.4 mm SBS reservoir): set for your reservoir
+  {"96-well plate", 65.9, 2.0},   // 15 mm nest + SBS plate: tips 9 mm into the wells (200 uL cartridge)
+  {"Tip loading",   62.0, 0.8},   // PLACEHOLDER (model rack: 62.0): set where the tips finish seating on your rack
+  {"Reservoir",     65.9, 2.0},   // PLACEHOLDER (model: 14.4 mm SBS reservoir): set for your reservoir
 };
 const uint8_t LABWARE_COUNT = sizeof(LABWARE) / sizeof(LABWARE[0]);
 const float   HEIGHT_STEP_MM = 0.1;

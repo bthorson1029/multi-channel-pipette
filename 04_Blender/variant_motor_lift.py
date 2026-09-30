@@ -77,7 +77,7 @@ LIFT_X = L.LIFT_X                 # screws at (+/-LIFT_X, 0): outside the tray (
 LIFT_MOTOR_XY = L.LIFT_MOTOR_XY
 BASE_Z = BED_RECT_Z - 10 - T      # base plate top = underside of bed-ring side members (52..55)
 LIFT_PLUS = BASE_Z + T + 1        # pulley stack starts 1 mm above the base plate
-LIFT0 = 78.0                      # platform underside at the bottom of travel
+LIFT0 = 80.0                      # platform underside at the bottom of travel: the T8 nut flange's screws and nuts clear the pulley
 TRAY_H, PLATE_H = 15.0, 14.4
 TIP_DEPTH = 9.0                   # tips this far into the wells at the top of travel
 SEAT = P - T                      # syringe flanges sit on the cartridge carrier plate, under the pipette plate
@@ -89,6 +89,7 @@ BRK_H = 18.0                      # lift carriage bracket height above the plate
 BRK_BOLT_Z = LIFT0 + T + 10.0     # rail-plate M4 row: the rail plates ride this high so it clears the plate
 LIFT_IF_HOLE_Y = (PY - 30.0, PY - 50.0)   # the rail plate's 2 M4 holes (DXF x 20, 40; anchor x -10 at PY)
 PLG_BRK_H = 18.0                  # plunger carriage bracket height under the plate
+PLG_BRK_POCKET = 11.5             # its bolt pockets' floor under the plate: an M4 x 20 then goes 5.5 into a T-nut
 assert L.CARRIAGE_Y == PY and PLG_MID - L.RAIL_ZC_BELOW_MID == g["ZC_HIGH"]
 # plunger
 PS_XY = L.PS_XY                   # order: LF, RF, LB, RB
@@ -122,7 +123,7 @@ KEEP_X = 52.5                     # the outer plunger rods pass at |x| <= 51 as 
 EJ_SPRING_Z = (SEAT, SEAT + 20)   # ejector springs: carrier plate top to the spring nut
 # Parts that come out with the syringe cartridge (see check_cartridge_removal)
 CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_lock_frame", "syringe_grip",
-             "eject_", "plunger_carrier", "pad_retainer", "plungers_x96")
+             "eject_", "plunger_carrier", "pad_retainer", "plungers_x96", "cartridge_fasteners")
 # USB: a panel-mount USB-B socket on the control box's left end, forward of the DC jack, joined
 # to the Arduino by a short USB-B extension. Typical socket: 12.5 x 11.5 mm body, 2 M3 ears 30 mm
 # apart (check yours).
@@ -146,7 +147,7 @@ EJECT_MM = EJ_GAP_B + EJ_STROKE
 OPT_BODY = (24.5, 10.8, 6.3)
 OPT_SLOT = 3.1
 OPT_EARS = 19.0
-OPT_BELOW = EJECT_MM + 3.0 + 1.5
+OPT_BELOW = EJECT_MM + 3.0 + 1.5 + 2.4   # + the M3 pan heads holding the sensor down
 CBOX_BOSSES = [(sx * 79.0, y + CBOX_DY) for sx in (-1, 1) for y in (-207.5, -117.5)]   # repo lid screw bosses (measured)
 CONTROL_SLOPE_DEG = 10.0          # control-box screen panel tilted toward the user (front edge lowered)
 
@@ -419,6 +420,10 @@ def plunger_flag(name, x, y, coll):
     for s_ in (-1, 1):
         _cone(bm, L.M3 / 2, L.M3 / 2, zu - 5, zu + 1, xy=(x, y + s_ * L.FLAG_HOLE_DY))
     boolean(o, bm)
+    bm = bmesh.new()                                  # countersinks from below: flush heads
+    for s_ in (-1, 1):
+        _cone(bm, 3.15, 1.6, zu - 3.01, zu - 3 + 1.95, seg=24, xy=(x, y + s_ * L.FLAG_HOLE_DY))
+    boolean(o, bm)
     return o
 
 
@@ -515,7 +520,7 @@ def plunger_carriage_bracket(name, sx, sy, coll):
         xa, xb = sorted((sx * 75.5, sx * 79.0))
         _block(bm, xa, xb, sy * y - 3.7, sy * y + 3.7, zb - 1, zr + 4.0)
     for x, y in L.PLG_BRACKET_PLATE_XY:               # plate-bolt nut pockets from below
-        _cone(bm, 4.2, 4.2, zb - 1, zt - 9.0, seg=6, xy=(sx * x, sy * y))
+        _cone(bm, 4.2, 4.2, zb - 1, zt - PLG_BRK_POCKET, seg=6, xy=(sx * x, sy * y))
     boolean(o, bm)
     return o
 
@@ -662,6 +667,13 @@ def dshaft_clamps(members):
         for x, y in L.TROUGH_BOLTS:
             _cone(bm, L.M3 / 2, L.M3 / 2, zu - 20, zu + 1, xy=(sx * x, y))
         boolean(tr, bm)
+        bm = bmesh.new()                                                      # pockets for the T8 nuts' flange-screw
+        for psx, psy in L.PS_XY:                                              # nuts under the plate (the front pair
+            for x, y in t8_flange_screws(psx, psy):                           # lands on the wall)
+                if x * sx > 0 and y0 < y < y1:
+                    _cone(bm, 3.6, 3.6, zu - 4.5, zu + 1, xy=(x, y))
+        if bm.verts:
+            boolean(tr, bm, self_intersect=True)
         xc, yh0, yh1 = sx * L.DSHAFT_X, y0 - LEVER_HUB[1] - 6.0, y0 - 6.0      # lever hub, clear of the trough
         ym = (yh0 + yh1) / 2
         bm = bmesh.new()
@@ -772,6 +784,8 @@ def well_plate_nest(name, z0, coll):
     bm = bmesh.new()
     for x, y in L.NEST_HOLES:
         _cone(bm, L.M4 / 2, L.M4 / 2, z0 - 1, z0 + TRAY_H + 1, xy=(x, y))
+    for sx in (-1, 1):                                  # clear of the lift nuts' flange-screw heads
+        _cone(bm, 11.5, 11.5, z0 - 1, z0 + TRAY_H + 5, seg=48, xy=(sx * LIFT_X, 0))
     boolean(o, bm)
     bm = bmesh.new()
     for x, y in L.NEST_HOLES:
@@ -1159,6 +1173,368 @@ def modify():
             "lift_belt_range": span(lift_seq, 1, +1), "plunger_belt_range": span(plg_seq, 1, +1)}
 
 
+# ================================================================ fasteners
+# Every screw, bolt, nut, washer and T-nut the BOM calls for, placed on the same hole lists the parts
+# are cut from. One object per joint (fast_<joint>), parented to whatever moves it. Each fastener is
+# logged in FAST_LOG (joint, bearing point, direction, length, grip, what it threads into) so the
+# checks can confirm its shank runs down a real hole, and its length is checked as it's placed:
+# a T-nut bolt must pass through the T-nut (4.2 mm past the slot face) and stop short of the
+# extrusion's core (6.1), a nut bolt must pass through its nut, and a screw into a part must get
+# enough thread.
+HEAD = {  # d: socket (dk, k), button (dk, k), pan (dk, k), countersunk (dk, depth)
+    "socket": {2: (3.8, 2.0), 3: (5.5, 3.0), 4: (7.0, 4.0), 5: (8.5, 5.0)},
+    "button": {3: (5.7, 1.65), 4: (7.6, 2.2), 5: (9.5, 2.75)},
+    "pan": {3: (5.6, 2.4)},
+    "csk": {3: (6.0, 1.86)},
+}
+NUT = {2: (4.0, 1.6), 3: (5.5, 2.4), 4: (7.0, 3.2), 5: (8.0, 4.0)}   # across flats, height
+WASHER = {3: (7.0, 0.5), 4: (9.0, 0.8), 5: (10.0, 1.0)}             # OD, thickness
+TNUT_FACE, TNUT_T, SLOT_CORE = 1.9, 2.3, 6.1                         # 2020: behind the 1.8 lip; core depth
+FAST_LOG, FAST_WARN = [], []
+_FB = {}                                                             # joint -> [bmesh, parent name]
+
+
+def _fbm(joint, parent=None):
+    if joint not in _FB:
+        _FB[joint] = [bmesh.new(), parent]
+    return _FB[joint][0]
+
+
+def _frustum(bm, p0, p1, r0, r1, seg=16):
+    p0, p1 = Vector(p0), Vector(p1)
+    d = p1 - p0
+    rot = d.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=r0, radius2=r1, depth=d.length,
+                          matrix=Matrix.Translation((p0 + p1) / 2) @ rot)
+
+
+def fastener(joint, p, u, d, length, grip=0.0, head="socket", nut=False, washer=False, tnut=None,
+             into=(), min_thread=None, parent=None, head_washer=False, tnut_off=0.0):
+    """p: the face the head bears on (for a countersunk head, the flush surface); u: into the joint.
+    grip: clamped thickness from p to the far face, where a nut (nut=True, washer under it if
+    washer) or a T-nut (tnut = the slot's direction) goes. into: object-name prefixes the shank
+    threads into (tapped, self-tapping or a nut's own part); min_thread: engagement it needs there."""
+    p, u = Vector(p), Vector(u).normalized()
+    bm = _fbm(joint, parent)
+    if head_washer:                                   # the head bears on a washer; the shank starts there
+        od, t = WASHER[d]
+        _frustum(bm, p - u * t, p, od / 2, od / 2)
+        p, length, grip = p - u * t, length, grip + t
+    if head == "csk":
+        dk, k = HEAD["csk"][d]
+        _frustum(bm, p, p + u * k, dk / 2, d / 2)
+    elif head != "none":
+        dk, k = HEAD[head][d]
+        _frustum(bm, p - u * k, p, dk / 2, dk / 2)
+    _frustum(bm, p, p + u * length, d / 2 - 0.1, d / 2 - 0.1, seg=12)
+    far = p + u * grip
+    if washer:
+        od, t = WASHER[d]
+        _frustum(bm, far, far + u * t, od / 2, od / 2)
+        far = far + u * t
+    if nut:
+        af, h = NUT[d]
+        _frustum(bm, far, far + u * h, af / math.sqrt(3), af / math.sqrt(3), seg=6)
+        if length < grip + (WASHER[d][1] if washer else 0) + h:
+            FAST_WARN.append(f"{joint}: M{d} x {length} ends before its nut is through (needs {grip + h:.1f})")
+    if tnut is not None:
+        a = Vector(tnut).normalized()
+        c = far + u * (TNUT_FACE + TNUT_T / 2) + a * tnut_off     # off-center along the slot near a bar's end
+        g_ = bmesh.ops.create_cube(bm, size=1)
+        across = u.cross(a)
+        bmesh.ops.transform(bm, verts=g_["verts"], matrix=Matrix(
+            [[a[i] * 10.0, across[i] * 9.5, u[i] * TNUT_T, c[i]] for i in range(3)] + [[0, 0, 0, 1]]))
+        past = length - grip
+        if not TNUT_FACE + TNUT_T <= past <= SLOT_CORE - 0.1:
+            FAST_WARN.append(f"{joint}: M{d} x {length} goes {past:.1f} into the slot (T-nut needs 4.2-6.0)")
+    if min_thread is not None and length - grip < min_thread:
+        FAST_WARN.append(f"{joint}: M{d} x {length} gets {length - grip:.1f} of thread (wants {min_thread})")
+    FAST_LOG.append((joint, p.copy(), u.copy(), length, grip, tuple(into),
+                     dict(d=d, head=head, nut=nut, washer=washer or head_washer, tnut=tnut is not None)))
+
+
+def _span(name, axis=2):
+    """(min, max) of an object's world vertices along an axis."""
+    o = bpy.data.objects[name]
+    vs = [o.matrix_world @ v.co for v in o.data.vertices]
+    return min(v[axis] for v in vs), max(v[axis] for v in vs)
+
+
+def _dxf_holes(obj, path, r_lo, r_hi):
+    """World centers of an imported plate's DXF circles with r_lo <= r <= r_hi."""
+    L_ = [l.strip() for l in open(path, errors='ignore').read().splitlines()]
+    out, cur, ins = [], None, False
+    for c, v in zip(L_[0::2], L_[1::2]):
+        if c == '2' and v == 'ENTITIES':
+            ins = True
+            continue
+        if not ins:
+            continue
+        if c == '0':
+            if cur and cur.get('t') == 'CIRCLE' and r_lo <= float(cur['40']) <= r_hi:
+                out.append(obj.matrix_world @ Vector((float(cur['10']), float(cur['20']), 0)))
+            cur = {'t': v}
+        elif cur is not None:
+            cur[c] = v
+    return out
+
+
+def t8_flange_screws(x, y):
+    """The 4 flange screws of a T8 nut at (x, y): on the 16 mm circle, 45 deg off the axes."""
+    r = L.T8_NUT_PCD / 2
+    return [(x + r * math.cos(D(45 + 90 * k)), y + r * math.sin(D(45 + 90 * k))) for k in range(4)]
+
+
+def inside_corner_bracket(bm, corner, a, b, n=20.0, t=4.0, w=18.0):
+    """2020 inside corner bracket (cast L) in the corner at `corner`: leg along +a on the face whose
+    normal is -b, leg along +b on the face whose normal is -a; w wide along a x b. Returns the two
+    bolt positions (on each leg's inner face) and the direction into each face."""
+    corner, a, b = Vector(corner), Vector(a), Vector(b)
+    c = a.cross(b)
+    for leg_dir, face_n in ((a, b), (b, a)):
+        ctr = corner + leg_dir * (n / 2) + face_n * (t / 2)
+        g_ = bmesh.ops.create_cube(bm, size=1)
+        bmesh.ops.transform(bm, verts=g_["verts"], matrix=Matrix(
+            [[leg_dir[i] * n, face_n[i] * t, c[i] * w, ctr[i]] for i in range(3)] + [[0, 0, 0, 1]]))
+    web = [corner + a * t, corner + a * (n * 0.8), corner + b * (n * 0.8), corner + b * t]
+    for s_ in (-1, 1):                                           # two gussets at the leg edges
+        off = c * s_ * (w / 2 - 1.0)
+        vs = [bm.verts.new(v + off + c * dz) for dz in (-1.0, 1.0) for v in web]
+        for f in ((0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)):
+            bm.faces.new([vs[i] for i in f])
+    return [(corner + a * (n * 0.55) + b * t, -b), (corner + b * (n * 0.55) + a * t, -a)]
+
+
+def fasteners():
+    """Place every fastener (rigs at their build positions: call before pose())."""
+    obj = bpy.data.objects
+    X, Y, Z = Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))
+    _FB.clear()
+    FAST_LOG.clear()
+    FAST_WARN.clear()
+    SP, SL, SC = "plunger_carriage", "lift_platform", None
+
+    # ---- bought parts are modeled as plain solids: drill their mounting holes where the fasteners go
+    bpy.context.view_layer.update()
+    for o in [o for o in obj if o.name.startswith("KFL08_")]:
+        c, a = o.matrix_world.translation, o.matrix_world.to_3x3() @ Vector((L.KFL08_BOLTS / 2, 0, 0))
+        drill(o, [(c.x + a.x, c.y + a.y), (c.x - a.x, c.y - a.y)], L.M4 / 2)
+    for o in [o for o in obj if o.name.startswith(("lift_nut_flange_", "plunger_nut_flange_"))]:
+        c = o.matrix_world.translation
+        drill(o, t8_flange_screws(c.x, c.y), L.M3 / 2)
+    sw = obj["lift_home_switch_body"]                            # its 2 mounting holes, 9.5 apart, along y
+    s0, _ = _span("lift_home_switch_body")
+    bm = bmesh.new()
+    for s_ in (-1, 1):
+        _bar(bm, (HOME_SW_XY[0] + s_ * 4.75, HOME_SW_XY[1] - 10, s0 + 3), (HOME_SW_XY[0] + s_ * 4.75, HOME_SW_XY[1] + 10, s0 + 3), 1.1)
+    boolean(sw, bm)
+    fl = obj["usb_panel_socket_flange"]                          # its 2 ears
+    uy, uz = USB_PANEL_YZ
+    fx0, fx1 = _span("usb_panel_socket_flange", 0)
+    bm = bmesh.new()
+    for s_ in (-1, 1):
+        _bar(bm, (fx0 - 1, uy + s_ * USB_PANEL_EARS / 2, uz), (fx1 + 1, uy + s_ * USB_PANEL_EARS / 2, uz), L.M3 / 2)
+    boolean(fl, bm)
+
+    # ---- top plate into the top ring (12), base plate up into the bed-level side bars (4)
+    zt0, zt1 = _span("top_plate")
+    for x, y in L.TOP_MOUNT_XY:
+        along = Y if abs(x) > 100 else X
+        fastener("fast_top_plate", (x, y, zt1), -Z, 5, 8, grip=zt1 - zt0, head="button", tnut=along)
+    zb0, zb1 = _span("lift_base_plate")
+    for x, y in L.BASE_MOUNT_XY:
+        fastener("fast_base_plate", (x, y, zb0), Z, 5, 8, grip=zb1 - zb0, head="button", tnut=Y)
+
+    # ---- inside corner brackets: head side bars and bed-level side bars to the posts (under each
+    # bar end), and the plunger stiffener's corners
+    bmb = _fbm("inside_corner_brackets")
+    for bar in ("ext_head", "ext_bed"):
+        for sx in (-1, 1):
+            name = f"{bar}_{'LR'[sx > 0]}"
+            z0, _ = _span(name)
+            y0, y1 = _span(name, 1)
+            for sy, yend in ((-1, y0), (1, y1)):
+                bolts = inside_corner_bracket(bmb, (sx * g["PX"], yend, z0), -sy * Y, -Z)
+                (p1, u1), (p2, u2) = bolts
+                fastener("fast_inside_corners", p1, u1, 5, 10, grip=4.0, head="socket", tnut=Y)
+                fastener("fast_inside_corners", p2, u2, 5, 10, grip=4.0, head="socket", tnut=Z)
+    bms = _fbm("stiffener_corner_brackets", SP)
+    zs0, _ = _span("plunger_stiffener_F")
+    ly, sxx = L.STIFF_LONG_Y - 10, L.STIFF_SHORT_X - 10          # inner faces of the long / short bars
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            bolts = inside_corner_bracket(bms, (sx * sxx, sy * ly, zs0 + 10), -sx * X, -sy * Y, n=18.0, w=16.0)
+            for (pp, uu), along in zip(bolts, (X, Y)):
+                pp = Vector(pp)
+                pp.z = zs0 + 10                                  # on the slot's centerline
+                fastener("fast_stiffener_corners", pp, uu, 5, 10, grip=4.0, head="socket", tnut=along, parent=SP)
+
+    # ---- linear rails into the posts' inner slots (20 mm pitch) and carriages to the rail plates
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            r0, r1 = _span(f"MGN9H_rail_{'LR'[sx > 0]}{'FB'[sy > 0]}")
+            xf = sx * g["IX"]                                    # post face under the rail
+            n = int((r1 - r0) // 20)
+            for i in range(n):
+                z = r0 + 10 + 20 * i
+                fastener("fast_rails", (xf - sx * 3.0, sy * g["PY"], z), sx * X, 3, 8, grip=3.0,
+                         head="socket", tnut=Z, into=("MGN9H_rail",))
+    for pl, parent, fname in (("interface_plate_high", SP, os.path.join(FAB_DXF, "plunger_rail_plate.dxf")),
+                              ("lift_interface", SL, os.path.join(g["DXF"], "interface_plate_high.DXF"))):
+        for o in [o for o in obj if o.name.startswith(pl)]:
+            xc = o.matrix_world.translation.x
+            s = 1 if xc > 0 else -1
+            for h in _dxf_holes(o, fname, 1.6, 1.8):            # carriage screws, from inside
+                fastener(f"fast_{pl}_carriage", (xc - s * T / 2, h.y, h.z), s * X, 3, 6, grip=T,
+                         head="socket", into=("MGN9H_carriage",), min_thread=2.5, parent=parent)
+            for h in _dxf_holes(o, fname, 2.2, 2.3):            # into the carriage bracket's captive nut
+                xn = s * (77.25 if parent == SP else 74.75)      # nut slot centers (see the bracket builders)
+                grip = abs((xc + s * T / 2) - (xn + s * NUT[4][1] / 2))
+                fastener(f"fast_{pl}_bracket", (xc + s * T / 2, h.y, h.z), -s * X, 4, 12, grip=grip,
+                         head="socket", nut=True, parent=parent)
+
+    # ---- lift platform: carriage brackets (counterbored heads) and the nest down through the plate
+    zl0, zl1 = _span("lift_plate")
+    for x, y in L.LIFT_BRACKET_HOLES:
+        zc = zl1 + 8.0                                           # counterbore floor
+        fastener("fast_lift_brackets", (x, y, zc), -Z, 4, 16, grip=zc - zl0, head="socket", nut=True, parent=SL)
+    for x, y in L.NEST_HOLES:
+        zc = zl1 + 6.0
+        fastener("fast_nest", (x, y, zc), -Z, 4, 16, grip=zc - zl0, head="socket", nut=True, parent=SL)
+    # T8 lift nuts: flange under the plate; screws down from the plate's top (the heads clear the nut
+    # body, the nest is cut back around them), nuts under the flange, 1 mm over the pulley at home
+    for sx in (-1, 1):
+        f0, f1 = _span(f"lift_nut_flange_{'LR'[sx > 0]}")
+        for x, y in t8_flange_screws(sx * LIFT_X, 0):
+            fastener("fast_lift_nuts", (x, y, zl1), -Z, 3, 10, grip=zl1 - f0, head="socket", nut=True, parent=SL)
+
+    # ---- plunger carriage: T8 nuts (flange on top of the drive plate, nut + washer underneath)
+    zp0, zp1 = _span("plunger_plate")
+    for i, (x0, y0) in enumerate(L.PS_XY, 1):
+        _, f1 = _span(f"plunger_nut_flange_{i}")
+        for x, y in t8_flange_screws(x0, y0):
+            fastener("fast_plunger_nuts", (x, y, f1), -Z, 3, 10, grip=f1 - zp0, head="socket", nut=True, parent=SP)
+    # carriage brackets: at y 33 up from the pocket into a T-nut in the long bar; at y 10 down from
+    # the plate's top into a captive nut in the pocket
+    pocket = zp0 - PLG_BRK_POCKET
+    for x, y in L.PLG_BRACKET_HOLES:
+        if abs(y) > 20:
+            fastener("fast_plunger_brackets", (x, y, pocket), Z, 4, 20, grip=zp1 - pocket, head="socket",
+                     tnut=X, tnut_off=-math.copysign(2.5, x), parent=SP)     # 3 mm from the bar's end
+        else:
+            fastener("fast_plunger_brackets", (x, y, zp1), -Z, 4, 20, grip=zp1 - pocket, head="socket",
+                     nut=True, parent=SP)
+    # D-shaft troughs: up through the outer wall; front pair to nuts on the plate, the pair at +/-32
+    # into T-nuts in the long bars
+    tz0, _ = _span("dshaft_trough_R")
+    for sx in (-1, 1):
+        for x, y in L.TROUGH_BOLTS:
+            tn = abs(abs(y) - L.STIFF_LONG_Y) < 1
+            fastener("fast_troughs", (sx * x, y, tz0), Z, 3, 25, grip=zp1 - tz0, head="socket",
+                     nut=not tn, tnut=X if tn else None, parent=SP)
+    # optical-endstop flags: countersunk up from under the tab (flush: the tab passes 1.5 mm over the
+    # sensor at full eject), nuts on top of the plate
+    for x, y in L.FLAG_HOLES:
+        fastener("fast_flags", (x, y, zp0 - 3.0), Z, 3, 10, grip=3.0 + T, head="csk", nut=True, parent=SP)
+
+    # ---- head: pipette-plate brackets, optical-endstop posts, drawer ledges
+    zq0, zq1 = _span("pipette_plate")
+    hb0, _ = _span("head_bracket_R")
+    for x, y in L.HEAD_MOUNT_XY:                                 # up through the bracket block + plate
+        fastener("fast_head_brackets", (x, y, zq0 - 20), Z, 4, 30, grip=23.0, head="socket", nut=True)
+    for sx in (-1, 1):                                           # the foot up into the bar's bottom slot
+        for y in (-20.0, 20.0):
+            fastener("fast_head_brackets", (sx * (g["IX"] + 10), y, hb0), Z, 5, 12, grip=6.0, head="socket", tnut=Y,
+                     head_washer=True)
+    for x, y in L.SWITCH_POST_HOLES:                             # counterbores 6 mm over the plate
+        fastener("fast_sensor_posts", (x, y, zq1 + 6), -Z, 3, 12, grip=6 + T, head="socket", nut=True)
+    for x, y in L.SWITCH_POSTS:                                  # sensor ears, self-tapping into the post
+        _, s1 = _span(f"plunger_optical_{'LR'[x > 0]}{'FB'[y > 0]}_sensor")
+        for s_ in (-1, 1):
+            fastener("fast_sensors", (x, y + s_ * OPT_EARS / 2, s1), -Z, 3, 8, grip=OPT_BODY[2], head="pan",
+                     into=("plunger_optical",), min_thread=1.5)
+    l0, _ = _span("cart_ledge_R")
+    for sx in (-1, 1):
+        for x, y in L.LEDGE_BOLTS:
+            fastener("fast_ledges", (sx * x, y, l0), Z, 3, 14, grip=zq1 - l0, head="socket", nut=True)
+
+    # ---- motors, bearings, tensioners, the lift home switch
+    for x, y, zf, u, m in ((*LIFT_MOTOR_XY, zb1, -Z, "lift"), (*PLG_MOTOR_XY, zt0, Z, "plunger")):
+        q = L.NEMA17_BOLTS / 2
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                fastener("fast_motors", (x + sx * q, y + sy * q, zf), u, 3, 8, grip=T, head="socket",
+                         into=(f"{m}_motor",), min_thread=4.0)
+    for sx in (-1, 1):                                           # lift KFL08s hang under the base plate
+        for s_ in (-1, 1):
+            fastener("fast_kfl08", (sx * LIFT_X + s_ * L.KFL08_BOLTS / 2, 0, zb1), -Z, 4, 12, grip=T + 5, head="socket", nut=True)
+    for x, y in L.PS_XY:                                         # plunger KFL08s on the top plate (turned 90 deg)
+        for s_ in (-1, 1):
+            fastener("fast_kfl08", (x, y + s_ * L.KFL08_BOLTS / 2, zt1 + 5), -Z, 4, 12, grip=T + 5, head="socket", nut=True)
+    for nm, zbase, ztop, y in (("lift_tensioner_bracket", zb0, None, L.LIFT_IDLER_Y),
+                               ("plunger_tensioner_bracket", zt0, None, L.PLG_IDLER_Y)):
+        b0, b1 = _span(nm)
+        for s_ in (-1, 1):
+            fastener("fast_tensioners", (s_ * L.TENSIONER_HOLE_DX, y, b1), -Z, 3, 12, grip=b1 - zbase,
+                     head="socket", nut=True)
+    hx, hy = HOME_SW_XY
+    hz0, _ = _span("lift_home_switch_body")                      # holder base top = switch bottom
+    for s_ in (-1, 1):
+        fastener("fast_home_switch", (hx + s_ * 14, hy, hz0), -Z, 3, 20, grip=hz0 - zb0, head="socket", nut=True)
+        fastener("fast_home_switch", (hx + s_ * 4.75, hy - 8.0, hz0 + 3), Y, 2, 20, grip=16.0, head="socket", nut=True)
+
+    # ---- control box: base plate into the bosses, pad into the bottom front bar, USB socket
+    for x, y in CBOX_BOSSES:
+        fastener("fast_control_box", (x, y, 0.0), Z, 3, 10, head="csk", into=("ScreenHousing",), min_thread=5.0)
+    back = -(g["FY"] / 2 + T + CBOX_BACK_GAP)                   # box back wall, outer face
+    for x in (-25.0, 25.0):
+        fastener("fast_control_box", (x, back - 3.0, 10.0), Y, 5, 14, grip=(-g["FY"] / 2) - (back - 3.0),
+                 head="socket", tnut=X)
+    uy, uz = USB_PANEL_YZ
+    ux0, _ = _span("usb_panel_socket_flange", 0)
+    for s_ in (-1, 1):
+        fastener("fast_control_box", (ux0, uy + s_ * USB_PANEL_EARS / 2, uz), X, 3, 12, grip=1.5 + 3.0,
+                 head="socket", nut=True)
+
+    # ---- cartridge: lock frame + plate into the grip's ears, handle, pad retainer to the carrier
+    _, fr1 = _span("syringe_lock_frame")
+    for x, y in L.FRAME_SCREWS:
+        fastener("cartridge_fasteners", (x, y, fr1), -Z, 3, 14, grip=FRAME_T + T, head="pan",
+                 into=("syringe_grip",), min_thread=5.0)
+    _, cp1 = _span("cartridge_plate")
+    for x, y in L.CART_HANDLE_SCREWS:
+        fastener("cartridge_fasteners", (x, y, cp1), -Z, 3, 10, grip=T, head="pan",
+                 into=("cartridge_handle",), min_thread=5.0)
+    _, pr1 = _span("pad_retainer")
+    for x, y in L.RETAINER_SCREWS:
+        fastener("pad_retainer_screws", (x, y, pr1), -Z, 3, 6, grip=3.0, head="csk",
+                 into=("plunger_carrier",), min_thread=2.5, parent=SP)
+
+    # ---- make the objects
+    if "Fasteners" not in bpy.data.collections:
+        bpy.context.scene.collection.children.link(bpy.data.collections.new("Fasteners"))
+    for joint, (bm, parent) in _FB.items():
+        m = M["chrome"] if joint.endswith("brackets") else M["motor"]
+        o = new_obj(joint, bm, "Fasteners", m)
+        if parent:
+            o.parent = obj[parent]
+            o.matrix_parent_inverse = obj[parent].matrix_world.inverted()
+    # D-shaft levers: an M3 x 6 cone-point set screw in the hub, into the dimple (turns with the lever)
+    zc = dshaft_axis_z()
+    r = L.DSHAFT_D / 2
+    for sx in (-1, 1):
+        lv = obj[f"dshaft_lever_{'LR'[sx > 0]}"]
+        ym = -100.0 - LEVER_HUB[1] / 2 - 6.0
+        bm = bmesh.new()
+        _frustum(bm, (sx * L.DSHAFT_X, ym, zc - r + 1.0), (sx * L.DSHAFT_X, ym, zc - LEVER_HUB[0] - 0.5), 1.4, 1.4, seg=12)
+        o = new_obj(f"dshaft_setscrew_{'LR'[sx > 0]}", bm, "Fasteners", M["motor"])
+        bpy.context.view_layer.update()
+        o.parent = lv
+        o.matrix_parent_inverse = lv.matrix_world.inverted()
+    for w in FAST_WARN:
+        print("FASTENER", w)
+
+
 # ================================================================ motion
 def spinners():
     obj = bpy.data.objects
@@ -1504,8 +1880,17 @@ def collision_report():
     pose_drawer(0, 0)
     skip = ("LCD", "encoder") + tuple(n for n in LABWARE if n != "well_plate_96") + LIQUIDS
     meshes = [o for o in obj if o.type == 'MESH' and o.name != "Ground" and not o.name.startswith(skip)]
-    lift_g = {o.name for o in meshes if o.parent and o.parent.name == "lift_platform"}
-    plg_g = {o.name for o in meshes if o.parent and o.parent.name == "plunger_carriage"}
+    def rig(o):
+        while o.parent:
+            o = o.parent
+            if o.name in ("lift_platform", "plunger_carriage"):
+                return o.name
+        return None
+    lift_g = {o.name for o in meshes if rig(o) == "lift_platform"}
+    plg_g = {o.name for o in meshes if rig(o) == "plunger_carriage"}
+    fast = {o.name for o in meshes if o.users_collection and o.users_collection[0].name == "Fasteners"} | \
+           {n for n in ("inside_corner_brackets", "stiffener_corner_brackets") if n in obj}
+    grp = lambda n: "lift" if n in lift_g else "plg" if n in plg_g else "static"
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
@@ -1540,7 +1925,9 @@ def collision_report():
                ("plunger_tensioner", "top_plate"), ("plunger_idler", "top_plate"), ("plunger_idler", "plunger_tensioner"),
                ("plunger_screw", "top_plate"), ("cart_spacer", "pipette_plate"), ("cart_ledge", "cart_spacer"),
                ("cart_detent", "cart_ledge"), ("cartridge_handle", "cartridge_plate"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
-               ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder")]   # bolts in slots
+               ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder"),
+               ("fast_rails", "MGN9H_carriage"),     # the rail screws' heads sit in the rail, which the carriage wraps
+               ("dshaft_setscrew", "dshaft")]         # bolts in slots
     ok = lambda a, b: any((a.startswith(p) and b.startswith(q)) or (a.startswith(q) and b.startswith(p)) for p, q in allowed)
     hits = {}
     samples = sorted({(l, a) for _, l, a in KEYS} | {(0.5, 0), (0.5, 1), (1, 0.5), (0, 0.5)} |
@@ -1556,6 +1943,8 @@ def collision_report():
                     continue
                 if (na in lift_g and nb in lift_g) or (na in plg_g and nb in plg_g):
                     continue
+                if (na in fast or nb in fast) and grp(na) == grp(nb):
+                    continue                              # a fastener in its own joint: see fasteners()
                 if bv[na].overlap(bv[nb]):
                     hits.setdefault(f"{na} x {nb}", []).append((round(l * LIFT_TRAVEL, 1), round(a * ASPIRATE, 1)))
     pose(0, 0)
@@ -1566,6 +1955,7 @@ if __name__ != "motor_lib":        # exec with this name to load functions only
     g["build"]()
     g["stage"]()
     belts = modify()
+    fasteners()                      # every screw, bolt, nut and T-nut (rigs still at build positions)
     pose(0, 0)
     labware()
     animate_cycle()                  # the full demo on the timeline: tips on, aspirate, dispense, eject, cartridge out

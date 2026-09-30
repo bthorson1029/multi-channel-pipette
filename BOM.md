@@ -32,7 +32,7 @@ goes.
 - T8x2 lead screw: 6 pieces (4 x ~131 mm, 2 x ~148 mm); anti-backlash nuts: 4; flange nuts: 2
 - KFL08 flange bearings: 6
 - GT2 20T pulleys: 6 x 8 mm bore, 2 x 5 mm bore; 16 mm smooth idlers: 2
-- GT2 6 mm closed loops: 1 x 339-344 mm, 1 x 542-547 mm
+- GT2 6 mm closed loops: 1 x 339-344 mm, 1 x 539-544 mm
 - 8 mm steel rod: 2 x ~165 mm (D-shafts)
 - M6 ball spring plungers: 2
 - KW12-type micro switch: 1; slotted optical endstop boards: 3
@@ -49,29 +49,32 @@ M4 threaded rod, 4 light springs (~6.4 mm OD x 20-25 mm).
 | Size | Buy |
 |---|---|
 | M5 x 8 button head | 96 |
-| M5 x 10 | 34 |
-| M5 x 12 | 3 |
+| M5 x 10 | 29 |
+| M5 x 12 | 5 |
+| M5 x 14 | 3 |
+| M5 washer | 5 |
 | M5 T-nut (2020) | 132 |
-| M4 x 10 | 15 |
-| M4 x 12 | 20 |
+| M4 x 12 | 34 |
 | M4 x 16 | 15 |
 | M4 x 20 | 10 |
 | M4 x 30 | 5 |
-| M4 hex nut | 68 |
+| M4 hex nut | 72 |
 | M4 washer | 15 |
-| M4 T-nut (2020) | 10 |
-| M3 x 8 | 132 |
-| M3 x 10 | 56 |
-| M3 x 12 | 10 |
+| M4 T-nut (2020) | 5 |
+| M3 x 6 | 29 |
+| M3 x 8 | 96 |
+| M3 x 10 | 29 |
+| M3 x 12 | 15 |
 | M3 x 14 | 17 |
+| M3 x 20 | 3 |
 | M3 x 25 | 10 |
-| M3 hex nut | 87 |
-| M3 flat washer (7 mm OD) | 29 |
-| M3 T-nut (2020) | 89 |
-| M3 x 6 cone-point set screw | 3 |
+| M3 x 10 countersunk | 8 |
 | M3 x 6 countersunk | 5 |
-| M3 self-tapping: x 8 / x 10 / x 14 / x 10 countersunk | 8 / 3 / 5 / 5 |
-| M2 x 16 + nut | 3 |
+| M3 hex nut | 75 |
+| M3 T-nut (2020) | 92 |
+| M3 x 6 cone-point set screw | 3 |
+| M3 self-tapping: pan x 8 / pan x 10 / pan x 14 / countersunk x 10 | 8 / 3 / 5 / 5 |
+| M2 x 20 + nut | 3 |
 | Shoulder bolt + nut (idlers) | 2 |
 
 ## 1. Laser-cut metal
@@ -86,7 +89,7 @@ would be lighter but about 3x more flexible, which costs plunger accuracy.
 | Plunger (drive) plate | 1 | `MotorLift/ToLaserCut-DXF/plunger_plate_motorlift.dxf` | Generated | 160 x 200 mm: 4 T8 nut cutouts, 8 carriage-bracket holes, 3 sensor flags, 8 trough bolts; no plunger-rod holes. |
 | Top plate | 1 | `MotorLift/ToLaserCut-DXF/top_plate.dxf` | Generated | On the top ring: the plunger screws' KFL08s, the plunger motor, the belt tensioner. |
 | Drawer channel ledge | 2 | `MotorLift/ToLaserCut-DXF/cart_ledge.dxf` | Generated | Flip one over for the left side. Tap the M6 hole. |
-| Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 160 x 200 mm, 2 T8 nut cutouts, 8 carriage-bracket holes, 4 well-plate-nest holes. |
+| Lift platform | 1 | `MotorLift/ToLaserCut-DXF/lift_plate.dxf` | Generated | 156 x 200 mm (its edges clear the rail plates' carriage-screw heads), 2 T8 nut cutouts, 8 carriage-bracket holes, 4 well-plate-nest holes. |
 | Lift base plate | 1 | `MotorLift/ToLaserCut-DXF/lift_base_plate.dxf` | Generated | 229.2 x 120 mm. |
 | Interface plate, high | 4 | `ToLaserCut-DXF/interface_plate_high.DXF` | Repo | Lift platform rail plates. |
 | Plunger rail plate | 4 | `MotorLift/ToLaserCut-DXF/plunger_rail_plate.dxf` | Generated | A taller, rectangular `interface_plate_high` that reaches down to the plunger carriage brackets. |
@@ -136,7 +139,7 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 | MGN9H carriage | 8 | Lift platform (4) + plunger plate (4). |
 | NEMA17 stepper, 40 mm body (~0.4 N m) | 1 | Lift. 5 mm shaft. |
 | NEMA17 stepper, 48 mm body (~0.5 N m) | 1 | Plunger (drives all four screws). Stands on the top plate, shaft down. |
-| T8x2 lead screw (8 mm, 2 mm lead) | 6 | Buy 150 mm: cut 4 plunger screws to ~131 mm (hung from the top plate); use 2 uncut for the lift (~148 mm needed for 68 mm of travel). |
+| T8x2 lead screw (8 mm, 2 mm lead) | 6 | Buy 150 mm: cut 4 plunger screws to ~131 mm (hung from the top plate); use 2 uncut for the lift (~148 mm needed for 66 mm of travel). |
 | T8x2 anti-backlash nut | 4 | Plunger. |
 | T8x2 brass flange nut | 2 | Lift (gravity keeps these loaded one way). |
 | KFL08 flange bearing (8 mm bore) | 6 | 4 plunger (on the top plate), 2 lift. The plates assume 37 mm bolt spacing; check yours. |
@@ -144,7 +147,7 @@ Not needed: `bed_left/right`, `bearing_holder`, `bearing_insert`, `bearing_inser
 | GT2 20T pulley, 5 mm bore, 6 mm belt | 2 | On the motors. |
 | Smooth idler, 16 mm OD, 6 mm belt | 2 | Tensioners, each on a shoulder bolt. |
 | GT2 closed-loop belt, 6 mm, 339-344 mm | 1 | Lift. Any loop in this range fits the tensioner's adjustment. |
-| GT2 closed-loop belt, 6 mm, 542-547 mm | 1 | Plunger, under the top plate. Any loop in this range fits the tensioner's adjustment. |
+| GT2 closed-loop belt, 6 mm, 539-544 mm | 1 | Plunger, under the top plate. Any loop in this range fits the tensioner's adjustment. |
 | Steel rod, 8 mm, ~165 mm | 2 | Drawer D-shafts: grind or file a 0.8 mm deep flat along the length, and drill a 2.5 mm dimple 1.5 mm deep, 4 mm from the front end, opposite the flat. |
 | M3 x 6 cone-point set screw | 2 | Holds each lever on its D-shaft (into the dimple). |
 | Ball spring plunger, M6 | 2 | Drawer detents, in the ledges. |
@@ -195,33 +198,39 @@ Everything that depends on the syringes and tips (see "Syringe cartridge" in
 | M3 x 14 self-tapping | 4 | Frame and cartridge plate into the grip's ears |
 | M3 x 6 countersunk (ISO 10642) | 4 | Pad retainer down into the carrier's tapped holes; heads flush on top, tips flush underneath |
 
-## 6. Fasteners (approximate; buy about 20 % extra)
+## 6. Fasteners
 
-The hardware README notes the originals are mostly 8 mm-long M3, M4 and M5 bolts with nuts and
-T-nuts.
+Counted from the Blender model, which places every one of them (the `fast_*` objects; see
+`fasteners()` in `04_Blender/variant_motor_lift.py`). Lengths were checked against each stack:
+T-nut bolts end 4.2-6.0 mm into the slot (through the T-nut, short of the 2020 core), nut bolts
+pass through their nut, and screws into plastic, motors or carriages get enough thread. Buy about
+20 % extra. The cartridge's own screws are in section 5b.
 
-| Fastener | Approx. qty | Where |
+| Fastener | Qty | Where |
 |---|---|---|
 | M5 x 8 button head + M5 T-nut (2020) | 80 | Corner brackets (64), top plate (12), base plate (4): 3 mm plates, so 5 mm into the slot. An M5 x 10 would go 7 mm in and bottom out on the extrusion's core (6.1 mm deep) before it clamps. |
-| M5 x 10 + M5 T-nut (2020) | 28 | Inside corner brackets (24), head brackets (4) |
-| M5 x 12 + M5 T-nut (2020) | 2 | Control box pad to the bottom front bar |
-| M3 x 8 + M3 T-nut (2020) | 70 | MGN9 rails (20 mm hole pitch) |
-| M3 x 6-8 | 40 | Carriages to interface plates, electronics housing |
-| M3 x 10 + nut | 46 | Motors (8), lift nuts (8), plunger nuts through the drive plate (16), tensioner brackets (4), lift switch holder (2), sensor flags (6), spares |
-| M3 x 12 + nut | 8 | Plunger switch posts to the pipette plate (6), USB panel socket (2) |
-| M3 x 10 countersunk, self-tapping | 4 | Control box base into the housing bosses |
-| M3 flat washer (7 mm OD) | 24 | Under the M3 nuts at the T8 nut cutouts, to span the slots (lift 8, plunger 16) |
-| M4 x 10 + nut | 12 | KFL08 bearings |
-| M4 x 30 + nut | 4 | Head brackets up through the pipette plate |
-| M4 x 12 + nut | 16 | Lift and plunger rail plates into the carriage brackets' captive nuts (8 + 8) |
+| M5 x 10 + M5 T-nut (2020) | 24 | Inside corner brackets: head and bed-level side bars to the posts (16), stiffener corners (8) |
+| M5 x 12 + M5 washer + M5 T-nut (2020) | 4 | Head brackets' feet up into the side bars |
+| M5 x 14 + M5 T-nut (2020) | 2 | Control box to the bottom front bar, through the 3 mm back wall and the pad |
+| M4 x 12 + nut | 28 | KFL08 bearings through the plate and the 5 mm flange (12); rail plates into the carriage brackets' captive nuts (16) |
 | M4 x 16 + nut | 12 | Lift brackets down through the platform (8); well-plate nest (4) |
-| M4 x 20 + M4 T-nut (2020) | 8 | Plunger carriage brackets up through the drive plate into the stiffening frame's bars |
+| M4 x 20 + M4 T-nut (2020) | 4 | Plunger carriage brackets: up from the bracket's pocket into the stiffener's long bar |
+| M4 x 20 + nut | 4 | Plunger carriage brackets: down through the drive plate into the bracket's pocket |
+| M4 x 30 + nut | 4 | Head brackets up through the pipette plate |
+| M3 x 6 | 24 | MGN9H carriages to the rail plates (3 each, into the carriage) |
+| M3 x 8 | 8 | Motors, into their faces |
+| M3 x 8 + M3 T-nut (2020) | 72 | MGN9 rails into the posts (20 mm pitch) |
+| M3 x 10 + nut | 24 | T8 nut flanges. Lift (8): heads on the platform, nuts under the flange (they clear the pulley by 1 mm with the bed down). Plunger (16): heads on the flange, nuts under the drive plate (pockets in the D-shaft troughs take the front ones). |
+| M3 x 10 countersunk + nut | 6 | Plunger home flags: flush under the tab (it passes over the sensor at full eject), nuts on the drive plate |
+| M3 x 10 countersunk, self-tapping | 4 | Control box base into the housing bosses |
+| M3 x 12 + nut | 12 | Sensor posts to the pipette plate (6), tensioner brackets (4), USB panel socket (2) |
 | M3 x 14 + nut | 14 | Drawer ledges and spacers to the pipette plate |
-| M3 x 25 + nut | 4 | D-shaft troughs to the drive plate (front bolts) |
-| M3 x 25 + M3 T-nut (2020) | 4 | D-shaft troughs up into the stiffener's long bars |
-| M2 x 16 + nut | 2 | Lift home switch in its holder |
-| M3 x 8 self-tapping | 6 | Optical endstops to their posts |
-| Shoulder bolt + nut for idlers | 2 | Tensioners |
+| M3 x 20 + nut | 2 | Lift home-switch holder to the base plate |
+| M3 x 25 + nut | 4 | D-shaft troughs to the drive plate (front) |
+| M3 x 25 + M3 T-nut (2020) | 4 | D-shaft troughs into the stiffener's long bars |
+| M3 x 8 pan-head self-tapping | 6 | Optical endstops to their posts |
+| M2 x 20 + nut | 2 | Lift home switch through its holder's walls |
+| Shoulder bolt + nut | 2 | Tensioner idlers |
 
 ## 7. Tools and supplies
 
