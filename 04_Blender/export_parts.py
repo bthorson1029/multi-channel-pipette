@@ -13,6 +13,9 @@ here = os.path.dirname(os.path.abspath(__file__))
 ns = {"__name__": "build", "__file__": os.path.join(here, "build_pipette.py")}
 exec(compile(open(ns["__file__"], encoding="utf-8").read(), ns["__file__"], "exec"), ns)
 ns["pose"](0, 0)
+# resin tip cones: one (96 are needed) and the sizing set, built here since the model has them on the nozzles
+ns["new_obj"]("tip_cone", ns["tip_cone_bm"](), "Syringes")
+ns["tip_cone_sizing_set"]("tip_cone_sizing_set", "Syringes")
 
 OUT = os.path.normpath(os.path.join(here, "..", "01_Hardware", "ToPrint-STL"))
 PARTS = {   # object -> (file, rotation for printing)
@@ -26,6 +29,8 @@ PARTS = {   # object -> (file, rotation for printing)
     "syringe_grip_slipfit": ("syringe_grip_slipfit.stl", Matrix.Identity(3)),
     "pad_retainer": ("pad_retainer.stl", Matrix.Rotation(math.pi, 3, "X")),   # pad pockets up
     "cartridge_handle": ("cartridge_handle.stl", Matrix.Rotation(math.pi, 3, "X")),   # plate face down
+    "tip_cone": ("tip_cone.stl", Matrix.Identity(3)),                         # resin; Luer mouth up
+    "tip_cone_sizing_set": ("tip_cone_sizing_set.stl", Matrix.Identity(3)),   # resin; notch at the smallest
     # drawer hardware on the machine (right-hand side; mirror each for the left)
     "cart_spacer_R": ("cart_spacer_R.stl", Matrix.Identity(3)),
     "dshaft_trough_R": ("dshaft_trough_R.stl", Matrix.Identity(3)),

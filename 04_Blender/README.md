@@ -32,8 +32,9 @@ Editor and use **Run Script**. Units are millimeters (Z up, front = -Y).
   extruded to 3 mm steel), and the three `source/` STLs.
 - **Modeled:** 2020 T-slot extrusion (B-type 6 mm slot profile), every screw, bolt, nut and
   T-nut in the BOM (`fasteners()`, one `fast_*` object per joint), MGN9H rails and carriages,
-  NEMA17 motors, T8 screws and nuts, syringes, tips, labware, bearings, pulleys and belts. The
-  printed parts are modeled as closed solids so `export_parts.py` can write them straight to STL.
+  NEMA17 motors, T8 screws and nuts, syringes, tip cones, tips, labware, bearings, pulleys and
+  belts. The printed parts are modeled as closed solids so `export_parts.py` can write them
+  straight to STL.
 - **Layout:** the frame layout was reconstructed from the original design's build video
   (youtu.be/2TTu-Lkz2Eo), then raised 30 mm (430 mm posts). Part shapes are exact; syringe and
   tip dimensions and some mounting positions are estimates.
@@ -46,6 +47,8 @@ Editor and use **Run Script**. Units are millimeters (Z up, front = -Y).
 - `fasteners()` checks every fastener as it places it: T-nut bolts must end 4.2-6.0 mm into the
   slot, nut bolts must pass through their nut, and screws into a part must get enough thread;
   any that don't are printed.
+- `eject_clearance()` gives, per row, how far below the tip cones' ends the tips are pushed at
+  full eject: 1.0 mm (back row) to 4.2 mm (front), so every tip comes fully off its cone.
 - The build reports the belt loop lengths across each tensioner's adjustment range: 338.9-344.4
   mm (lift) and 538.7-544.6 mm (plunger).
 

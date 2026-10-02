@@ -19,6 +19,7 @@ goes.
   brackets can be bought instead.
 - 3D-printed: 32 parts from 19 STL files (sections 2 and 5b). Mirror `cart_spacer_R` and
   `dshaft_trough_R` for the left side.
+- Resin-printed (SLA): 96 tip cones plus spares, and one sizing set to order first (section 5b).
 
 **Frame and motion**
 - 2020 extrusion, 12 bars to cut: 4 x 430 mm *est.*, 4 x 189.2 mm, 8 x 178 mm, 2 x 150 mm,
@@ -38,7 +39,7 @@ goes.
 panel-mount USB-B extension, 12 V 5 A supply with a DC socket (optional LM2596), wire and
 Dupont leads.
 
-**Cartridge supplies:** 96 1 mL Luer-slip syringes plus spares, heat-shrink tubing, 4 x ~110 mm
+**Cartridge supplies:** 96 1 mL Luer-slip syringes plus spares, 4 x ~110 mm
 M4 threaded rod, 4 light springs (~6.4 mm OD x 20-25 mm).
 
 **Fasteners** (with ~20 % extra)
@@ -181,7 +182,8 @@ Everything that depends on the syringes and tips (see "Syringe cartridge" in
 | Syringe barrel grip, slip fit (printed) | 1 | `ToPrint-STL/syringe_grip_slipfit.stl`; hangs from the cartridge plate by 4 ears |
 | Pad retainer (printed) | 1 | `ToPrint-STL/pad_retainer.stl`; countersunk for 4 M3 |
 | 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. Instead of cutting the flanged end off, trim the finger tabs to stubs: flange 8.2 mm across the stubs and at most 7.2 mm wide, face left flat (the model assumes a 6.4 mm barrel and a 1.2 mm flange; measure yours). |
-| Heat-shrink tubing | 96 pieces | Over each syringe tip so this cartridge's tips seal; size it by test fitting. |
+| Tip cone (resin-printed) | 96 + spares | `ToPrint-STL/tip_cone.stl`, SLA in a tough resin if offered. Pushed onto each Luer nozzle; the tips seal on it. Size it with the sizing set first (see "Tip cones" in `01_Hardware/README.md`). |
+| Tip cone sizing set (resin-printed) | 1 | `ToPrint-STL/tip_cone_sizing_set.stl`: five sizes on a bar, smallest at the notched end. |
 | M4 threaded rod, ~110 mm | 4 | Tip-ejector rods |
 | Compression spring, ~6.4 mm OD x 20-25 mm, light | 4 | Hold the ejector plate up; one over each rod |
 | M4 nut + washer | 12 | Ejector rods: under and over the plate, and the spring stop |
@@ -246,7 +248,7 @@ pass through their nut, and screws into plastic, motors or carriages get enough 
   [Xometry](https://www.xometry.com/capabilities/sheet-metal-fabrication/),
   [Protolabs](https://www.protolabs.com/services/sheet-metal-fabrication/laser-cutting/)
 
-**3D printing** (upload STL):
+**3D printing** (upload STL; choose SLA resin for the tip cones):
 - [Craftcloud](https://craftcloud3d.com/): compares quotes from 150+ print services.
 - [JLC3DP](https://jlc3dp.com/): FDM, SLA, MJF and SLS; low per-part prices.
 - [Xometry](https://www.xometry.com/capabilities/3d-printing-service/): also PLA/PETG FDM.

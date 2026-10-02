@@ -1,7 +1,7 @@
 # Fabrication files
 
-Every part to cut or print for the pipette: 12 DXF files for 34 laser-cut parts and 19 STL files
-for 32 printed parts. Everything else is bought; see [`BOM.md`](../BOM.md) for the full list with
+Every part to cut or print for the pipette: 12 DXF files for 34 laser-cut parts and 21 STL files
+for 32 printed parts plus 96 resin tip cones. Everything else is bought; see [`BOM.md`](../BOM.md) for the full list with
 quantities to order. Units are millimeters.
 
 ## Laser-cut (`ToLaserCut-DXF/`, 3 mm steel; 304 stainless or coated steel suggested)
@@ -38,7 +38,7 @@ After cutting, tap the 4 small (2.5 mm) holes in `plunger_carrier.dxf` for M3 an
 in each `cart_ledge.dxf` for M6. For a spare cartridge, order another cartridge plate, plunger
 carrier and tip ejector plate.
 
-## 3D-printed (`ToPrint-STL/`, PETG suggested; oriented for printing)
+## 3D-printed (`ToPrint-STL/`, PETG suggested, the tip cones in resin; oriented for printing)
 
 | File | Qty | Notes |
 |---|---|---|
@@ -61,7 +61,10 @@ carrier and tip ejector plate.
 | `dshaft_lever.stl` | 2 | On the front end of each D-shaft, held by an M3 cone-point set screw in a dimple opposite the flat. Pointing inward and down, the flat faces outward and the carrier is clamped; a quarter turn outward (the arm ends up hanging 30 deg out from straight down, about 16 mm clear of the rail plate) brings the flat up and the carrier sinks 0.8 mm onto it. With the lever open, the carrier and the plunger rods slide out past it, so the hub only wraps the shaft about 190 deg: it's trimmed flush with the flat (0.2 mm under the carrier) and 1.5 mm outside the outer rods, and the arm is 5.6 mm thick. |
 | `lift_home_switch_holder.stl` | 1 | For a KW12-type lever micro switch (20 x 10 x 6.4 mm, mounting holes 9.5 mm apart), clamped by 2 M2 through the walls; 2 M3 to the base plate. Check the hole positions against your switch. |
 
-All nineteen are closed solids (every edge shared by exactly two triangles).
+| `tip_cone.stl` | 96 per cartridge, plus spares | Resin (SLA), not FDM. Pushed onto each syringe's Luer-slip nozzle; the tips seal on it. See "Tip cones" below. Prints Luer mouth up. |
+| `tip_cone_sizing_set.stl` | 1 | Resin (SLA). Five tip cones in 0.1 mm steps on a bar, smallest at the notched end: order it first to choose the size. |
+
+All 21 are closed solids (every edge shared by exactly two triangles).
 
 ## Check against your hardware before cutting
 
@@ -83,8 +86,39 @@ once; at 11.5 mm every tip has been pushed 6 mm off its nozzle. Because the plat
 the plunger's home sensors are slotted optical endstops with flags, not lever switches. The whole
 ejector is part of the syringe cartridge.
 
-Before relying on it, pull one tip off a heat-shrunk nozzle with a luggage scale: the plunger drive
+Before relying on it, pull one tip off a tip cone with a luggage scale: the plunger drive
 has roughly 300-500 N, and the staggering keeps the peak to about two rows of tips.
+
+## Tip cones
+
+A resin sleeve on each syringe's Luer-slip nozzle that the tips seal on (`tip_cone.stl`). Inside
+it is the standard female Luer taper (6 %), open right through, so it pushes onto the nozzle like
+any Luer-slip fitting; the nozzle's end sits 4.5 mm in. Outside, the seal cone narrows from 5.14
+to 4.90 mm over its first 4.6 mm, then a lead-in chamfers it to 4.6 mm. It sits 0.5 mm under the
+ejector plate, whose 5.8 mm holes it passes. Because every cone is the same part, every channel
+gets the same seal and the same pull-off force.
+
+It is only 5.3 mm long so the ejector pushes every tip fully clear of it: at full eject the
+back row (the least-pushed, since the plate tilts) ends 1.0 mm below the cone's end and the front
+row 4.2 mm (`eject_clearance()` in the model). A longer cone would leave the tips loose but still
+on it, relying on gravity to drop them. The seal therefore sits over the nozzle, in the tip's top
+5 mm.
+
+- **Print in resin (SLA), not FDM,** from a service: JLC3DP and Craftcloud both offer it. Choose a
+  tough or engineering resin over standard if offered: the wall over the nozzle is only about
+  0.45 mm, since the tip's mouth (about 5.3 mm) limits the outside and the nozzle (about 4.2 mm)
+  the inside. Order a few spares.
+- **Size them first.** The seal-cone diameters are estimates, and tip brands differ.
+  `tip_cone_sizing_set.stl` has five cones on a bar, from 0.2 mm under to 0.2 mm over the model's
+  size (`CONE_SIZES`), smallest at the notched end. Order it with a box of the tips you'll use,
+  cut the cones off the bar, push each onto a syringe and press a tip on by hand. Pick the
+  smallest that seals (draw some water and hold it for a minute: no drop forms) and still pulls
+  off with a firm tug. Add its offset to `CONE_SEAL` in `04_Blender/build_pipette.py`, rerun
+  `export_parts.py`, and order 96 plus spares.
+- **Fitting:** push each onto its nozzle with a quarter twist, as you would a Luer-slip fitting.
+  A seated Luer taper usually holds harder than a tip does, so the cones should stay put when the
+  tips are ejected. If one comes off with its tip, glue it with cyanoacrylate and a polyolefin
+  primer (syringe nozzles are polypropylene).
 
 ## Syringe cartridge (drawer)
 
@@ -97,7 +131,7 @@ while one is cleaned or repaired). Each cartridge has its own 96 syringes.
   carriage brackets), home sensors and flags, and the drawer's channels and clamps.
 - **In the cartridge:** the cartridge plate with the barrels, locking frame, grip and handle; the
   plunger carrier (`plunger_carrier.dxf` + `pad_retainer.stl`) holding the thumb pads captive; the
-  tip ejector (plate, rods, springs); the nozzles' heat-shrink for its tip family. Out of the
+  tip ejector (plate, rods, springs); the 96 tip cones, sized for its tip family. Out of the
   machine it holds together by itself: the syringe stoppers' friction keeps the plunger carrier
   where it was.
 - **Lower level, the cartridge plate:** its edges run in two channels under the pipette plate's

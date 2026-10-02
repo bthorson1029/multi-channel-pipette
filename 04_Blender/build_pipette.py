@@ -116,7 +116,7 @@ KEEP_X = 52.5                     # the outer plunger rods pass at |x| <= 51 as 
 EJ_SPRING_Z = (SEAT, SEAT + 20)   # ejector springs: carrier plate top to the spring nut
 # Parts that come out with the syringe cartridge (see check_cartridge_removal)
 CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_lock_frame", "syringe_grip",
-             "eject_", "plunger_carrier", "pad_retainer", "plungers_x96", "cartridge_fasteners")
+             "eject_", "plunger_carrier", "pad_retainer", "plungers_x96", "cartridge_fasteners", "tip_cone")
 # USB: a panel-mount USB-B socket on the control box's left end, forward of the DC jack, joined
 # to the Arduino by a short USB-B extension. Typical socket: 12.5 x 11.5 mm body, 2 M3 ears 30 mm
 # apart (check yours).
@@ -133,6 +133,21 @@ USB_PANEL_EARS = 30.0             # M3 hole spacing, along y
 EJ_GAP_F, EJ_GAP_B = 1.0, 5.5
 EJ_STROKE = 6.0
 EJECT_MM = EJ_GAP_B + EJ_STROKE
+# Tip cones (see tip_cone_bm()): a resin sleeve pushed onto each syringe's Luer-slip nozzle. Its
+# bore is the female Luer taper and its outside is the cone the tips seal on, so every channel gets
+# the same fit. The tip's mouth limits the sleeve to about 5.2 mm, so the wall over the nozzle is
+# thin. It is short so the ejector pushes every tip clear of it: at EJECT_MM the back row's tips
+# (the least-pushed, the plate being tilted) end CONE_EJECT_CLEAR below the cone's end.
+LUER_D, LUER_TAPER = 3.976, 0.06  # male Luer nozzle: diameter at its end (ISO 80369-7: 3.925-4.027), 6 % taper
+LUER_LEN = 8.0                    # nozzle below the barrel end (7.5 minimum)
+CONE_ENGAGE = 4.5                 # nozzle inside the sleeve: its top then sits 0.5 under the ejector plate
+CONE_TOP = 0.5                    # straight band at the top
+CONE_SEAL = (5.14, 4.90, 4.6)     # seal cone: diameter at the band, diameter at its end, end below the top
+CONE_LEN, CONE_TIP_D = 5.3, 4.6   # overall length; lead-in chamfer to this diameter. The bore runs
+                                  # through, so a nozzle at the small end can seat deeper.
+CONE_EJECT_CLEAR = 1.0            # wanted gap (checked by eject_clearance())
+CONE_SIZES = (-0.2, -0.1, 0.0, 0.1, 0.2)   # sizing set: offsets on the seal cone's diameter
+CONE_Z = SEAT - 58 - T - 0.5      # sleeve top: 0.5 under the ejector plate at rest
 # Plunger home sensors: slotted optical endstops (TCST2103-type fork, 24.5 x 10.8 x 6.3 mm body,
 # 3.1 mm slot, M3 ears 19 mm apart; check yours). Laid flat, so each flag passes straight through
 # its slot; the sensor sits OPT_BELOW under the plunger plate at home so the plate and the flag's
@@ -530,7 +545,8 @@ def syringe_barrels(name, coll):
         for f in t.faces:
             f.material_index = 0
         n0 = len(t.faces)
-        _cone(t, 1.5, 2.0, SEAT - 66, SEAT - 58, seg=20, xy=(x, y))   # Luer nozzle
+        _cone(t, LUER_D / 2, (LUER_D + LUER_TAPER * LUER_LEN) / 2, SEAT - 58 - LUER_LEN, SEAT - 58,
+              seg=20, xy=(x, y))   # Luer-slip nozzle
         for f in list(t.faces)[n0:]:
             f.material_index = 1
         me = bpy.data.meshes.new("tmp")
@@ -543,6 +559,66 @@ def syringe_barrels(name, coll):
     o.data.materials.append(M["white"])
     for f in o.data.polygons:
         f.use_smooth = False
+    return o
+
+
+def tip_cone_bm(d_off=0.0, seg=40):
+    """One tip cone as a closed solid of revolution, top at z = 0: the female Luer bore, open
+    through (the nozzle's end sits CONE_ENGAGE in), and outside a short band, the seal cone (d_off
+    added to its diameters) and a lead-in chamfer (not offset, to keep its wall)."""
+    mouth = LUER_D + LUER_TAPER * CONE_ENGAGE
+    prof = [((CONE_SEAL[0] + d_off) / 2, 0), ((CONE_SEAL[0] + d_off) / 2, -CONE_TOP),
+            ((CONE_SEAL[1] + d_off) / 2, -CONE_SEAL[2]), (CONE_TIP_D / 2, -CONE_LEN),
+            ((mouth - LUER_TAPER * CONE_LEN) / 2, -CONE_LEN), (mouth / 2, 0)]
+    bm = bmesh.new()
+    vs = [bm.verts.new((r, 0, z)) for r, z in prof]
+    es = [bm.edges.new((vs[i], vs[(i + 1) % len(vs)])) for i in range(len(vs))]
+    bmesh.ops.spin(bm, geom=vs + es, cent=(0, 0, 0), axis=(0, 0, 1), angle=2 * math.pi, steps=seg, use_merge=True)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return bm
+
+
+def tip_cones(name, coll):
+    """96 tip cones on the nozzles (part of the cartridge)."""
+    one = bpy.data.meshes.new("tmp")
+    tip_cone_bm(seg=24).to_mesh(one)
+    bm = bmesh.new()
+    for x, y in g["GRID"]:
+        n0 = len(bm.verts)
+        bm.from_mesh(one)
+        bm.verts.ensure_lookup_table()
+        bmesh.ops.translate(bm, verts=bm.verts[n0:], vec=(x, y, CONE_Z))
+    bpy.data.meshes.remove(one)
+    o = new_obj(name, bm, coll, M["white"])
+    for p in o.data.polygons:
+        p.use_smooth = True
+    return o
+
+
+def tip_cone_sizing_set(name, coll):
+    """Print-only: one cone per CONE_SIZES offset, smallest to largest, each hung by a thin tab from
+    its top band off a bar with a notch at the smallest end."""
+    pitch, bar_y, bar = 9.0, -5.0, (2.0, 3.0)
+    bm = bmesh.new()
+    for i, d in enumerate(CONE_SIZES):
+        t = tip_cone_bm(d)
+        bmesh.ops.translate(t, verts=t.verts[:], vec=(i * pitch, 0, 0))
+        me = bpy.data.meshes.new("tmp")
+        t.to_mesh(me)
+        t.free()
+        bm.from_mesh(me)
+        bpy.data.meshes.remove(me)
+    o = new_obj(name, bm, coll, M["white"])
+    n = len(CONE_SIZES)
+    u = bmesh.new()
+    x0, x1 = -pitch / 2, (n - 0.5) * pitch
+    _block(u, x0, x1, bar_y - bar[0] / 2, bar_y + bar[0] / 2, -bar[1], 0)
+    for i in range(n):                         # 0.8 x 0.45 mm tabs, from the bar into the top band
+        _block(u, i * pitch - 0.4, i * pitch + 0.4, bar_y, -2.3, -0.45, -0.05)
+    boolean(o, u, 'UNION')
+    cut = bmesh.new()                          # notch: marks the smallest size's end
+    _block(cut, x0 - 1, x0 + 1.5, bar_y - 2, bar_y + 2, -bar[1] - 1, -bar[1] / 2)
+    boolean(o, cut)
     return o
 
 
@@ -997,6 +1073,7 @@ def modify():
     syringe_lock_frame("syringe_lock_frame", "Head")
     cartridge_grip(obj["syringe_grip_static"])
     tip_ejector("Head")
+    tip_cones("tip_cones_x96", "Syringes")
     # plunger home sensors: printed posts bolted to the pipette plate's arms carry three slotted
     # optical endstops (the firmware homes on the first and checks the other two). Optical, because
     # the plunger goes on past home to eject tips.
@@ -1824,6 +1901,19 @@ def world_bvh(o):
     return t
 
 
+def eject_clearance():
+    """Gap from each tip cone's end down to the ejector plate's underside at full eject (EJECT_MM),
+    per row front to back: the tips rest against the plate, so this is how far they end up clear."""
+    p = bpy.data.objects["eject_plate"]
+    pose(0, -EJECT_MM)
+    bpy.context.view_layer.update()
+    vs = [p.matrix_world @ v.co for v in p.data.vertices]
+    gaps = [round(CONE_Z - CONE_LEN - min(v.z for v in vs if abs(v.y - y) < 4.0), 2)
+            for y in sorted({y for _, y in g["GRID"]})]
+    pose(0, 0)
+    return gaps
+
+
 def collision_report():
     """Check every mesh pair that can meet: moving groups vs everything at each keyframe, plus
     the new static drive parts vs the rest at rest. Intended contacts are whitelisted. Checked with
@@ -1852,7 +1942,7 @@ def collision_report():
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
                   "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket", "eject_", "plunger_optical", "cartridge_plate", "syringe_grip", "top_plate",
-                  "cart_ledge", "cart_spacer", "cart_detent", "cartridge_handle"))}
+                  "cart_ledge", "cart_spacer", "cart_detent", "cartridge_handle", "tip_cone"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -1873,6 +1963,7 @@ def collision_report():
                ("control_box_base", "ScreenHousing"),
                ("eject_rod", "plunger_carriage_bracket"), ("eject_rod", "eject_plate"), ("eject_rod", "eject_spring"),
                ("eject_spring", "syringe_lock_frame"), ("eject_plate", "pipette_tips"), ("eject_plate", "syringe_barrels"),
+               ("tip_cone", "syringe_barrels"), ("tip_cone", "pipette_tips"),   # on the nozzles, inside the (solid) tips
                ("plunger_optical", "pipette_plate"), ("plunger_optical", "plunger_optical"),
                ("cartridge_plate", "pipette_plate"), ("cartridge_plate", "syringe_barrels"),
                ("cartridge_plate", "syringe_lock_frame"), ("cartridge_plate", "syringe_grip"),
@@ -1921,4 +2012,5 @@ summary = {
     "lift_revs": round(LIFT_TRAVEL / LIFT_LEAD, 1),
     "wellplate_top_mm": [round(LIFT0 + T + TRAY_H + PLATE_H, 1), round(LIFT0 + T + TRAY_H + PLATE_H + LIFT_TRAVEL, 1)],
     "tip_bottom_mm": round(TIP_BOTTOM, 1),
+    "tip_eject_clear_mm": eject_clearance() if "eject_plate" in bpy.data.objects else None,
 }

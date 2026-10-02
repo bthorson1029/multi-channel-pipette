@@ -21,6 +21,8 @@ Before trusting it with samples, you'll need to measure or set:
 - The plunger level-check tolerance (`PLUNGER_TILT_MAX_MM`)
 - The KFL08 bolt spacing (the plates assume 37 mm) and your syringes' flange dimensions
 - The force needed to strip the tips, and the D-shaft clamp's preload
+- The tip cone size for your tips: order the sizing set first (see "Tip cones" in
+  [`01_Hardware/README.md`](01_Hardware/README.md))
 
 The frame layout was reconstructed from the original's build video, since the original has no
 assembly file. Part shapes are exact; some positions and lengths are estimates.
@@ -65,7 +67,7 @@ The Blender model plays this whole run on its timeline (680 frames).
 - **Plunger:** 48 mm NEMA17 on the top plate, four T8x2 screws on a GT2 belt, anti-backlash nuts
 - **Electronics:** Arduino Uno, CNC Shield V3, two A4988 or DRV8825 drivers at 1/8 step, 20 x 4
   I2C LCD, rotary encoder, 12 V supply
-- **Parts:** 34 laser-cut steel parts (12 DXF files), 32 printed parts (19 STL files), about 360
+- **Parts:** 34 laser-cut steel parts (12 DXF files), 32 printed parts plus 96 resin tip cones (21 STL files), about 360
   fasteners. Full list with an order summary: [BOM.md](BOM.md)
 
 ![The top plate: plunger motor, bearings and belt tensioner](04_Blender/renders/motor_lift_top_plate.jpg)
@@ -75,7 +77,7 @@ The Blender model plays this whole run on its timeline (680 frames).
 | Path | What's there |
 |---|---|
 | [`BOM.md`](BOM.md) | Bill of materials, with totals to order and where to get parts made |
-| [`01_Hardware`](01_Hardware) | Every file to fabricate: `ToLaserCut-DXF/` (12 files, 34 parts) and `ToPrint-STL/` (19 files, 32 parts), plus `make_dxf.py`, which holds the layout numbers. Its README explains each part. |
+| [`01_Hardware`](01_Hardware) | Every file to fabricate: `ToLaserCut-DXF/` (12 files, 34 parts) and `ToPrint-STL/` (21 files: 32 parts, plus the resin tip cones and their sizing set), plus `make_dxf.py`, which holds the layout numbers. Its README explains each part. |
 | [`02_Software`](02_Software) | Firmware (`arduino/MotorLift`; settings in `Config.h`). Its README has the wiring and what each feature does. |
 | [`04_Blender`](04_Blender) | Scripts that build the model, check it for collisions and clearances, animate a full run, and write the STLs |
 

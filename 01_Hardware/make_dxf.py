@@ -107,7 +107,7 @@ FRAME_SCREWS = [(sx * 27.0, sy * 38.8) for sx in (-1, 1) for sy in (-1, 1)]   # 
 EJ_ROD_X, EJ_ROD_Y = 44.0, 45.0
 EJ_ROD_HOLES = [(sx * EJ_ROD_X, sy * EJ_ROD_Y) for sx in (-1, 1) for sy in (-1, 1)]
 EJ_PLATE = (112.0, 98.0)
-EJ_HOLE_D = 5.8                                  # passes the heat-shrunk nozzle, not the tip rim
+EJ_HOLE_D = 5.8                                  # passes the tip cones (5.2 mm), not the tip rims
 EJ_ROD_HOLE_D = 6.0                              # loose: the plate tilts a few degrees on the rods
 NEST_HOLES = [(sx * 55.0, sy * 15.0) for sx in (-1, 1) for sy in (-1, 1)]
 
