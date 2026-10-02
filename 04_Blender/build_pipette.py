@@ -100,7 +100,7 @@ HOME_OVERTRAVEL = 0.8             # lever deflection when the platform is home
 # Syringes: typical 1 mL (Luer-slip) values; measure yours and adjust. The finger tabs are cut
 # back to short stubs so the flange is SYR_KEY_L across the tabs and SYR_KEY_W wide; the stubs key
 # each barrel into its row's slot under the locking frame (tabs along x).
-SYR_BARREL_D = 6.4                # barrel OD (the pipette plate's holes are 6.5)
+SYR_BARREL_D = 6.4                # barrel OD (the cartridge plate's holes are L.BARREL_HOLE_D)
 SYR_FLANGE_T = 1.2                # flange thickness
 SYR_KEY_L, SYR_KEY_W = 8.2, 7.2   # trimmed flange: across the tab stubs (x) x width (y)
 GRIP_SLIP_D = 6.9                 # printed grip holes: a slip fit, no press (prints come out small)
@@ -110,6 +110,10 @@ PC_BELOW = 6.0                    # plunger carrier (3 mm steel) + pad retainer 
 TOP_PZ0 = FH - 1 - 16             # plunger pulleys hang under the top plate, inside the top ring
 CART_HANDLE_H = 12.0              # cartridge handle, under the front of the cartridge plate
 LEVER_HUB = (8.0, 8.0)            # D-shaft lever hub: radius, length along the shaft
+LEVER_FLAT_CLEAR = 0.5            # open, the hub stays this far under the carrier (the flat is filed by hand)
+FRAME_PRESS = 0.2                 # the locking frame's slots are this much shallower than the flange
+CLAMP_HEAD = (10.0, 4.0, 2.5)     # drawer clamp thumbscrew head: diameter, height, gap under the ledge
+CLAMP_LOOSEN = 1.5                # how far the clamps back off when the cartridge is released
 LEVER_ARM = (24.0, 5.6)           # lever arm: reach from the axis, thickness in the turning plane
 LEVER_OPEN_DEG = 30.0             # open lever: arm this far outward of straight down (clear of the rail plate)
 KEEP_X = 52.5                     # the outer plunger rods pass at |x| <= 51 as the drawer slides: drawer hardware stays outside
@@ -625,7 +629,7 @@ def tip_cone_sizing_set(name, coll):
 def syringe_lock_frame(name, coll):
     """Printed frame that clamps the trimmed syringe flanges to the cartridge carrier plate
     (replaces the original's S-P retainer and the press fit). Its underside has one slot per row,
-    SYR_KEY_W + 0.2 wide and 0.1 mm shallower than the flange, so the stubs can't turn and the
+    SYR_KEY_W + 0.2 wide and FRAME_PRESS shallower than the flange, so the stubs can't turn and the
     frame presses every flange down; 5.2 mm holes pass the plunger rods and bear on each barrel's
     rim. 4 M3 through the frame and the carrier into the grip's ears clamp the three together; it
     passes through the pipette plate's drawer slot with 1.5 mm to spare."""
@@ -636,7 +640,7 @@ def syringe_lock_frame(name, coll):
     o = box(name, (2 * FRAME_HALF[0], 2 * FRAME_HALF[1], FRAME_T), (0, 0, (z0 + z1) / 2), coll, M["pla"])
     bm = bmesh.new()                                      # flange slots, one per row
     for y in ys:
-        _block(bm, -x_end, x_end, y - SYR_KEY_W / 2 - 0.1, y + SYR_KEY_W / 2 + 0.1, z0 - 1, z0 + SYR_FLANGE_T - 0.1)
+        _block(bm, -x_end, x_end, y - SYR_KEY_W / 2 - 0.1, y + SYR_KEY_W / 2 + 0.1, z0 - 1, z0 + SYR_FLANGE_T - FRAME_PRESS)
     boolean(o, bm)
     bm = bmesh.new()
     for x, y in g["GRID"]:                                # plunger rods
@@ -770,7 +774,7 @@ def dshaft_clamps(members):
         e = LEVER_HUB[0] + 2
         keep = L.DSHAFT_X - KEEP_X                                            # open, this side faces the rods
         bm = bmesh.new()
-        _block(bm, *sorted((xc + sx * (r - L.DSHAFT_FLAT - 0.2), xc + sx * e)), yh0 - 1, yh1 + 1, zc - e, zc + e)   # flat side
+        _block(bm, *sorted((xc + sx * (r - L.DSHAFT_FLAT - LEVER_FLAT_CLEAR), xc + sx * e)), yh0 - 1, yh1 + 1, zc - e, zc + e)   # flat side
         _block(bm, xc - e, xc + e, yh0 - 1, yh1 + 1, zc + keep, zc + e)       # rod side
         _bar(bm, (xc, yh0 - 1, zc), (xc, yh1 + 1, zc), r + 0.15, seg=48)      # bore
         _bar(bm, (xc, ym, zc - e), (xc, ym, zc - r + 0.5), 1.25, seg=16)      # M3 set screw, tapped
@@ -797,7 +801,8 @@ def dshaft_drop(turn):
 def drawer_channels():
     """Under the pipette plate's arms, each side: a steel ledge (cart_ledge.dxf) on a printed spacer,
     CART_GAP below the arm; the cartridge plate's edge runs between them. The spacer turns in at the
-    back as the stop, and a spring plunger in the ledge clicks into the plate's detent hole."""
+    back as the stop, and a spring plunger in the ledge clicks into the plate's detent hole. Two M4
+    thumbscrews up through each ledge (L.CART_CLAMPS) press the plate up against the arm."""
     zt = SEAT                                         # pipette plate underside
     for sx in (-1, 1):
         tag = "LR"[sx > 0]
@@ -818,6 +823,13 @@ def drawer_channels():
         for x, y in L.CART_DETENTS:
             if x * sx > 0:
                 cyl(f"cart_detent_{tag}", 3.0, 10.0, (x, y, zt - L.CART_GAP - 5.0), "Head", M["chrome"])
+        zl = zt - L.CART_GAP - T                                              # ledge underside
+        for i, (x, y) in enumerate(L.CART_CLAMPS):
+            bm = bmesh.new()
+            z_head = zl - CLAMP_HEAD[2]
+            _cone(bm, CLAMP_HEAD[0] / 2, CLAMP_HEAD[0] / 2, z_head - CLAMP_HEAD[1], z_head, seg=24, xy=(sx * x, y))
+            _cone(bm, 2.0, 2.0, z_head - 0.01, zt - T, seg=16, xy=(sx * x, y))   # tip on the plate's underside
+            new_obj(f"cart_clamp_{tag}{i}", bm, "Head", M["chrome"])
 
 
 def cartridge_handle(coll):
@@ -1815,7 +1827,7 @@ def animate_cycle():
     rows = [o for o in obj if o.name.startswith("pipette_tips_row")]
     tl, rl, wl = (obj[n] for n in LIQUIDS)
     key = tl.data.shape_keys.key_blocks["fill"]
-    for o in mech + cart + levers + list(lw.values()) + rows + [tl, rl, wl]:
+    for o in mech + cart + levers + clamps() + list(lw.values()) + rows + [tl, rl, wl]:
         o.animation_data_clear()
     tl.data.shape_keys.animation_data_clear()
     released = {}
@@ -1859,6 +1871,8 @@ def animate_cycle():
             o.keyframe_insert("delta_location", frame=f)
         for o in levers:
             o.keyframe_insert("delta_rotation_euler", frame=f)
+        for o in clamps():
+            o.keyframe_insert("delta_location", frame=f)
         for o in list(lw.values()) + rows + [tl, rl, wl]:
             o.keyframe_insert("location", frame=f)
             o.keyframe_insert("scale", frame=f)
@@ -1882,11 +1896,18 @@ def pose_drawer(turn, out):
     """turn 1 = D-shafts a quarter turn open, levers swung out level, carrier sunk onto the flats;
     out 1 = drawer DRAWER_OUT forward. Uses delta transforms, so it stacks on pose()."""
     cart, levers = drawer_parts()
-    for o in cart:
+    k = min(1.0, 2 * turn)                            # the clamps back off over the first half of the turn
+    for o in cart:                                    # and the plate settles onto the ledges
         o.delta_location.y = -out * DRAWER_OUT
-        o.delta_location.z = -dshaft_drop(turn) if o.name.startswith(CARRIER) else 0.0
+        o.delta_location.z = -dshaft_drop(turn) if o.name.startswith(CARRIER) else -k * (L.CART_GAP - T)
     for o in levers:
         o.delta_rotation_euler.y = (1 if o.name.endswith("L") else -1) * turn * D(90)
+    for o in clamps():
+        o.delta_location.z = -k * CLAMP_LOOSEN
+
+
+def clamps():
+    return [o for o in bpy.data.objects if o.name.startswith("cart_clamp_")]
 
 
 
@@ -1942,7 +1963,7 @@ def collision_report():
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
                   "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket", "eject_", "plunger_optical", "cartridge_plate", "syringe_grip", "top_plate",
-                  "cart_ledge", "cart_spacer", "cart_detent", "cartridge_handle", "tip_cone"))}
+                  "cart_ledge", "cart_spacer", "cart_detent", "cartridge_handle", "tip_cone", "cart_clamp"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
                ("plunger_screw", "plunger_pulley"), ("plunger_screw", "pipette_plate"), ("KFL08_lift", "lift_base_plate"),
@@ -1972,7 +1993,7 @@ def collision_report():
                ("top_plate", "ext_top"), ("top_plate", "post_"), ("top_plate", "angle_bracket"), ("KFL08_plunger", "top_plate"), ("plunger_motor", "top_plate"),
                ("plunger_tensioner", "top_plate"), ("plunger_idler", "top_plate"), ("plunger_idler", "plunger_tensioner"),
                ("plunger_screw", "top_plate"), ("cart_spacer", "pipette_plate"), ("cart_ledge", "cart_spacer"),
-               ("cart_detent", "cart_ledge"), ("cartridge_handle", "cartridge_plate"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
+               ("cart_detent", "cart_ledge"), ("cart_clamp", "cart_ledge"), ("cart_clamp", "cartridge_plate"), ("cartridge_handle", "cartridge_plate"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
                ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder"),
                ("fast_rails", "MGN9H_carriage"),     # the rail screws' heads sit in the rail, which the carriage wraps
                ("dshaft_setscrew", "dshaft")]         # bolts in slots

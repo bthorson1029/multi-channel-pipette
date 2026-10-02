@@ -50,7 +50,8 @@ assembly file. Part shapes are exact; some positions and lengths are estimates.
    out after a single transfer; reverse mode is for repeat dispenses.
 4. **Eject.** Put a waste tray on the bed and choose *Eject tips*: the plunger runs past home and
    the ejector plate strips the tips, front rows first.
-5. **Swap cartridges.** Turn the two levers a quarter turn and slide the cartridge out the front.
+5. **Swap cartridges.** Loosen the four clamp thumbscrews, turn the two levers a quarter turn and
+   slide the cartridge out the front.
    Pick the new one's profile in the *Cartridge* menu.
 
 The Blender model plays this whole run on its timeline (680 frames).

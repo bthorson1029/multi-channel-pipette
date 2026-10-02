@@ -32,7 +32,7 @@ goes.
 - GT2 20T pulleys: 6 x 8 mm bore, 2 x 5 mm bore; 16 mm smooth idlers: 2
 - GT2 6 mm closed loops: 1 x 339-344 mm, 1 x 539-544 mm
 - 8 mm steel rod: 2 x ~165 mm (D-shafts)
-- M6 ball spring plungers: 2
+- M6 ball spring plungers: 2; M4 x 6 knurled thumbscrews (head 10 mm or less): 4
 - KW12-type micro switch: 1; slotted optical endstop boards: 3
 
 **Electronics:** Arduino Uno, CNC Shield V3, 2 stepper drivers, 20x4 I2C LCD, rotary encoder,
@@ -77,7 +77,7 @@ M4 threaded rod, 4 light springs (~6.4 mm OD x 20-25 mm).
 
 ## 1. Laser-cut metal
 
-The model assumes **3 mm steel** (not 1/8", 3.18 mm: the cartridge plate runs in a 3.3 mm channel). The machine
+The model assumes **3 mm steel** (11 gauge, .119"); 1/8" (3.18 mm) also fits. The machine
 works around liquids, so consider 304 stainless or a coated steel over bare mild steel. Aluminum
 would be lighter but about 3x more flexible, which costs plunger accuracy.
 
@@ -86,7 +86,7 @@ would be lighter but about 3x more flexible, which costs plunger accuracy.
 | Pipette plate | 1 | `ToLaserCut-DXF/pipette_plate.dxf` | A U open at the front for the cartridge drawer; head-bracket, sensor-post and channel holes. |
 | Plunger (drive) plate | 1 | `ToLaserCut-DXF/plunger_plate.dxf` | 160 x 200 mm: 4 T8 nut cutouts, 8 carriage-bracket holes, 3 sensor flags, 8 trough bolts; no plunger-rod holes. |
 | Top plate | 1 | `ToLaserCut-DXF/top_plate.dxf` | On the top ring: the plunger screws' KFL08s, the plunger motor, the belt tensioner. |
-| Drawer channel ledge | 2 | `ToLaserCut-DXF/cart_ledge.dxf` | Flip one over for the left side. Tap the M6 hole. |
+| Drawer channel ledge | 2 | `ToLaserCut-DXF/cart_ledge.dxf` | Flip one over for the left side. Tap the M6 hole and the two clamp holes (M4). |
 | Lift platform | 1 | `ToLaserCut-DXF/lift_plate.dxf` | 156 x 200 mm (its edges clear the rail plates' carriage-screw heads), 2 T8 nut cutouts, 8 carriage-bracket holes, 4 well-plate-nest holes. |
 | Lift base plate | 1 | `ToLaserCut-DXF/lift_base_plate.dxf` | 229.2 x 120 mm. |
 | Lift rail plate | 4 | `ToLaserCut-DXF/lift_rail_plate.dxf` | Joins the lift platform's brackets to the carriages. |
@@ -144,6 +144,7 @@ least 220 mm.
 | Steel rod, 8 mm, ~165 mm | 2 | Drawer D-shafts: grind or file a 0.8 mm deep flat along the length, and drill a 2.5 mm dimple 1.5 mm deep, 4 mm from the front end, opposite the flat. |
 | M3 x 6 cone-point set screw | 2 | Holds each lever on its D-shaft (into the dimple). |
 | Ball spring plunger, M6 | 2 | Drawer detents, in the ledges. |
+| Knurled thumbscrew, M4 x 6, head 10 mm across or less | 4 | Drawer clamps: up through the ledges' tapped holes, pressing the cartridge plate against the pipette plate's arms. A bigger head hits the barrels as the drawer slides. |
 | Micro limit switch (lever type, KW12-style) | 1 | Lift home. |
 | Slotted optical endstop board (TCST2103-type, 3D-printer style) | 3 | Plunger home, one per sensor post. Check the body (24.5 x 10.8 x 6.3 mm, 3.1 mm slot, M3 ears 19 mm apart) and the output level when blocked (`PLUNGER_SW_ACTIVE`). |
 

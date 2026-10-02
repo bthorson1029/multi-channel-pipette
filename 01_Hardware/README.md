@@ -8,7 +8,8 @@ quantities to order. Units are millimeters.
 
 Upload the files separately and set each quantity. The generated files don't declare units: choose
 millimeters if asked, and check a size (the top plate is 229.2 x 218 mm). Use 3 mm (or 11 gauge)
-stock, not 1/8" (3.18 mm): the cartridge plate slides in a 3.3 mm channel.
+stock (11 gauge, .119"); the model assumes 3.0 mm. 1/8" (3.18 mm) also fits the cartridge
+plate's 3.5 mm channel.
 
 | File | Qty | Notes |
 |---|---|---|
@@ -19,8 +20,8 @@ stock, not 1/8" (3.18 mm): the cartridge plate slides in a 3.3 mm channel.
 | `corner_bracket.dxf` | 16 | Frame corners, 4 M5 each into the extrusion (the original design's). Or buy 2020 flat L corner plates. |
 | `lift_plate.dxf` | 1 | 156 x 200 lift platform (its edges clear the rail plates' carriage-screw heads) with 2 T8 nut cutouts (body through), 8 holes for the carriage brackets and 4 for the well-plate nest. |
 | `top_plate.dxf` | 1 | Across the frame's top ring (12 M5 into it). 4 KFL08s for the plunger screws, the plunger motor (standing on it, shaft down) and the belt-tensioner slot; the pulleys, belt and idler run under it inside the ring. |
-| `cart_ledge.dxf` | 2 | The drawer channels' ledges under the pipette plate's arms (drawn for the right; flip one over for the left): 7 M3 and a tapped M6 hole for the spring plunger. |
-| `cartridge_plate.dxf` | 1 per cartridge | The cartridge's drawer plate, 124 x 100 mm: 96 barrel holes, 4 ejector-rod holes, 4 frame screws, 2 handle screws, and 2 detent holes for the spring plungers. |
+| `cart_ledge.dxf` | 2 | The drawer channels' ledges under the pipette plate's arms (drawn for the right; flip one over for the left): 7 M3, a tapped M6 hole for the spring plunger. |
+| `cartridge_plate.dxf` | 1 per cartridge | The cartridge's drawer plate, 124 x 100 mm: 96 barrel holes (6.7 mm, for 6.4 mm barrels), 4 ejector-rod holes, 4 frame screws, 2 handle screws, and 2 detent holes for the spring plungers. |
 | `plunger_carrier.dxf` | 1 per cartridge | Under the thumb pads, 120 x 100 mm with 96 rod holes and 4 holes to tap M3 for the pad retainer; it rides on the D-shaft clamps and pushes the ejector rods. |
 | `tip_ejector_plate.dxf` | 1 per cartridge | Tip ejector under the barrel ends, 112 x 102 mm with a 5.8 mm hole around each nozzle, 6 mm holes for its 4 M4 rods (loose, so it can tilt). |
 | `lift_base_plate.dxf` | 1 | 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
@@ -34,10 +35,10 @@ Checked: all outlines closed; smallest hole 2.5 mm (the plunger carrier's tap ho
 plate thickness. Every hole has at least 1.5 mm of steel to the plate's outer edge (the cartridge
 plate's detent holes; everything else 2.2 mm or more), above SendCutSend's 0.91 mm minimum for
 instant quoting. The thinnest web is 4.1 mm (drive plate), apart from the cartridge plate's 96
-barrel holes, which keep the original design's 2.5 mm webs.
+barrel holes, which leave 2.3 mm webs.
 
-After cutting, tap the 4 small (2.5 mm) holes in `plunger_carrier.dxf` for M3 and the detent hole
-in each `cart_ledge.dxf` for M6. For a spare cartridge, order another cartridge plate, plunger
+After cutting, tap the 4 small (2.5 mm) holes in `plunger_carrier.dxf` for M3, and in each
+`cart_ledge.dxf` the detent hole for M6 and the two 3.3 mm clamp holes for M4. For a spare cartridge, order another cartridge plate, plunger
 carrier and tip ejector plate.
 
 ## 3D-printed (`ToPrint-STL/`, PETG suggested, the tip cones in resin; oriented for printing)
@@ -54,13 +55,13 @@ carrier and tip ejector plate.
 | `plunger_flag.stl` | 3 | Hangs from the drive plate (2 M3 x 10 countersunk up from under the tab, flush, nuts on the plate) with a 4 x 2 mm vane that reaches the sensor's beam at home and passes on through the slot. Prints tab down. |
 | `well_plate_nest.stl` | 1 | Locates the well plate on the lift platform (replaces the original's flat tray): a 15 mm base (the height the firmware expects), walls 4 mm above it on the back and sides, a 2 mm lip at the front, 0.4 mm clearance around the SBS footprint. 4 M4 x 16 through counterbores into the platform. Cut back 11.5 mm around each lift nut for its flange screws' heads. |
 | `control_box_base.stl` | 1 | Closes the control box (replaces the original's lid, which sat between the posts). 4 countersunk M3 self-tappers into the housing bosses. |
-| `syringe_lock_frame.stl` | 1 per cartridge | Holds the 96 syringes by their flanges, with the finger tabs trimmed to stubs instead of the flanged end cut off: each flange sits on the cartridge plate in a slot along its row (7.4 mm wide, 1.1 mm deep, so the frame presses 0.1 mm on every flange and the stubs can't turn), and 5.2 mm holes pass the plunger rods. 4 M3 x 14 self-tappers go down through it and the cartridge plate into the grip's ears. Prints slot side up. |
+| `syringe_lock_frame.stl` | 1 per cartridge | Holds the 96 syringes by their flanges, with the finger tabs trimmed to stubs instead of the flanged end cut off: each flange sits on the cartridge plate in a slot along its row (7.4 mm wide, 1.0 mm deep, so the frame presses 0.2 mm on every flange, enough to cover print and flange tolerance, and the stubs can't turn), and 5.2 mm holes pass the plunger rods. 4 M3 x 14 self-tappers go down through it and the cartridge plate into the grip's ears. Prints slot side up; use fine layers (0.1-0.15 mm) so the slot depth comes out right. |
 | `syringe_grip_slipfit.stl` | 1 per cartridge | The original design's grip (in `04_Blender/source/`) with its 96 holes opened from 6.5 to 6.9 mm, so the barrels slide in; it keeps their lower ends in line. 4 ears take the frame screws, so it hangs from the cartridge plate instead of sliding down the barrels. |
 | `pad_retainer.stl` | 1 per cartridge | Over the thumb pads, on the plunger carrier (3 mm): pockets keep the 96 pads captive when the cartridge is out, and it carries the drive plate's push down to them. 4 M3 x 6 countersunk screws hold it to the carrier: the heads sit flush with its top (which bears on the drive plate) and the tips come out flush under the carrier (which rides on the D-shafts). Prints pockets up. |
 | `cartridge_handle.stl` | 1 per cartridge | Under the front of the cartridge plate (2 M3 self-tappers): pull the drawer out by it. |
 | `cart_spacer_R.stl` | 2 | Drawer channel spacer under the pipette plate's arm, between it and the ledge; its tab at the back is the drawer's stop. Drawn for the right; mirror it for the left. |
 | `dshaft_trough_R.stl` | 2 | Under the drive plate, cradling an 8 mm D-shaft along its length (so the shaft can't bend); 4 M3 x 25 up into the plate (2 into T-nuts in the stiffener's long bar); pockets under the plate take the nuts of the front plunger T8 flange screws. Mirror for the left. |
-| `dshaft_lever.stl` | 2 | On the front end of each D-shaft, held by an M3 cone-point set screw in a dimple opposite the flat. Pointing inward and down, the flat faces outward and the carrier is clamped; a quarter turn outward (the arm ends up hanging 30 deg out from straight down, about 16 mm clear of the rail plate) brings the flat up and the carrier sinks 0.8 mm onto it. With the lever open, the carrier and the plunger rods slide out past it, so the hub only wraps the shaft about 190 deg: it's trimmed flush with the flat (0.2 mm under the carrier) and 1.5 mm outside the outer rods, and the arm is 5.6 mm thick. |
+| `dshaft_lever.stl` | 2 | On the front end of each D-shaft, held by an M3 cone-point set screw in a dimple opposite the flat. Pointing inward and down, the flat faces outward and the carrier is clamped; a quarter turn outward (the arm ends up hanging 30 deg out from straight down, about 16 mm clear of the rail plate) brings the flat up and the carrier sinks 0.8 mm onto it. With the lever open, the carrier and the plunger rods slide out past it, so the hub only wraps the shaft about 190 deg: it's trimmed 0.5 mm below the flat, so it stays clear of the carrier even if the flat is filed a little deep and 1.5 mm outside the outer rods, and the arm is 5.6 mm thick. |
 | `lift_home_switch_holder.stl` | 1 | For a KW12-type lever micro switch (20 x 10 x 6.4 mm, mounting holes 9.5 mm apart), clamped by 2 M2 through the walls; 2 M3 to the base plate. Check the hole positions against your switch. |
 
 | `tip_cone.stl` | 96 per cartridge, plus spares | Resin (SLA), not FDM. Pushed onto each syringe's Luer-slip nozzle; the tips seal on it. See "Tip cones" below. Prints Luer mouth up. |
@@ -137,8 +138,11 @@ while one is cleaned or repaired). Each cartridge has its own 96 syringes.
   machine it holds together by itself: the syringe stoppers' friction keeps the plunger carrier
   where it was.
 - **Lower level, the cartridge plate:** its edges run in two channels under the pipette plate's
-  arms (a steel ledge on a printed spacer, 3.3 mm gap). It slides in until it stops against the
-  spacers' tabs at the back, and a spring plunger in each ledge clicks into its detent holes.
+  arms (a steel ledge on a printed spacer, 3.5 mm gap, loose enough never to bind). It slides in
+  until it stops against the spacers' tabs at the back, and a spring plunger in each ledge clicks
+  into its detent holes. Then four M4 thumbscrews, two up through each ledge, press it up against
+  the arms. Without them the plate could shift up and down in the channel as the plunger drags
+  the barrels, and that travel would be lost volume (about 17 uL per mm of plunger travel).
 - **Upper level, the plunger carrier:** its edges run over two 8 mm D-shafts, each cradled full
   length in a printed trough under the drive plate. With the flats up it slides in freely; a
   quarter turn of each shaft's front lever puts the round side up and presses the carrier against
@@ -147,9 +151,9 @@ while one is cleaned or repaired). Each cartridge has its own 96 syringes.
   (`Config.h`) sets the tip capacity, calibration and tip height.
 
 To swap: empty the tips (eject them, or leave them on: with the bed down they clear the nest) and
-take the labware off; Home all (bed down, plunger at its working zero). Turn the two levers to
-open, pull the drawer out by its handle. Slide the other one in until it clicks, turn the levers
-to clamp, select it on the device, Home all. The whole path is clear (checked in the model: the
+take the labware off; Home all (bed down, plunger at its working zero). Loosen the four clamp
+thumbscrews a turn, turn the two levers to open, pull the drawer out by its handle. Slide the
+other one in until it clicks, turn the levers to clamp, tighten the thumbscrews finger-tight, select it on the device, Home all. The whole path is clear (checked in the model: the
 cartridge slides 300 mm straight out the front without touching anything). A new cartridge's
 plunger carrier has to sit at the same height as the one that came out; set it once with the
 drive plate at its working zero, the syringes' friction keeps it.

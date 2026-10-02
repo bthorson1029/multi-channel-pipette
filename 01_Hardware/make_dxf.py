@@ -80,17 +80,21 @@ TOP_MOUNT_XY = [(sx * x, sy * 99.0) for sx in (-1, 1) for sy in (-1, 1) for x in
 # - The pipette plate is a U, open at the front: its slot is +/-CART_SLOT_X wide and runs back to
 #   CART_SLOT_BACK. The cartridge plate slides in under its arms, riding on a steel ledge each side
 #   (cart_ledge.dxf) held CART_GAP below the arm on a printed spacer, until it stops at the back;
-#   a spring plunger in each ledge clicks into it (CART_DETENTS).
+#   a spring plunger in each ledge clicks into it (CART_DETENTS). Two M4 thumbscrews up through each
+#   ledge (CART_CLAMPS) then press it up against the arms, so it can't shift when the plunger drags
+#   the barrels; the channel can then be loose enough never to bind.
 # - The plunger carrier slides in under the drive plate on two 8 mm D-shafts in printed troughs;
 #   a quarter turn of each shaft's lever clamps it up against the drive plate with no play.
 # Nothing else is in the way at the front: the plunger drive is on the top plate.
 ARRAY_GRID = [(-49.5 + 9 * i, -31.5 + 9 * j) for j in range(8) for i in range(12)]
 CART_SLOT_X, CART_SLOT_BACK = 57.0, 50.0
 CART_PLATE = (62.0, 50.0)                        # cartridge plate half sizes
-CART_GAP = 3.3                                   # its channel: 3 mm plate + 0.3 mm
+CART_GAP = 3.5                                   # its channel: 3 mm plate + 0.5 mm (sheet and print tolerance)
 LEDGE_X = (54.3, 69.0)                           # ledge under the arm
 LEDGE_BOLTS = [(64.2, y) for y in (-95.0, -70.0, -45.0, -20.0, 5.0, 30.0, 46.0)]   # right side; mirrored
 CART_DETENTS = [(sx * 59.0, 40.0) for sx in (-1, 1)]   # 1.5 mm in from the cartridge plate's edge
+CART_CLAMPS = [(59.5, y) for y in (-34.0, 18.0)]  # right side; mirrored. Tapped M4: the heads (10 mm)
+                                                 # clear the barrels and grip as the drawer slides
 CART_HANDLE_SCREWS = [(sx * 15.0, -46.0) for sx in (-1, 1)]
 PC_PLATE = (60.0, 50.0)                          # plunger carrier half sizes (clears the T8 screws)
 # Pad retainer to carrier: 4 M3 x 6 countersunk down through the retainer (heads flush with its top,
@@ -98,6 +102,8 @@ PC_PLATE = (60.0, 50.0)                          # plunger carrier half sizes (c
 # rides on the D-shafts); between the pad pockets and the retainer's edge, clear of the ejector rods
 RETAINER_SCREWS = [(sx * 20.0, sy * 41.5) for sx in (-1, 1) for sy in (-1, 1)]
 M3_TAP_D = 2.5
+M4_TAP_D = 3.3
+BARREL_HOLE_D = 6.7                              # 6.4 mm barrels: room for laser and molding tolerance
 DSHAFT_X, DSHAFT_D, DSHAFT_FLAT = 55.5, 8.0, 0.8  # D-shaft clamps: axis, diameter, depth of the flat
 TROUGH_BOLTS = [(64.0, y) for y in (-95.0, -80.0, -32.0, 32.0)]   # right side; mirrored. +/-32: T-nuts
 FRAME_SCREWS = [(sx * 27.0, sy * 38.8) for sx in (-1, 1) for sy in (-1, 1)]   # frame + carrier + grip
@@ -257,6 +263,7 @@ def cart_ledge():
     ents = rounded_rect(x1 - x0, y1 - y0, 1.0, (x0 + x1) / 2, (y0 + y1) / 2)
     ents += [circle(x, y, M3) for x, y in LEDGE_BOLTS]
     ents += [circle(abs(x), y, 5.0) for x, y in CART_DETENTS[1:]]        # M6 tap drill
+    ents += [circle(x, y, M4_TAP_D) for x, y in CART_CLAMPS]             # M4 tap drill: clamp thumbscrews
     return ents
 
 
@@ -295,7 +302,7 @@ def cartridge_plate():
     """Carrier plate: 3 mm steel, the cartridge's drawer. Its edges run in the channels under the
     pipette plate's arms; the barrels, frame, grip and ejector hang from it."""
     ents = rounded_rect(2 * CART_PLATE[0], 2 * CART_PLATE[1], 2.0)
-    ents += [circle(x, y, 6.5) for x, y in ARRAY_GRID]                 # barrels
+    ents += [circle(x, y, BARREL_HOLE_D) for x, y in ARRAY_GRID]       # barrels
     ents += [circle(x, y, M4) for x, y in EJ_ROD_HOLES]                # ejector rods slide here
     ents += [circle(x, y, M3) for x, y in FRAME_SCREWS + CART_HANDLE_SCREWS]
     ents += [circle(x, y, 3.0) for x, y in CART_DETENTS]               # the spring plungers click in

@@ -64,8 +64,8 @@ The timeline plays a complete run (`CYCLE`, 680 frames); scrub it to watch:
 3. A 96-well plate replaces the reservoir, and the plunger dispenses into its wells.
 4. A waste tray replaces the plate. The plunger runs 11.5 mm past home, and the tilted ejector
    plate strips the tips a row at a time, front row first; they drop into the tray.
-5. The D-shaft levers open (the flats come up and the plunger carrier sinks 0.8 mm onto them),
-   and the syringe cartridge slides 210 mm out the front.
+5. The drawer clamps back off, the D-shaft levers open (the flats come up and the plunger carrier
+   sinks 0.8 mm onto them), and the syringe cartridge slides 210 mm out the front.
 
 The labware (`tip_rack`, `reservoir`, `well_plate_96`, `waste_tray`) is demo-only and is loaded
 from the front over the nest's lip. Anything that goes in or out while tips are on has to pass
