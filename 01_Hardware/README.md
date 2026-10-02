@@ -15,14 +15,14 @@ stock, not 1/8" (3.18 mm): the cartridge plate slides in a 3.3 mm channel.
 | `pipette_plate.dxf` | 1 | 160 x 200 mm: a U open at the front for the cartridge drawer (slot 114 mm wide, to 50 mm behind center), with the head-bracket holes, 6 for the sensor posts and 14 for the drawer channels. |
 | `plunger_plate.dxf` | 1 | The drive plate, redrawn at 160 x 200 mm so the carriage brackets sit outside the drawer's clamp troughs: 4 T8 nut cutouts (the nuts sit on it, body up), 8 M4 for the carriage brackets, 6 M3 for the sensor flags, 8 M3 for the troughs. No plunger-rod holes: the rods are the cartridge's. |
 | `plunger_rail_plate.dxf` | 4 | Joins the drive plate's carriage brackets to the carriages: the lift rail plate made rectangular and 24 mm longer so it reaches down beside the drive plate; same carriage holes, M4 pair moved into the carriage bracket. |
-| `lift_rail_plate.dxf` | 4 | Joins the lift platform's carriage brackets to the carriages (the original design's `interface_plate_high`): 3 carriage screws, 2 M4 into the bracket. |
+| `lift_rail_plate.dxf` | 4 | Joins the lift platform's carriage brackets to the carriages: 3 carriage screws, 2 M4 into the bracket. The original design's `interface_plate_high`, redrawn 2 mm wider at the carriage end and at its notch, which left only 0.8 mm of steel beside three holes. |
 | `corner_bracket.dxf` | 16 | Frame corners, 4 M5 each into the extrusion (the original design's). Or buy 2020 flat L corner plates. |
 | `lift_plate.dxf` | 1 | 156 x 200 lift platform (its edges clear the rail plates' carriage-screw heads) with 2 T8 nut cutouts (body through), 8 holes for the carriage brackets and 4 for the well-plate nest. |
 | `top_plate.dxf` | 1 | Across the frame's top ring (12 M5 into it). 4 KFL08s for the plunger screws, the plunger motor (standing on it, shaft down) and the belt-tensioner slot; the pulleys, belt and idler run under it inside the ring. |
 | `cart_ledge.dxf` | 2 | The drawer channels' ledges under the pipette plate's arms (drawn for the right; flip one over for the left): 7 M3 and a tapped M6 hole for the spring plunger. |
 | `cartridge_plate.dxf` | 1 per cartridge | The cartridge's drawer plate, 124 x 100 mm: 96 barrel holes, 4 ejector-rod holes, 4 frame screws, 2 handle screws, and 2 detent holes for the spring plungers. |
 | `plunger_carrier.dxf` | 1 per cartridge | Under the thumb pads, 120 x 100 mm with 96 rod holes and 4 holes to tap M3 for the pad retainer; it rides on the D-shaft clamps and pushes the ejector rods. |
-| `tip_ejector_plate.dxf` | 1 per cartridge | Tip ejector under the barrel ends, 112 x 98 mm with a 5.8 mm hole around each nozzle, 6 mm holes for its 4 M4 rods (loose, so it can tilt). |
+| `tip_ejector_plate.dxf` | 1 per cartridge | Tip ejector under the barrel ends, 112 x 102 mm with a 5.8 mm hole around each nozzle, 6 mm holes for its 4 M4 rods (loose, so it can tilt). |
 | `lift_base_plate.dxf` | 1 | 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
 
 Each T8 nut mounts through one cloverleaf cutout (the center bore with four 3.4 mm slots out to
@@ -30,9 +30,11 @@ the flange screws) instead of a bore and four separate holes, which would leave 
 (lift) and 1.9 mm (plunger) of steel between them. The flange covers the slots and carries the
 load; the M3 nuts (5.5 mm across flats) span the 3.4 mm slots on their own.
 
-Checked: all outlines closed, smallest hole or slot 3.4 mm (above the thickness), and at least
-2.7 mm of material to every plate edge. The thinnest web is 4.1 mm (drive plate), apart from
-the cartridge plate's 96 barrel holes, which keep the original design's 2.5 mm webs.
+Checked: all outlines closed; smallest hole 2.5 mm (the plunger carrier's tap holes), most of the
+plate thickness. Every hole has at least 1.5 mm of steel to the plate's outer edge (the cartridge
+plate's detent holes; everything else 2.2 mm or more), above SendCutSend's 0.91 mm minimum for
+instant quoting. The thinnest web is 4.1 mm (drive plate), apart from the cartridge plate's 96
+barrel holes, which keep the original design's 2.5 mm webs.
 
 After cutting, tap the 4 small (2.5 mm) holes in `plunger_carrier.dxf` for M3 and the detent hole
 in each `cart_ledge.dxf` for M6. For a spare cartridge, order another cartridge plate, plunger
@@ -162,5 +164,5 @@ python 01_Hardware/make_dxf.py                           # DXFs
 blender -b --python 04_Blender/export_parts.py           # STLs (builds the model first)
 ```
 
-`lift_rail_plate.dxf` and `corner_bracket.dxf` are the original design's drawings, cut as they are;
-`make_dxf.py` reads the rail plate to draw `plunger_rail_plate.dxf` from it.
+`corner_bracket.dxf` is the original design's drawing, cut as it is; `make_dxf.py` writes every
+other DXF, including `lift_rail_plate.dxf` (redrawn from the original's).

@@ -90,7 +90,7 @@ CART_PLATE = (62.0, 50.0)                        # cartridge plate half sizes
 CART_GAP = 3.3                                   # its channel: 3 mm plate + 0.3 mm
 LEDGE_X = (54.3, 69.0)                           # ledge under the arm
 LEDGE_BOLTS = [(64.2, y) for y in (-95.0, -70.0, -45.0, -20.0, 5.0, 30.0, 46.0)]   # right side; mirrored
-CART_DETENTS = [(sx * 60.0, 40.0) for sx in (-1, 1)]
+CART_DETENTS = [(sx * 59.0, 40.0) for sx in (-1, 1)]   # 1.5 mm in from the cartridge plate's edge
 CART_HANDLE_SCREWS = [(sx * 15.0, -46.0) for sx in (-1, 1)]
 PC_PLATE = (60.0, 50.0)                          # plunger carrier half sizes (clears the T8 screws)
 # Pad retainer to carrier: 4 M3 x 6 countersunk down through the retainer (heads flush with its top,
@@ -106,7 +106,7 @@ FRAME_SCREWS = [(sx * 27.0, sy * 38.8) for sx in (-1, 1) for sy in (-1, 1)]   # 
 # goes below home. All of it belongs to the cartridge.
 EJ_ROD_X, EJ_ROD_Y = 44.0, 45.0
 EJ_ROD_HOLES = [(sx * EJ_ROD_X, sy * EJ_ROD_Y) for sx in (-1, 1) for sy in (-1, 1)]
-EJ_PLATE = (112.0, 98.0)
+EJ_PLATE = (112.0, 102.0)                       # 3 mm of steel outside the rod holes
 EJ_HOLE_D = 5.8                                  # passes the tip cones (5.2 mm), not the tip rims
 EJ_ROD_HOLE_D = 6.0                              # loose: the plate tilts a few degrees on the rods
 NEST_HOLES = [(sx * 55.0, sy * 15.0) for sx in (-1, 1) for sy in (-1, 1)]
@@ -116,37 +116,7 @@ M3, M4, M5 = 3.4, 4.5, 5.5
 SCREW_CLEAR_D = 9.0                              # T8 screw through a plate
 
 
-# ---------------------------------------------------------------- DXF read / write
-def read_entities(path):
-    """LINE/ARC/CIRCLE entities from a DXF as dicts of group code -> value."""
-    lines = [l.strip() for l in open(path, errors="ignore").read().splitlines()]
-    ents, cur, inside = [], None, False
-    for code, val in zip(lines[0::2], lines[1::2]):
-        if code == "2" and val == "ENTITIES":
-            inside = True
-            continue
-        if not inside:
-            continue
-        if code == "0":
-            if cur:
-                ents.append(cur)
-            if val == "ENDSEC":
-                break
-            cur = {"t": val}
-        elif cur is not None and code not in cur:
-            cur[code] = val
-    out = []
-    for e in ents:
-        f = lambda k: float(e[k])
-        if e["t"] == "LINE":
-            out.append(("LINE", f("10"), f("20"), f("11"), f("21")))
-        elif e["t"] == "CIRCLE":
-            out.append(("CIRCLE", f("10"), f("20"), f("40")))
-        elif e["t"] == "ARC":
-            out.append(("ARC", f("10"), f("20"), f("40"), f("50"), f("51")))
-    return out
-
-
+# ---------------------------------------------------------------- DXF write
 def write_dxf(path, ents):
     rows = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "0", "ENDSEC",
             "0", "SECTION", "2", "ENTITIES"]
@@ -231,16 +201,6 @@ def mirror4(quadrant):
     return q + q2[1:] + q3[1:] + q4[1:-1]
 
 
-def near_r(e, r):
-    return e[0] == "CIRCLE" and abs(e[3] - r) < 0.02
-
-
-def at_any(e, pts, offset):
-    """A circle centered on one of pts (machine frame; offset maps machine -> DXF)."""
-    return e[0] == "CIRCLE" and any(abs(e[1] - x - offset[0]) < 0.05 and abs(e[2] - y - offset[1]) < 0.05
-                                    for x, y in pts)
-
-
 # ---------------------------------------------------------------- parts
 # The pipette and drive plates are drawn in the original design's plate frames (the model places them
 # there); these offsets map machine -> DXF coordinates.
@@ -300,12 +260,31 @@ def cart_ledge():
     return ents
 
 
+RAIL_PLATE_X0 = -22.0     # carriage end of the rail plates: 2.8 mm of steel past the carriage-screw holes
+CARRIAGE_HOLES = [(-17.5, 12.0), (-2.5, -4.0), (-17.5, -4.0)]   # MGN9H, 3 of its 4 (the 4th is under the notch)
+
+
+def lift_rail_plate():
+    """Joins a lift carriage bracket to its carriage (the original design's interface_plate_high,
+    redrawn): 3 carriage screws and 2 M4 into the bracket. Widened 2 mm at the carriage end and at
+    the notch so no hole is closer than 2.8 mm to an edge (the original had 0.8 mm)."""
+    x0, xn, r = RAIL_PLATE_X0, 2.0, 2.0
+    ents = [("LINE", x0 + r, -9.0, xn - r, -9.0), ("ARC", xn - r, -7.0, r, 270.0, 360.0),
+            ("LINE", xn, -7.0, xn, -2.0), ("ARC", xn + r, -2.0, r, 90.0, 180.0),
+            ("LINE", xn + r, 0.0, 48.0, 0.0), ("ARC", 48.0, 2.0, r, 270.0, 360.0),
+            ("LINE", 50.0, 2.0, 50.0, 18.0), ("ARC", 48.0, 18.0, r, 0.0, 90.0),
+            ("LINE", 48.0, 20.0, x0 + r, 20.0), ("ARC", x0 + r, 18.0, r, 90.0, 180.0),
+            ("LINE", x0, 18.0, x0, -7.0), ("ARC", x0 + r, -7.0, r, 180.0, 270.0)]
+    ents += [circle(x, y, M3) for x, y in CARRIAGE_HOLES]
+    ents += [circle(x, 10.0, M4) for x in (20.0, 40.0)]
+    return ents
+
+
 def plunger_rail_plate():
-    """The lift rail plate (lift_rail_plate.dxf) made rectangular and 24 mm longer, so it reaches down beside the
-    plunger plate to its carriage bracket: same carriage holes, M4 row moved into the bracket."""
-    src = read_entities(os.path.join(OUT, "lift_rail_plate.dxf"))
-    ents = [e for e in src if near_r(e, 1.7)]               # the 3 carriage screws
-    x0, x1, y0, y1 = -20.0, CARRIAGE_Y - 10.0 - (PLG_BRACKET_RAIL_Y[0] - 9.0), -9.0, 20.0
+    """The lift rail plate made rectangular and 24 mm longer, so it reaches down beside the plunger
+    plate to its carriage bracket: same carriage holes, M4 row moved into the bracket."""
+    ents = [circle(x, y, M3) for x, y in CARRIAGE_HOLES]
+    x0, x1, y0, y1 = RAIL_PLATE_X0, CARRIAGE_Y - 10.0 - (PLG_BRACKET_RAIL_Y[0] - 9.0), -9.0, 20.0
     ents += rounded_rect(x1 - x0, y1 - y0, 2.0, (x0 + x1) / 2, (y0 + y1) / 2)
     row = RAIL_ZC_BELOW_MID - PLG_BRACKET_ROW_BELOW_MID
     ents += [circle(CARRIAGE_Y - 10.0 - y, row, M4) for y in PLG_BRACKET_RAIL_Y]
@@ -374,6 +353,7 @@ def shift(e, dx, dy):
 PARTS = {
     "pipette_plate": pipette_plate,
     "plunger_plate": plunger_plate,
+    "lift_rail_plate": lift_rail_plate,
     "plunger_rail_plate": plunger_rail_plate,
     "tip_ejector_plate": tip_ejector_plate,
     "cartridge_plate": cartridge_plate,
