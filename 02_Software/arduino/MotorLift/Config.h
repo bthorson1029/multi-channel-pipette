@@ -63,12 +63,6 @@ const long  VOLUME_MIN_UL   = 1;
 // forward dispense ends at the working zero, then blows out down to the switches.
 const float BLOWOUT_UL = 10.0;
 
-// Reverse mode: draw REVERSE_EXCESS_UL more than asked (it stays in the tip and is discarded
-// with "Empty tips"), plus REVERSE_PRELOAD_UL that is pushed straight back into the source so
-// the nut's slack is taken up in the dispense direction before the first dispense.
-const float REVERSE_EXCESS_UL  = 10.0;
-const float REVERSE_PRELOAD_UL = 5.0;
-
 // Extra steps added whenever the plunger reverses direction. Anti-backlash nuts should make
 // this ~0; measure by reversing and watching the plate with a dial indicator.
 const float BACKLASH_UL = 0.0;
@@ -89,17 +83,22 @@ const CalPoint CAL_10_REVERSE[]  = {{0, 0}, {10, 10}};
 // much further the bed must rise for its tips than for the 200 uL tips the labware heights below
 // are set for (shorter tips: positive). Keep it 0 until measured: tips that fall short are safe,
 // tips driven into the bottom of a plate are not.
+// Reverse mode draws reverseExcessUl more than asked (it stays in the tip and is discarded with
+// "Empty tips"), plus reversePreloadUl that is pushed straight back into the source so the slack
+// is taken up in the dispense direction before the first dispense. Both scale with the tips: on
+// small tips they must leave room for the volume itself.
 struct Cartridge {
   const char *name;     // <= 13 characters
   long capacityUl;
   float tipOffsetMm;
+  float reverseExcessUl, reversePreloadUl;
   const CalPoint *calForward; uint8_t nForward;
   const CalPoint *calReverse; uint8_t nReverse;
 };
 #define CAL_TABLE(t) t, (uint8_t)(sizeof(t) / sizeof(t[0]))
 const Cartridge CARTRIDGES[] = {
-  {"200 uL tips", 200, 0.0, CAL_TABLE(CAL_200_FORWARD), CAL_TABLE(CAL_200_REVERSE)},
-  {"10 uL tips",   10, 0.0, CAL_TABLE(CAL_10_FORWARD),  CAL_TABLE(CAL_10_REVERSE)},   // PLACEHOLDER offset
+  {"200 uL tips", 200, 0.0, 10.0, 5.0, CAL_TABLE(CAL_200_FORWARD), CAL_TABLE(CAL_200_REVERSE)},
+  {"10 uL tips",   10, 0.0,  1.0, 0.5, CAL_TABLE(CAL_10_FORWARD),  CAL_TABLE(CAL_10_REVERSE)},   // PLACEHOLDER offset, reverse amounts
 };
 const uint8_t CARTRIDGE_COUNT = sizeof(CARTRIDGES) / sizeof(CARTRIDGES[0]);
 

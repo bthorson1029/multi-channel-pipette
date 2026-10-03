@@ -84,6 +84,8 @@ float commandFor(float wantUl) {
 }
 
 long tipCapacityUl() { return CARTRIDGES[cartIdx].capacityUl; }
+float reverseExcessUl() { return CARTRIDGES[cartIdx].reverseExcessUl; }
+float reversePreloadUl() { return CARTRIDGES[cartIdx].reversePreloadUl; }
 
 // ---------------------------------------------------------------- bed
 float engageMm() {
@@ -153,10 +155,10 @@ bool plungerFail() {
 void runAspirate() {
   if (!ready()) return;
   float held = heldUl();
-  // Forward: draw the calibrated command. Reverse: draw the volume plus the preload (pushed
-  // back below), plus the excess if the tips are empty.
-  float draw = reverseMode ? volumeUl + REVERSE_PRELOAD_UL + (held < 0.5 ? REVERSE_EXCESS_UL : 0)
-                           : commandFor(volumeUl);
+  // Draw the calibrated command (the same one the dispense uses). Reverse: plus the preload
+  // (pushed back below), plus the excess if the tips are empty.
+  float draw = commandFor(volumeUl);
+  if (reverseMode) draw += reversePreloadUl() + (held < 0.5 ? reverseExcessUl() : 0);
   if (held + draw > tipCapacityUl()) { showStatus("Over tip capacity"); return; }
   bool stayUp = bedUp;
   if (!bedUp && !raiseBed()) return;
@@ -171,7 +173,7 @@ void runAspirate() {
   if (!plungerToHeld(held + draw, ASPIRATE_UL_S)) { plungerFail(); return; }
   delay(ASPIRATE_DELAY_MS);
   if (reverseMode) {                   // take up the slack in the dispense direction
-    if (!plungerToHeld(held + draw - REVERSE_PRELOAD_UL, DISPENSE_UL_S)) { plungerFail(); return; }
+    if (!plungerToHeld(held + draw - reversePreloadUl(), DISPENSE_UL_S)) { plungerFail(); return; }
     delay(DISPENSE_DELAY_MS);
   }
   if (!stayUp && !lowerBed()) return;
@@ -200,7 +202,7 @@ void runDispense() {
   if (held < 0.5) { showStatus("Nothing held"); return; }
   if (!reverseMode) { dispenseAll("Dispense DONE"); return; }
   float cmd = commandFor(volumeUl);
-  if (held - cmd < REVERSE_EXCESS_UL - 0.5) { showStatus("Low: Empty tips"); return; }
+  if (held - cmd < reverseExcessUl() - 0.05) { showStatus("Low: Empty tips"); return; }
   bool stayUp = bedUp;
   if (!bedUp && !raiseBed()) return;
   showStatus("Dispensing...");

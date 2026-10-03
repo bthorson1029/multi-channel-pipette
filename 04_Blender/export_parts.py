@@ -66,6 +66,19 @@ for name, (fname, rot) in PARTS.items():
     bm = bmesh.new()
     bm.from_mesh(o.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh())
     open_edges = sum(1 for e in bm.edges if not e.is_manifold)
+    shells, seen = 0, set()                       # loose pieces: a part must print as one solid
+    for v0 in bm.verts:
+        if v0.index in seen:
+            continue
+        shells += 1
+        stack = [v0]
+        seen.add(v0.index)
+        while stack:
+            for e in stack.pop().link_edges:
+                for u in e.verts:
+                    if u.index not in seen:
+                        seen.add(u.index)
+                        stack.append(u)
     bmesh.ops.triangulate(bm, faces=bm.faces[:])
     bm.transform(rot.to_4x4() @ o.matrix_world.to_3x3().to_4x4())   # object rotation, then print pose
     zmin = min(v.co.z for v in bm.verts)
@@ -76,9 +89,9 @@ for name, (fname, rot) in PARTS.items():
     size = [max(v.co[i] for v in bm.verts) - min(v.co[i] for v in bm.verts) for i in range(3)]
     vol = bm.calc_volume(signed=False)
     bm.free()
-    if open_edges:
+    if open_edges or shells != 1:
         failed = True
-        print(f"EXPORT FAIL {fname}: {open_edges} open edges")
+        print(f"EXPORT FAIL {fname}: {open_edges} open edges, {shells} separate pieces")
         continue
     write_stl(os.path.join(OUT, fname), tris)
     print(f"EXPORT {fname}: {len(tris)} triangles, {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm, "

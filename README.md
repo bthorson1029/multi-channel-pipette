@@ -68,7 +68,7 @@ The Blender model plays this whole run on its timeline (680 frames).
 - **Plunger:** 48 mm NEMA17 on the top plate, four T8x2 screws on a GT2 belt, anti-backlash nuts
 - **Electronics:** Arduino Uno, CNC Shield V3, two A4988 or DRV8825 drivers at 1/8 step, 20 x 4
   I2C LCD, rotary encoder, 12 V supply
-- **Parts:** 34 laser-cut steel parts (12 DXF files), 32 printed parts plus 96 resin tip cones (21 STL files), about 360
+- **Parts:** 35 laser-cut steel parts (13 DXF files), 32 printed parts plus 96 resin tip cones (21 STL files), about 360
   fasteners. Full list with an order summary: [BOM.md](BOM.md)
 
 ![The top plate: plunger motor, bearings and belt tensioner](04_Blender/renders/motor_lift_top_plate.jpg)
@@ -78,7 +78,7 @@ The Blender model plays this whole run on its timeline (680 frames).
 | Path | What's there |
 |---|---|
 | [`BOM.md`](BOM.md) | Bill of materials, with totals to order and where to get parts made |
-| [`01_Hardware`](01_Hardware) | Every file to fabricate: `ToLaserCut-DXF/` (12 files, 34 parts) and `ToPrint-STL/` (21 files: 32 parts, plus the resin tip cones and their sizing set), plus `make_dxf.py`, which holds the layout numbers. Its README explains each part. |
+| [`01_Hardware`](01_Hardware) | Every file to fabricate: `ToLaserCut-DXF/` (13 files, 35 parts) and `ToPrint-STL/` (21 files: 32 parts, plus the resin tip cones and their sizing set), plus `make_dxf.py`, which holds the layout numbers. Its README explains each part. |
 | [`02_Software`](02_Software) | Firmware (`arduino/MotorLift`; settings in `Config.h`). Its README has the wiring and what each feature does. |
 | [`04_Blender`](04_Blender) | Scripts that build the model, check it for collisions and clearances, animate a full run, and write the STLs |
 

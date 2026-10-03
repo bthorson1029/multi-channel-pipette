@@ -1,6 +1,6 @@
 # Fabrication files
 
-Every part to cut or print for the pipette: 12 DXF files for 34 laser-cut parts and 21 STL files
+Every part to cut or print for the pipette: 13 DXF files for 35 laser-cut parts and 21 STL files
 for 32 printed parts plus 96 resin tip cones. Everything else is bought; see [`BOM.md`](../BOM.md) for the full list with
 quantities to order. Units are millimeters.
 
@@ -23,6 +23,7 @@ plate's 3.5 mm channel.
 | `cart_ledge.dxf` | 2 | The drawer channels' ledges under the pipette plate's arms (drawn for the right; flip one over for the left): 7 M3, a tapped M6 hole for the spring plunger. |
 | `cartridge_plate.dxf` | 1 per cartridge | The cartridge's drawer plate, 124 x 100 mm: 96 barrel holes (6.7 mm, for 6.4 mm barrels), 4 ejector-rod holes, 4 frame screws, 2 handle screws, and 2 detent holes for the spring plungers. |
 | `plunger_carrier.dxf` | 1 per cartridge | Under the thumb pads, 120 x 100 mm with 96 rod holes and 4 holes to tap M3 for the pad retainer; it rides on the D-shaft clamps and pushes the ejector rods. |
+| `syringe_lock_plate.dxf` | 1 per cartridge | Steel plate over the printed locking frame, 111 x 87 mm: 96 holes (5.2 mm) for the plunger rods and 4 M3 for the frame screws, each on a tab for edge distance. Tip loading and the stoppers' drag push the barrels up into it; the printed frame alone would bend about 2 mm per 100 N, this about 0.03 mm. |
 | `tip_ejector_plate.dxf` | 1 per cartridge | Tip ejector under the barrel ends, 112 x 102 mm with a 5.8 mm hole around each nozzle, 6 mm holes for its 4 M4 rods (loose, so it can tilt). |
 | `lift_base_plate.dxf` | 1 | 229.2 x 120 plate hung under the bed-level side extrusions; lift screws + KFL08s, lift motor, tensioner slot, home-switch holder and 4 M5 mounting holes. |
 
@@ -38,8 +39,8 @@ instant quoting. The thinnest web is 4.1 mm (drive plate), apart from the cartri
 barrel holes, which leave 2.3 mm webs.
 
 After cutting, tap the 4 small (2.5 mm) holes in `plunger_carrier.dxf` for M3, and in each
-`cart_ledge.dxf` the detent hole for M6 and the two 3.3 mm clamp holes for M4. For a spare cartridge, order another cartridge plate, plunger
-carrier and tip ejector plate.
+`cart_ledge.dxf` the detent hole for M6 and the two 3.3 mm clamp holes for M4. For a spare cartridge, order another cartridge plate, lock plate,
+plunger carrier and tip ejector plate.
 
 ## 3D-printed (`ToPrint-STL/`, PETG suggested, the tip cones in resin; oriented for printing)
 
@@ -55,7 +56,7 @@ carrier and tip ejector plate.
 | `plunger_flag.stl` | 3 | Hangs from the drive plate (2 M3 x 10 countersunk up from under the tab, flush, nuts on the plate) with a 4 x 2 mm vane that reaches the sensor's beam at home and passes on through the slot. Prints tab down. |
 | `well_plate_nest.stl` | 1 | Locates the well plate on the lift platform (replaces the original's flat tray): a 15 mm base (the height the firmware expects), walls 4 mm above it on the back and sides, a 2 mm lip at the front, 0.4 mm clearance around the SBS footprint. 4 M4 x 16 through counterbores into the platform. Cut back 11.5 mm around each lift nut for its flange screws' heads. |
 | `control_box_base.stl` | 1 | Closes the control box (replaces the original's lid, which sat between the posts). 4 countersunk M3 self-tappers into the housing bosses. |
-| `syringe_lock_frame.stl` | 1 per cartridge | Holds the 96 syringes by their flanges, with the finger tabs trimmed to stubs instead of the flanged end cut off: each flange sits on the cartridge plate in a slot along its row (7.4 mm wide, 1.0 mm deep, so the frame presses 0.2 mm on every flange, enough to cover print and flange tolerance, and the stubs can't turn), and 5.2 mm holes pass the plunger rods. 4 M3 x 14 self-tappers go down through it and the cartridge plate into the grip's ears. Prints slot side up; use fine layers (0.1-0.15 mm) so the slot depth comes out right. |
+| `syringe_lock_frame.stl` | 1 per cartridge | Holds the 96 syringes by their flanges, with the finger tabs trimmed to stubs instead of the flanged end cut off: each flange sits on the cartridge plate in a slot along its row (7.4 mm wide, 1.0 mm deep, so the frame presses 0.2 mm on every flange, enough to cover print and flange tolerance, and the stubs can't turn), and 5.2 mm holes pass the plunger rods. 2 mm thick: it only keys and presses the flanges, while the steel lock plate on top takes the load. 4 M3 x 16 self-tappers go down through the lock plate, the frame and the cartridge plate into the grip's ears. Prints slot side up; use fine layers (0.1-0.15 mm) so the slot depth comes out right. |
 | `syringe_grip_slipfit.stl` | 1 per cartridge | The original design's grip (in `04_Blender/source/`) with its 96 holes opened from 6.5 to 6.9 mm, so the barrels slide in; it keeps their lower ends in line. 4 ears take the frame screws, so it hangs from the cartridge plate instead of sliding down the barrels. |
 | `pad_retainer.stl` | 1 per cartridge | Over the thumb pads, on the plunger carrier (3 mm): pockets keep the 96 pads captive when the cartridge is out, and it carries the drive plate's push down to them. 4 M3 x 6 countersunk screws hold it to the carrier: the heads sit flush with its top (which bears on the drive plate) and the tips come out flush under the carrier (which rides on the D-shafts). Prints pockets up. |
 | `cartridge_handle.stl` | 1 per cartridge | Under the front of the cartridge plate (2 M3 self-tappers): pull the drawer out by it. |
@@ -132,7 +133,7 @@ while one is cleaned or repaired). Each cartridge has its own 96 syringes.
 - **Stays on the machine:** frame, lift, pipette plate (a U, open at the front), the plunger drive
   (now on the top plate: motor, belt, screws; the drive plate with its nuts, stiffening frame and
   carriage brackets), home sensors and flags, and the drawer's channels and clamps.
-- **In the cartridge:** the cartridge plate with the barrels, locking frame, grip and handle; the
+- **In the cartridge:** the cartridge plate with the barrels, locking frame and lock plate, grip and handle; the
   plunger carrier (`plunger_carrier.dxf` + `pad_retainer.stl`) holding the thumb pads captive; the
   tip ejector (plate, rods, springs); the 96 tip cones, sized for its tip family. Out of the
   machine it holds together by itself: the syringe stoppers' friction keeps the plunger carrier

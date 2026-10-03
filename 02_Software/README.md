@@ -48,7 +48,8 @@ move it to A0 and A2 in `Config.h`.
   *Reservoir* are placeholders to set for your rack and reservoir. Trim them on the device in
   0.1 mm steps; trims are saved to EEPROM. The lift's soft limit is `LIFT_TRAVEL_MM` (66 mm).
 - **Cartridge** (menu): pick the syringe cartridge fitted. Each entry in `CARTRIDGES` has its tip
-  capacity, its own calibration tables and a tip height offset added to every labware height (keep
+  capacity, its own calibration tables, its reverse-mode extra and preload (scaled to its tips), and a
+  tip height offset added to every labware height (keep
   it 0 until measured; the 10 uL entry is a placeholder). Only allowed with the tips empty and the
   bed down; kept in EEPROM.
 - **Eject tips** (menu): with the bed down and the tips empty, the plunger goes `EJECT_MM`

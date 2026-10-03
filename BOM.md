@@ -15,7 +15,7 @@ Fastener quantities include about 20 % extra; the sections below say where each 
 goes.
 
 **To have made**
-- Laser-cut, 3 mm steel: 34 parts from 12 DXF files (sections 1 and 5b). The 16 frame corner
+- Laser-cut, 3 mm steel: 35 parts from 13 DXF files (sections 1 and 5b). The 16 frame corner
   brackets can be bought instead.
 - 3D-printed: 32 parts from 19 STL files (sections 2 and 5b). Mirror `cart_spacer_R` and
   `dshaft_trough_R` for the left side.
@@ -71,7 +71,7 @@ M4 threaded rod, 4 light springs (~6.4 mm OD x 20-25 mm).
 | M3 hex nut | 75 |
 | M3 T-nut (2020) | 92 |
 | M3 x 6 cone-point set screw | 3 |
-| M3 self-tapping: pan x 8 / pan x 10 / pan x 14 / countersunk x 10 | 8 / 3 / 5 / 5 |
+| M3 self-tapping: pan x 8 / pan x 10 / pan x 16 / countersunk x 10 | 8 / 3 / 5 / 5 |
 | M2 x 20 + nut | 3 |
 | Shoulder bolt + nut (idlers) | 2 |
 
@@ -93,7 +93,7 @@ would be lighter but about 3x more flexible, which costs plunger accuracy.
 | Plunger rail plate | 4 | `ToLaserCut-DXF/plunger_rail_plate.dxf` | A taller, rectangular lift rail plate that reaches down to the plunger carriage brackets. |
 | Frame corner bracket | 16 | `ToLaserCut-DXF/corner_bracket.dxf` | Or buy 2020 flat L corner plates. |
 
-The syringe cartridge's three plates are in section 5b.
+The syringe cartridge's four plates are in section 5b.
 
 ## 2. 3D-printed parts
 
@@ -180,6 +180,7 @@ Everything that depends on the syringes and tips (see "Syringe cartridge" in
 | Plunger carrier, 3 mm steel | 1 | `ToLaserCut-DXF/plunger_carrier.dxf`; tap the 4 small (2.5 mm) holes M3 |
 | Tip ejector plate, 3 mm steel | 1 | `ToLaserCut-DXF/tip_ejector_plate.dxf` |
 | Syringe locking frame (printed) | 1 | `ToPrint-STL/syringe_lock_frame.stl`; a slot per row keys the tab stubs |
+| Syringe lock plate, 3 mm steel | 1 | `ToLaserCut-DXF/syringe_lock_plate.dxf`; over the frame, holds the flanges against tip loading and stopper drag |
 | Syringe barrel grip, slip fit (printed) | 1 | `ToPrint-STL/syringe_grip_slipfit.stl`; hangs from the cartridge plate by 4 ears |
 | Pad retainer (printed) | 1 | `ToPrint-STL/pad_retainer.stl`; countersunk for 4 M3 |
 | 1 mL Luer-slip syringes | 96 + spares | Plungers sanded from 9.5 to 8 mm in a drill so they fit the 9 mm spacing (per the build video). Buy from one batch so the bores match. Instead of cutting the flanged end off, trim the finger tabs to stubs: flange 8.2 mm across the stubs and at most 7.2 mm wide, face left flat (the model assumes a 6.4 mm barrel and a 1.2 mm flange; measure yours). |
@@ -190,7 +191,7 @@ Everything that depends on the syringes and tips (see "Syringe cartridge" in
 | M4 nut + washer | 12 | Ejector rods: under and over the plate, and the spring stop |
 | Cartridge handle (printed) | 1 | `ToPrint-STL/cartridge_handle.stl` |
 | M3 x 10 self-tapping | 2 | Handle to the cartridge plate |
-| M3 x 14 self-tapping | 4 | Frame and cartridge plate into the grip's ears |
+| M3 x 16 self-tapping | 4 | Lock plate, frame and cartridge plate into the grip's ears |
 | M3 x 6 countersunk (ISO 10642) | 4 | Pad retainer down into the carrier's tapped holes; heads flush on top, tips flush underneath |
 
 ## 6. Fasteners

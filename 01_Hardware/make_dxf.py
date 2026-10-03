@@ -107,6 +107,12 @@ BARREL_HOLE_D = 6.7                              # 6.4 mm barrels: room for lase
 DSHAFT_X, DSHAFT_D, DSHAFT_FLAT = 55.5, 8.0, 0.8  # D-shaft clamps: axis, diameter, depth of the flat
 TROUGH_BOLTS = [(64.0, y) for y in (-95.0, -80.0, -32.0, 32.0)]   # right side; mirrored. +/-32: T-nuts
 FRAME_SCREWS = [(sx * 27.0, sy * 38.8) for sx in (-1, 1) for sy in (-1, 1)]   # frame + carrier + grip
+# Syringe lock plate: 3 mm steel over the printed locking frame, so the flanges are held by steel
+# (tip loading and the stoppers' drag push the barrels up into it). Same outline as the frame, with
+# a tab at each screw for edge distance.
+LOCK_HALF = (55.5, 41.0)                         # inside the pipette plate's drawer slot (57)
+LOCK_TAB = (5.0, 43.5)                           # tab half-width around each frame screw's x; tab edge y
+LOCK_ROD_D = 5.2                                 # passes the plunger rods
 # Tip ejector: a plate under the barrel ends with a hole around each nozzle, hung on 4 M4 rods
 # that run up through the cartridge plate; the plunger carrier pushes them down when the plunger
 # goes below home. All of it belongs to the cartridge.
@@ -318,6 +324,30 @@ def plunger_carrier():
     return ents
 
 
+def lock_outline():
+    """The locking frame / lock plate outline: a rectangle with a tab out at each frame screw."""
+    (hx, hy), (tw, ty) = LOCK_HALF, LOCK_TAB
+    xs = sorted({abs(x) for x, _ in FRAME_SCREWS})
+    q = [(hx, 0.0), (hx, hy)]                                 # +x/+y quarter, from the +x axis
+    for x in sorted(xs, reverse=True):
+        q += [(x + tw, hy), (x + tw, ty), (x - tw, ty), (x - tw, hy)]
+    q += [(0.0, hy)]
+    full = q + [(-x, y) for x, y in reversed(q)] + [(-x, -y) for x, y in q] + [(x, -y) for x, y in reversed(q)]
+    out = []
+    for p in full:
+        if not out or (abs(p[0] - out[-1][0]) > 1e-9 or abs(p[1] - out[-1][1]) > 1e-9):
+            out.append(p)
+    pts = [p for i, p in enumerate(out) if not (abs(p[1]) < 1e-9 and abs(abs(p[0]) - hx) < 1e-9) and not (abs(p[0]) < 1e-9)]
+    return pts
+
+
+def syringe_lock_plate():
+    ents = polygon(lock_outline())
+    ents += [circle(x, y, LOCK_ROD_D) for x, y in ARRAY_GRID]
+    ents += [circle(x, y, M3) for x, y in FRAME_SCREWS]
+    return ents
+
+
 def tip_ejector_plate():
     w, h = EJ_PLATE
     ents = rounded_rect(w, h)
@@ -363,6 +393,7 @@ PARTS = {
     "lift_rail_plate": lift_rail_plate,
     "plunger_rail_plate": plunger_rail_plate,
     "tip_ejector_plate": tip_ejector_plate,
+    "syringe_lock_plate": syringe_lock_plate,
     "cartridge_plate": cartridge_plate,
     "top_plate": top_plate,
     "cart_ledge": cart_ledge,

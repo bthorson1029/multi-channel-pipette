@@ -104,8 +104,8 @@ SYR_BARREL_D = 6.4                # barrel OD (the cartridge plate's holes are L
 SYR_FLANGE_T = 1.2                # flange thickness
 SYR_KEY_L, SYR_KEY_W = 8.2, 7.2   # trimmed flange: across the tab stubs (x) x width (y)
 GRIP_SLIP_D = 6.9                 # printed grip holes: a slip fit, no press (prints come out small)
-FRAME_T = 4.0                     # locking frame thickness
-FRAME_HALF = (55.5, 41.0)         # locking frame, inside the pipette plate's drawer slot
+FRAME_T = 2.0                     # printed locking frame (keys the flange stubs); the steel lock plate goes on top
+FRAME_HALF = L.LOCK_HALF          # locking frame, inside the pipette plate's drawer slot
 PC_BELOW = 6.0                    # plunger carrier (3 mm steel) + pad retainer (3 mm) under the drive plate
 TOP_PZ0 = FH - 1 - 16             # plunger pulleys hang under the top plate, inside the top ring
 CART_HANDLE_H = 12.0              # cartridge handle, under the front of the cartridge plate
@@ -119,7 +119,7 @@ LEVER_OPEN_DEG = 30.0             # open lever: arm this far outward of straight
 KEEP_X = 52.5                     # the outer plunger rods pass at |x| <= 51 as the drawer slides: drawer hardware stays outside
 EJ_SPRING_Z = (SEAT, SEAT + 20)   # ejector springs: carrier plate top to the spring nut
 # Parts that come out with the syringe cartridge (see check_cartridge_removal)
-CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_lock_frame", "syringe_grip",
+CARTRIDGE = ("cartridge_plate", "cartridge_handle", "syringe_barrels", "syringe_lock_frame", "syringe_lock_plate", "syringe_grip",
              "eject_", "plunger_carrier", "pad_retainer", "plungers_x96", "cartridge_fasteners", "tip_cone")
 # USB: a panel-mount USB-B socket on the control box's left end, forward of the DC jack, joined
 # to the Arduino by a short USB-B extension. Typical socket: 12.5 x 11.5 mm body, 2 M3 ears 30 mm
@@ -619,7 +619,7 @@ def tip_cone_sizing_set(name, coll):
     _block(u, x0, x1, bar_y - bar[0] / 2, bar_y + bar[0] / 2, -bar[1], 0)
     for i in range(n):                         # 0.8 x 0.45 mm tabs, from the bar into the top band
         _block(u, i * pitch - 0.4, i * pitch + 0.4, bar_y, -2.3, -0.45, -0.05)
-    boolean(o, u, 'UNION')
+    boolean(o, u, 'UNION', self_intersect=True)   # merges the cones, tabs and bar into one solid
     cut = bmesh.new()                          # notch: marks the smallest size's end
     _block(cut, x0 - 1, x0 + 1.5, bar_y - 2, bar_y + 2, -bar[1] - 1, -bar[1] / 2)
     boolean(o, cut)
@@ -627,17 +627,24 @@ def tip_cone_sizing_set(name, coll):
 
 
 def syringe_lock_frame(name, coll):
-    """Printed frame that clamps the trimmed syringe flanges to the cartridge carrier plate
+    """Printed frame that keys the trimmed syringe flanges on the cartridge carrier plate
     (replaces the original's S-P retainer and the press fit). Its underside has one slot per row,
-    SYR_KEY_W + 0.2 wide and FRAME_PRESS shallower than the flange, so the stubs can't turn and the
-    frame presses every flange down; 5.2 mm holes pass the plunger rods and bear on each barrel's
-    rim. 4 M3 through the frame and the carrier into the grip's ears clamp the three together; it
-    passes through the pipette plate's drawer slot with 1.5 mm to spare."""
+    SYR_KEY_W + 0.2 wide and FRAME_PRESS shallower than the flange, so the stubs can't turn and
+    every flange is pressed down. The steel lock plate (syringe_lock_plate.dxf) lies on top and
+    takes the load: tip loading and the stoppers' drag push the barrels up into it, which a printed
+    frame alone would let bend by millimeters. 5.2 mm holes pass the plunger rods. 4 M3 through the
+    plate, the frame and the carrier into the grip's ears clamp them together; it passes through
+    the pipette plate's drawer slot with 1.5 mm to spare."""
     z0, z1 = SEAT, SEAT + FRAME_T
     xs = [x for x, _ in g["GRID"]]
     ys = sorted({y for _, y in g["GRID"]})
     x_end = max(xs) + SYR_KEY_L / 2 + 0.3
-    o = box(name, (2 * FRAME_HALF[0], 2 * FRAME_HALF[1], FRAME_T), (0, 0, (z0 + z1) / 2), coll, M["pla"])
+    bm = bmesh.new()
+    f = bm.faces.new([bm.verts.new((x, y, z0)) for x, y in L.lock_outline()])
+    ext = bmesh.ops.extrude_face_region(bm, geom=[f])
+    bmesh.ops.translate(bm, verts=[v for v in ext["geom"] if isinstance(v, bmesh.types.BMVert)], vec=(0, 0, FRAME_T))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    o = new_obj(name, bm, coll, M["pla"])
     bm = bmesh.new()                                      # flange slots, one per row
     for y in ys:
         _block(bm, -x_end, x_end, y - SYR_KEY_W / 2 - 0.1, y + SYR_KEY_W / 2 + 0.1, z0 - 1, z0 + SYR_FLANGE_T - FRAME_PRESS)
@@ -661,7 +668,7 @@ def cartridge_grip(grip):
     bm = bmesh.new()
     for x, y in L.FRAME_SCREWS:
         xa, xb = sorted((x - 4.0, x + 4.0))
-        ya, yb = (35.5, 40.8) if y > 0 else (-40.8, -35.5)       # clear of the outer barrels (34.7)
+        ya, yb = (35.5, 42.5) if y > 0 else (-42.5, -35.5)       # clear of the outer barrels (34.7); 2.4 mm wall past the screw
         _block(bm, xa, xb, ya, yb, zt - 10, zt)
     boolean(grip, bm, 'UNION', self_intersect=True)
     bm = bmesh.new()
@@ -810,10 +817,11 @@ def drawer_channels():
         if sx < 0:
             ld.scale.x = -1
         xa, xb = sorted((sx * 63.3, sx * L.LEDGE_X[1]))
-        sp = box(f"cart_spacer_{tag}", (xb - xa, L.CART_SLOT_BACK + 100, L.CART_GAP),
-                 ((xa + xb) / 2, (L.CART_SLOT_BACK - 100) / 2, zt - L.CART_GAP / 2), "Head", M["pla"])
+        y_end = L.CART_SLOT_BACK + 6                                         # the body runs on behind the stop tab
+        sp = box(f"cart_spacer_{tag}", (xb - xa, y_end + 100, L.CART_GAP),
+                 ((xa + xb) / 2, (y_end - 100) / 2, zt - L.CART_GAP / 2), "Head", M["pla"])
         bm = bmesh.new()
-        ta, tb = sorted((sx * 56.5, sx * 63.31))
+        ta, tb = sorted((sx * 56.5, sx * 64.5))                               # overlaps the body: one solid
         _block(bm, ta, tb, L.CART_SLOT_BACK + 0.3, L.CART_SLOT_BACK + 6, zt - L.CART_GAP, zt)   # back stop
         boolean(sp, bm, 'UNION', self_intersect=True)
         bm = bmesh.new()
@@ -836,10 +844,10 @@ def cartridge_handle(coll):
     """Printed handle under the front of the cartridge plate (2 M3 self-tappers down through the
     plate); a finger slot to pull the drawer out."""
     zt = SEAT - T
-    y1 = -L.CART_PLATE[1] + 6.0
-    h = box("cartridge_handle", (50, 21, CART_HANDLE_H), (0, y1 - 10.5, zt - CART_HANDLE_H / 2), coll, M["pla"])
+    y1 = -L.CART_PLATE[1] + 7.0                       # back face: 1.8 mm of wall behind the screws
+    h = box("cartridge_handle", (44, 22, CART_HANDLE_H), (0, y1 - 11.0, zt - CART_HANDLE_H / 2), coll, M["pla"])   # inside the grip's ears
     bm = bmesh.new()
-    _block(bm, -18, 18, y1 - 21 - 1, y1 - 12, zt - CART_HANDLE_H - 1, zt - 4)          # finger slot
+    _block(bm, -18, 18, y1 - 22 - 1, y1 - 13, zt - CART_HANDLE_H - 1, zt - 4)          # finger slot
     for x, y in L.CART_HANDLE_SCREWS:
         _cone(bm, 1.25, 1.25, zt - 9, zt + 1, xy=(x, y))
     boolean(h, bm)
@@ -1083,6 +1091,7 @@ def modify():
     drawer_channels()
     syringe_barrels("syringe_barrels_x96", "Syringes")
     syringe_lock_frame("syringe_lock_frame", "Head")
+    fab_plate("syringe_lock_plate.dxf", "syringe_lock_plate", "Head", (0, 0, SEAT + FRAME_T + T / 2))
     cartridge_grip(obj["syringe_grip_static"])
     tip_ejector("Head")
     tip_cones("tip_cones_x96", "Syringes")
@@ -1544,9 +1553,9 @@ def fasteners():
                  head="socket", nut=True)
 
     # ---- cartridge: lock frame + plate into the grip's ears, handle, pad retainer to the carrier
-    _, fr1 = _span("syringe_lock_frame")
+    _, fr1 = _span("syringe_lock_plate")
     for x, y in L.FRAME_SCREWS:
-        fastener("cartridge_fasteners", (x, y, fr1), -Z, 3, 14, grip=FRAME_T + T, head="pan",
+        fastener("cartridge_fasteners", (x, y, fr1), -Z, 3, 16, grip=T + FRAME_T + T, head="pan",
                  into=("syringe_grip",), min_thread=5.0)
     _, cp1 = _span("cartridge_plate")
     for x, y in L.CART_HANDLE_SCREWS:
@@ -1962,7 +1971,7 @@ def collision_report():
     new_static = {o.name for o in meshes if o.name.startswith(("lift_screw", "lift_pulley", "lift_belt", "lift_motor",
                   "KFL08", "lift_base", "plunger_screw", "plunger_pulley", "plunger_belt", "plunger_motor",
                   "lift_idler", "lift_tensioner", "lift_home_switch", "plunger_idler", "plunger_tensioner",
-                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "usb_panel_socket", "eject_", "plunger_optical", "cartridge_plate", "syringe_grip", "top_plate",
+                  "ext_head", "head_bracket", "plunger_switch", "ScreenHousing", "control_box_base", "syringe_lock_frame", "syringe_lock_plate", "usb_panel_socket", "eject_", "plunger_optical", "cartridge_plate", "syringe_grip", "top_plate",
                   "cart_ledge", "cart_spacer", "cart_detent", "cartridge_handle", "tip_cone", "cart_clamp"))}
     allowed = [("lift_screw", "lift_nut"), ("lift_screw", "KFL08_lift"), ("lift_screw", "lift_pulley"),
                ("lift_screw", "lift_base_plate"), ("plunger_screw", "plunger_nut"), ("plunger_screw", "KFL08_plunger"),
@@ -1993,7 +2002,7 @@ def collision_report():
                ("top_plate", "ext_top"), ("top_plate", "post_"), ("top_plate", "angle_bracket"), ("KFL08_plunger", "top_plate"), ("plunger_motor", "top_plate"),
                ("plunger_tensioner", "top_plate"), ("plunger_idler", "top_plate"), ("plunger_idler", "plunger_tensioner"),
                ("plunger_screw", "top_plate"), ("cart_spacer", "pipette_plate"), ("cart_ledge", "cart_spacer"),
-               ("cart_detent", "cart_ledge"), ("cart_clamp", "cart_ledge"), ("cart_clamp", "cartridge_plate"), ("cartridge_handle", "cartridge_plate"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"),
+               ("cart_detent", "cart_ledge"), ("cart_clamp", "cart_ledge"), ("cart_clamp", "cartridge_plate"), ("cartridge_handle", "cartridge_plate"), ("usb_panel_socket", "ScreenHousing"), ("usb_panel_socket", "usb_panel_socket"), ("syringe_lock_frame", "syringe_barrels"), ("syringe_lock_plate", "syringe_lock_frame"),
                ("syringe_lock_frame", "pipette_plate"), ("ScreenHousing", "LCD_2004"), ("ScreenHousing", "encoder"),
                ("fast_rails", "MGN9H_carriage"),     # the rail screws' heads sit in the rail, which the carriage wraps
                ("dshaft_setscrew", "dshaft")]         # bolts in slots
